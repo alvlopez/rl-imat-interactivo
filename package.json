@@ -1,0 +1,10 @@
+{
+  "name": "rl-imat-interactivo",
+  "private": true,
+  "type": "module",
+  "description": "Recursos web interactivos de Aprendizaje por Refuerzo (IMAT). El type:module es para que node ejecute los tests; GitHub Pages ignora este fichero.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "servir": "python -m http.server 8080"
+  }
+}

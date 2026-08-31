@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 2 · Procesos de Decisión de Markov — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 2 de Aprendizaje por Refuerzo (IMAT): dinámica del MDP, política y retorno, funciones de valor, diagramas de backup y optimalidad de Bellman.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema">interactivo</span></a>
+    <nav>
+      <a href="index.html">Inicio</a>
+      <a href="tema1.html">Tema 1 · Introducción</a>
+      <a href="tema2.html">Tema 2 · MDP</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <div class="portada-tema">
+    <p class="kicker">Tema 2 · Sutton &amp; Barto, capítulo 3</p>
+    <h1>Procesos de Decisión de Markov</h1>
+    <p class="entradilla">
+      Las dos rejillas que se usan en clase, pero manipulables. Aquí se responden las
+      preguntas que las diapositivas dejan planteadas: las cuatro probabilidades de la
+      dinámica, cuántas ecuaciones salen de la cuadrícula, el diagrama de backup de los
+      estados 3 y 4, y si puede haber más de una política óptima.
+    </p>
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> La dinámica del MDP</a></li>
+        <li><a href="#m2"><span class="num">2</span> Política y retorno</a></li>
+        <li><a href="#m3"><span class="num">3</span> Funciones de valor</a></li>
+        <li><a href="#m4"><span class="num">4</span> Diagramas de backup</a></li>
+        <li><a href="#m5"><span class="num">5</span> Optimalidad</a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · dinámica                                               -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta">MÓDULO 1</p>
+      <h2>La dinámica del MDP: \(p(s',r \mid s,a)\)</h2>
+      <p class="fuente">Tema2_MDP#slide-8 · #slide-9</p>
+    </header>
+
+    <div class="pregunta-diapo">
+      <p>La diapositiva plantea cuatro probabilidades y las deja sin resolver:
+        <em>\(p(5,-1\mid 2,\text{abajo})\)</em>, <em>\(p(5,-1\mid 2,\text{izq})\)</em>,
+        <em>\(p(5,0\mid 2,\text{abajo})\)</em> y <em>\(p(3,-1\mid 3,\text{dch})\)</em>.</p>
+      <span class="de-donde">Respóndelas tú primero y compruébalas abajo.</span>
+    </div>
+
+    <p class="explicacion">
+      Recompensa \(-1\) en toda transición; si el agente sale del tablero se queda donde
+      estaba. Elige un estado en la rejilla y una acción: se resalta a dónde puede ir y
+      con qué probabilidad.
+    </p>
+
+    <div class="controles" id="m1-controles">
+      <div class="control">
+        <label>Acción desde el estado seleccionado</label>
+        <div class="grupo-botones" id="m1-acciones"></div>
+      </div>
+      <div class="control">
+        <label>Estado</label>
+        <div class="fila"><span class="mono" id="m1-estado">1</span>
+          <span class="suave">— o pulsa una celda</span></div>
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <div class="viz"><p class="viz-titulo">Rejilla 3×3</p><div id="m1-rejilla"></div></div>
+        <p class="explicacion nota" id="m1-recuento"></p>
+      </div>
+      <div>
+        <p class="viz-titulo">Distribución \(p(s',r \mid s,a)\)</p>
+        <div class="tabla-scroll"><table class="datos" id="m1-tabla"></table></div>
+
+        <h3 style="margin-top:1.2rem">Las preguntas de la diapositiva</h3>
+        <div class="grupo-botones" id="m1-preguntas"></div>
+        <div id="m1-respuesta" class="retro" hidden></div>
+      </div>
+    </div>
+
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · política y retorno                                     -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta">MÓDULO 2</p>
+      <h2>Política \(\pi(a \mid s)\) y retorno \(G_t\)</h2>
+      <p class="fuente">Tema2_MDP#slide-10 · #slide-11</p>
+    </header>
+
+    <p class="explicacion">
+      La política reparte probabilidad entre las acciones de cada estado. El retorno es lo
+      que de verdad quiere maximizar el agente:
+      \(G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots\)
+      Lanza episodios y mira cómo el descuento \(\gamma\) cambia el peso de lo que pasa
+      lejos en el tiempo.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Política</label>
+        <div class="grupo-botones" id="m2-presets"></div>
+      </div>
+      <div class="control">
+        <label>Descuento <span class="valor" id="m2-gamma-v">1.00</span></label>
+        <input type="range" id="m2-gamma" min="0" max="1" step="0.05" value="1">
+      </div>
+      <div class="control">
+        <label>Semilla</label>
+        <input type="number" id="m2-semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" class="primario" id="m2-lanzar">Lanzar episodio</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo">Rejilla y política — pulsa una celda para editarla</p>
+          <div id="m2-rejilla"></div>
+        </div>
+        <div id="m2-editor"></div>
+      </div>
+      <div>
+        <p class="viz-titulo">Trayectoria y descomposición del retorno</p>
+        <div id="m2-episodio"><p class="suave">Pulsa «Lanzar episodio».</p></div>
+      </div>
+    </div>
+
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 3 · funciones de valor                                     -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta">MÓDULO 3</p>
+      <h2>Funciones de valor \(v_\pi\) y \(q_\pi\)</h2>
+      <p class="fuente">Tema2_MDP#slide-12 a #slide-15</p>
+    </header>
+
+    <div class="pregunta-diapo">
+      <p><em>«¿Cuántas ecuaciones salen de esta cuadrícula?»</em></p>
+      <span class="de-donde">Tema2_MDP#slide-15 — el sistema se resuelve aquí, y también barrido a barrido.</span>
+    </div>
+
+    <p class="explicacion">
+      La ecuación de Bellman
+      \(v_\pi(s)=\sum_a \pi(a\mid s)\sum_{s',r} p(s',r\mid s,a)\,[\,r+\gamma v_\pi(s')\,]\)
+      es un sistema lineal: una ecuación por estado. Se puede resolver de golpe
+      (\(\mathbf{X}=\mathbf{A}^{-1}\mathbf{B}\)) o iterando, que es lo que hará la
+      programación dinámica del Tema 3.
+      <strong>La política es la que hayas dejado en el módulo 2.</strong>
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Descuento <span class="valor" id="m3-gamma-v">1.00</span></label>
+        <input type="range" id="m3-gamma" min="0.05" max="1" step="0.05" value="1">
+      </div>
+      <div class="control">
+        <label>Mostrar</label>
+        <div class="grupo-botones" id="m3-vista"></div>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" class="primario" id="m3-resolver">Resolver el sistema</button>
+          <button type="button" id="m3-barrido">Un barrido</button>
+          <button type="button" id="m3-auto">Iterar hasta converger</button>
+          <button type="button" id="m3-reiniciar">Reiniciar a 0</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <div class="viz"><p class="viz-titulo" id="m3-titulo">v<sub>π</sub>(s)</p><div id="m3-rejilla"></div></div>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq">Ecuaciones del sistema</div><div class="cifra" id="m3-ecuaciones">—</div></div>
+          <div class="metrica"><div class="etiq">Barridos hechos</div><div class="cifra" id="m3-barridos">0</div></div>
+          <div class="metrica"><div class="etiq">Cambio máximo</div><div class="cifra" id="m3-delta">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m3-nota"></p>
+        <div class="tabla-scroll"><table class="datos" id="m3-tabla"></table></div>
+      </div>
+    </div>
+
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 4 · diagramas de backup                                    -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta">MÓDULO 4</p>
+      <h2>Diagramas de <em>backup</em></h2>
+      <p class="fuente">Tema2_MDP#slide-16 a #slide-18 · Problemas.pdf, problema 3</p>
+    </header>
+
+    <div class="pregunta-diapo">
+      <p><em>«Ejercicio: diagrama de backup de los estados 3 y 4»</em></p>
+      <span class="de-donde">Tema2_MDP#slide-18 — la diapositiva lo deja abierto. Son justo los dos estados con viento.</span>
+    </div>
+
+    <p class="explicacion">
+      El diagrama de backup dibuja de dónde sale el valor de un estado: la raíz es \(s\),
+      los puntos negros son las acciones y los círculos de abajo los sucesores \(s'\), con
+      su probabilidad y su recompensa. <strong>Pulsa cualquier estado de la rejilla</strong>
+      para generar el suyo.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Ejemplos del material</label>
+        <div class="grupo-botones" id="m4-atajos"></div>
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m4-viento-inv">
+          Invertir el sentido del viento
+        </label>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz"><p class="viz-titulo">Navegación 4×4</p><div id="m4-rejilla"></div></div>
+        <p class="explicacion nota" id="m4-leyenda"></p>
+      </div>
+      <div>
+        <div class="viz"><p class="viz-titulo" id="m4-titulo">Diagrama de backup</p><div id="m4-arbol"></div></div>
+        <div class="tabla-scroll"><table class="datos" id="m4-tabla"></table></div>
+      </div>
+    </div>
+
+    <div class="aviso" id="m4-aviso"></div>
+
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 5 · optimalidad                                            -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m5">
+    <header>
+      <p class="etiqueta">MÓDULO 5</p>
+      <h2>Optimalidad: \(v_*\), \(q_*\) y \(\pi_*\)</h2>
+      <p class="fuente">Tema2_MDP#slide-19 a #slide-21</p>
+    </header>
+
+    <div class="pregunta-diapo">
+      <p><em>«Siempre hay al menos una política mejor o igual al resto. ¿Puede haber varias políticas óptimas?»</em></p>
+      <span class="de-donde">Tema2_MDP#slide-19 — las celdas con más de una flecha son la respuesta.</span>
+    </div>
+
+    <p class="explicacion">
+      La ecuación de optimalidad de Bellman sustituye la media sobre \(\pi\) por un máximo:
+      \(v_*(s)=\max_a \sum_{s',r} p(s',r\mid s,a)\,[\,r+\gamma v_*(s')\,]\).
+      Compara lo que vale moverse al azar con lo que vale actuar de forma óptima, y fíjate
+      en dónde la política óptima no es única.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Descuento <span class="valor" id="m5-gamma-v">1.00</span></label>
+        <input type="range" id="m5-gamma" min="0.5" max="1" step="0.01" value="1">
+      </div>
+      <div class="control">
+        <label>Qué se resuelve</label>
+        <div class="grupo-botones" id="m5-modo"></div>
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m5-flechas" checked>
+          Mostrar la política
+        </label>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz"><p class="viz-titulo" id="m5-titulo">v(s)</p><div id="m5-rejilla"></div></div>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq">Políticas óptimas distintas</div><div class="cifra" id="m5-cuantas">—</div></div>
+          <div class="metrica"><div class="etiq">Coste desde el estado 1</div><div class="cifra" id="m5-v1">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m5-nota"></p>
+        <div class="tabla-scroll"><table class="datos" id="m5-tabla"></table></div>
+      </div>
+    </div>
+
+    <div id="m5-quiz"></div>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema1.html">← Tema 1 · Introducción y bandits</a>
+    </p>
+    <p>
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulo 3.
+    </p>
+    <p class="suave">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema2.js"></script>
+</body>
+</html>

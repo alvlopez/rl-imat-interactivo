@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 1 · Introducción y bandits — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 1 de Aprendizaje por Refuerzo (IMAT): k-armed bandits, banco de pruebas de 10 brazos, exploración frente a explotación, estudio de parámetros y puente hacia los MDP.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema">interactivo</span></a>
+    <nav>
+      <a href="index.html">Inicio</a>
+      <a href="tema1.html">Tema 1 · Introducción</a>
+      <a href="tema2.html">Tema 2 · MDP</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <div class="portada-tema">
+    <p class="kicker">Tema 1 · Sutton &amp; Barto, capítulos 1 y 2</p>
+    <h1>Introducción y <span style="white-space:nowrap"><em>k</em>-armed bandits</span></h1>
+    <p class="entradilla">
+      Las figuras del tema, pero corriendo de verdad y con tus parámetros. Aquí se
+      responden las tres preguntas que las diapositivas dejan en el aire: quién gana a la
+      larga entre ε = 0.1 y ε = 0.01, si el promedio muestral sirve cuando el entorno
+      cambia, y qué pasa con las estrategias «optimistas» cuando el mundo se mueve.
+    </p>
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> El problema del bandit</a></li>
+        <li><a href="#m2"><span class="num">2</span> Banco de pruebas de 10 brazos</a></li>
+        <li><a href="#m3"><span class="num">3</span> Comparador de estrategias</a></li>
+        <li><a href="#m4"><span class="num">4</span> Estudio de parámetros</a></li>
+        <li><a href="#m5"><span class="num">5</span> De bandits a MDP</a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta">MÓDULO 1</p>
+      <h2>El problema del bandit: estimar \(q_*(a)\) tirando</h2>
+      <p class="fuente">Tema1_Intro#slide-14 a #slide-19</p>
+    </header>
+
+    <p class="explicacion">
+      El ejemplo del jamón de clase, con sus valores reales:
+      \(q_*(\text{5J}) = 9{,}8\), \(q_*(\text{JLT}) = 9{,}2\), \(q_*(\text{Cv}) = 8{,}9\).
+      El agente <strong>no los conoce</strong>: solo tiene estimaciones \(Q_t(a)\) que
+      construye probando. Tira unas cuantas veces y mira qué haría una política
+      <em>greedy</em>, \(A_t \doteq \arg\max_a Q_t(a)\), con la información que lleva.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Prueba un jamón</label>
+        <div class="grupo-botones" id="m1-brazos"></div>
+      </div>
+      <div class="control">
+        <label>Automático</label>
+        <div class="grupo-botones">
+          <button type="button" id="m1-greedy">10 tiradas greedy</button>
+          <button type="button" id="m1-reset">Reiniciar</button>
+        </div>
+      </div>
+      <div class="control">
+        <label>Semilla</label>
+        <input type="number" id="m1-semilla" value="7" min="1" step="1">
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <div class="tabla-scroll"><table class="datos" id="m1-tabla"></table></div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq">Tiradas</div><div class="cifra" id="m1-tiradas">0</div></div>
+          <div class="metrica"><div class="etiq">Recompensa media</div><div class="cifra" id="m1-media">—</div></div>
+          <div class="metrica"><div class="etiq">Regret acumulado</div><div class="cifra" id="m1-regret">0,00</div></div>
+        </div>
+        <p class="explicacion nota" id="m1-diagnostico"></p>
+      </div>
+      <div>
+        <p class="viz-titulo">Historial de tiradas</p>
+        <div class="tabla-scroll" style="max-height:320px"><table class="datos" id="m1-historial"></table></div>
+      </div>
+    </div>
+
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta">MÓDULO 2</p>
+      <h2>El banco de pruebas de 10 brazos</h2>
+      <p class="fuente">Tema1_Intro#slide-23</p>
+    </header>
+
+    <p class="explicacion">
+      El entorno estándar del tema: \(q_*(a) \sim \mathcal{N}(0,1)\) y, al tirar del brazo
+      \(a\), \(R_t \sim \mathcal{N}(q_*(a), 1)\). En la diapositiva esta figura es una
+      imagen fija; aquí cada semilla es un problema distinto.
+      <strong>Genera unos cuantos</strong> y fíjate en lo que cambia: a veces el mejor
+      brazo destaca mucho y a veces hay dos casi empatados. Esa diferencia es justo la que
+      hace que un mismo ε funcione bien o mal.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Semilla del problema</label>
+        <input type="number" id="m2-semilla" value="1" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" class="primario" id="m2-nuevo">Nueva instancia</button>
+        </div>
+      </div>
+      <div class="control">
+        <label>Brazos <span class="valor" id="m2-k-v">10</span></label>
+        <input type="range" id="m2-k" min="3" max="20" step="1" value="10">
+      </div>
+    </div>
+
+    <div class="viz"><div id="m2-violin"></div></div>
+    <p class="explicacion nota" id="m2-nota"></p>
+
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta">MÓDULO 3</p>
+      <h2>Comparador de estrategias de exploración</h2>
+      <p class="fuente">Tema1_Intro#slide-21 · #slide-24 a #slide-28</p>
+    </header>
+
+    <div class="pregunta-diapo">
+      <p><em>«¿Quién acabará consiguiendo mayor recompensa, ε = 0.1 o ε = 0.01?»</em>
+        &nbsp;·&nbsp; <em>«¿Tiene sensibilidad a cambios posteriores en el entorno?»</em>
+        &nbsp;·&nbsp; <em>«¿Se cumple para α constante?»</em></p>
+      <span class="de-donde">Tema1_Intro#slide-24, #slide-25, #slide-26 y #slide-21 — las tres se responden aquí.</span>
+    </div>
+
+    <p class="explicacion">
+      Todas las estrategias se enfrentan <strong>a los mismos problemas</strong>, así que la
+      comparación es justa. Dos controles hacen el trabajo:
+    </p>
+    <ul class="explicacion">
+      <li><strong>El horizonte.</strong> La figura del libro se corta a los 1000 pasos.
+        Llévalo a 10&nbsp;000 y observa cómo ε = 0.01 alcanza y adelanta a ε = 0.1: explora
+        menos, pero cuando por fin encuentra el mejor brazo lo explota casi siempre.</li>
+      <li><strong>El entorno cambiante.</strong> Activa la deriva y los \(q_*(a)\) empiezan a
+        moverse. El promedio muestral \(1/n\) se queda ciego —da el mismo peso a lo de hace
+        5000 pasos que a lo de ahora— mientras que el paso constante α sigue al óptimo.
+        Ahí se ve por qué \(\sum \alpha_n^2 &lt; \infty\) <em>no</em> se cumple con α
+        constante, y por qué eso es una ventaja y no un defecto.</li>
+    </ul>
+
+    <div class="controles">
+      <div class="control">
+        <label>Pasos <span class="valor" id="m3-pasos-v">1000</span></label>
+        <input type="range" id="m3-pasos" min="200" max="10000" step="200" value="1000">
+      </div>
+      <div class="control">
+        <label>Ejecuciones <span class="valor" id="m3-runs-v">200</span></label>
+        <input type="range" id="m3-runs" min="20" max="1000" step="20" value="200">
+      </div>
+      <div class="control">
+        <label>Semilla</label>
+        <input type="number" id="m3-semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m3-deriva">
+          Entorno no estacionario
+        </label>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" class="primario" id="m3-ejecutar">Ejecutar</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="viz-titulo">Estrategias en juego</p>
+    <div id="m3-estrategias" class="controles" style="align-items:flex-start"></div>
+
+    <div class="barra-progreso" id="m3-progreso" hidden><i></i></div>
+
+    <div class="viz">
+      <p class="viz-titulo">Recompensa media</p>
+      <div id="m3-gr-recompensa"></div>
+    </div>
+    <div class="viz" style="margin-top:1rem">
+      <p class="viz-titulo">% de veces que se elige la acción óptima</p>
+      <div id="m3-gr-optimo"></div>
+    </div>
+    <div id="m3-leyenda"></div>
+    <p class="explicacion nota" id="m3-lectura"></p>
+
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta">MÓDULO 4</p>
+      <h2>Estudio de parámetros</h2>
+      <p class="fuente">Tema1_Intro#slide-29</p>
+    </header>
+
+    <p class="explicacion">
+      La última figura del tema resume todo lo anterior: para cada estrategia, la recompensa
+      media en los primeros 1000 pasos en función de <em>su</em> parámetro. Todas las curvas
+      tienen forma de campana invertida — hay un punto dulce, y pasarse de exploración es
+      tan malo como quedarse corto. Como es un cálculo largo, corre en segundo plano.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label>Ejecuciones por punto <span class="valor" id="m4-runs-v">100</span></label>
+        <input type="range" id="m4-runs" min="20" max="400" step="20" value="100">
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m4-deriva">
+          Entorno no estacionario
+        </label>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" class="primario" id="m4-ejecutar">Calcular</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="barra-progreso" id="m4-progreso" hidden><i></i></div>
+    <div class="viz" style="margin-top:1rem"><div id="m4-grafica"></div></div>
+    <div id="m4-leyenda"></div>
+    <p class="explicacion nota" id="m4-lectura"></p>
+
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <section class="modulo" id="m5">
+    <header>
+      <p class="etiqueta">MÓDULO 5</p>
+      <h2>De bandits a MDP</h2>
+      <p class="fuente">Tema1_Intro#slide-30 · #slide-31</p>
+    </header>
+
+    <p class="explicacion">
+      Un bandit es «RL sin estados»: cada decisión es independiente de las anteriores.
+      Añade piezas al entorno y verás en qué se convierte el problema — y por qué el
+      Tema 2 necesita toda la maquinaria de los MDP.
+    </p>
+
+    <div class="controles">
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m5-estados">
+          El entorno tiene estados
+        </label>
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m5-transicion">
+          Las acciones cambian el estado
+        </label>
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div class="viz"><div id="m5-diagrama"></div></div>
+      <div>
+        <h3 id="m5-nombre">k-armed bandit</h3>
+        <p id="m5-descripcion"></p>
+        <div class="tabla-scroll"><table class="datos" id="m5-tabla"></table></div>
+      </div>
+    </div>
+
+    <div id="m5-quiz"></div>
+  </section>
+
+  <footer class="pie">
+    <p><a class="siguiente" href="tema2.html">Tema 2 · Procesos de Decisión de Markov →</a></p>
+    <p>
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulos 1 y 2.
+    </p>
+    <p class="suave">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema1.js"></script>
+</body>
+</html>
