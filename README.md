@@ -111,12 +111,22 @@ las curvas quedan igual de suaves que en el libro.
 
 ## Publicación
 
-El sitio se publica con **GitHub Pages** sirviendo la rama `main` desde la raíz. El
-fichero `.nojekyll` evita que Pages ignore nada. No hay nada que compilar: lo que hay en
-el repositorio es lo que se sirve.
+Publicado en **GitHub Pages** desde la rama `main`, raíz del repositorio:
 
-Al publicar o mover el sitio, anotar la URL en `Interactivo/catalogo.md` del workspace de
-la asignatura.
+- Sitio: <https://alvlopez.github.io/rl-imat-interactivo/>
+- Repositorio: <https://github.com/alvlopez/rl-imat-interactivo>
+
+El fichero `.nojekyll` evita que Pages ignore nada. No hay nada que compilar: lo que hay
+en el repositorio es lo que se sirve, así que basta con `git push` para actualizar.
+
+Los parámetros de URL `?modo=clase` y `?tema=oscuro` (o `claro`) sirven para dejar un
+enlace ya preparado para el proyector.
+
+> **Aviso: este repositorio vive dentro de OneDrive.** Es cómodo, porque el código queda
+> junto al resto del material de la asignatura, pero OneDrive sincroniza también el
+> directorio `.git`. Con un solo equipo el riesgo es bajo; si algún día trabajas desde
+> dos máquinas a la vez, conviene moverlo fuera de OneDrive para que la sincronización no
+> corrompa el historial.
 
 ---
 
