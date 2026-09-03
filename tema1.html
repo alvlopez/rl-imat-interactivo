@@ -51,12 +51,12 @@
     <header>
       <p class="etiqueta">MÓDULO 1</p>
       <h2>El problema del bandit: estimar \(q_*(a)\) tirando</h2>
-      <p class="fuente">Tema1_Intro#slide-14 a #slide-19</p>
+      <p class="fuente">1_Tema1#page-16 a #page-21 · material de Lucía: Tema1_Intro#slide-14 a #slide-19</p>
     </header>
 
     <p class="explicacion">
       El ejemplo del jamón de clase, con sus valores reales:
-      \(q_*(\text{5J}) = 9{,}8\), \(q_*(\text{JLT}) = 9{,}2\), \(q_*(\text{Cv}) = 8{,}9\).
+      \(q_*(\text{5J}) = 9{,}5\), \(q_*(\text{Jlt}) = 9{,}2\), \(q_*(\text{Cv}) = 8{,}9\).
       El agente <strong>no los conoce</strong>: solo tiene estimaciones \(Q_t(a)\) que
       construye probando. Tira unas cuantas veces y mira qué haría una política
       <em>greedy</em>, \(A_t \doteq \arg\max_a Q_t(a)\), con la información que lleva.
@@ -104,7 +104,7 @@
     <header>
       <p class="etiqueta">MÓDULO 2</p>
       <h2>El banco de pruebas de 10 brazos</h2>
-      <p class="fuente">Tema1_Intro#slide-23</p>
+      <p class="fuente">1_Tema1#page-24 · material de Lucía: Tema1_Intro#slide-23</p>
     </header>
 
     <p class="explicacion">
@@ -144,14 +144,21 @@
     <header>
       <p class="etiqueta">MÓDULO 3</p>
       <h2>Comparador de estrategias de exploración</h2>
-      <p class="fuente">Tema1_Intro#slide-21 · #slide-24 a #slide-28</p>
+      <p class="fuente">1_Tema1#page-21 · #page-25 a #page-27 · material de Lucía: Tema1_Intro#slide-21 · #slide-24 a #slide-28</p>
     </header>
 
     <div class="pregunta-diapo">
-      <p><em>«¿Quién acabará consiguiendo mayor recompensa, ε = 0.1 o ε = 0.01?»</em>
-        &nbsp;·&nbsp; <em>«¿Tiene sensibilidad a cambios posteriores en el entorno?»</em>
-        &nbsp;·&nbsp; <em>«¿Se cumple para α constante?»</em></p>
-      <span class="de-donde">Tema1_Intro#slide-24, #slide-25, #slide-26 y #slide-21 — las tres se responden aquí.</span>
+      <p><em>«Los valores iniciales optimistas son insensibles a los cambios en el entorno
+        que ocurren después de un tiempo»</em>
+        &nbsp;·&nbsp; <em>«UCB es insensible a los cambios en el entorno que ocurren después
+        de un tiempo»</em></p>
+      <span class="de-donde">1_Tema1#page-26 y #page-27 — dos afirmaciones que aquí puedes
+        poner a prueba con el interruptor de no estacionariedad. El material de Lucía las
+        plantea como pregunta abierta al aula (<em>«¿tiene sensibilidad a cambios posteriores
+        en el entorno?»</em>, Tema1_Intro#slide-25 y #slide-26), junto con <em>«¿quién
+        acabará consiguiendo mayor recompensa, ε = 0.1 o ε = 0.01?»</em>
+        (Tema1_Intro#slide-24) y <em>«¿se cumple para α constante?»</em>
+        (Tema1_Intro#slide-21, 1_Tema1#page-21). Las tres se responden en este módulo.</span>
     </div>
 
     <p class="explicacion">
@@ -220,17 +227,42 @@
     <header>
       <p class="etiqueta">MÓDULO 4</p>
       <h2>Estudio de parámetros</h2>
-      <p class="fuente">Tema1_Intro#slide-29</p>
+      <p class="fuente">Solo en el material de Lucía: Tema1_Intro#slide-29 (figura 2.6 del libro)</p>
     </header>
 
     <p class="explicacion">
       La última figura del tema resume todo lo anterior: para cada estrategia, la recompensa
-      media en los primeros 1000 pasos en función de <em>su</em> parámetro. Todas las curvas
+      media en los primeros 2000 pasos en función de <em>su</em> parámetro. Todas las curvas
       tienen forma de campana invertida — hay un punto dulce, y pasarse de exploración es
       tan malo como quedarse corto. Como es un cálculo largo, corre en segundo plano.
     </p>
 
+    <p class="aviso">
+      <strong>El horizonte no es un detalle: es parte del resultado.</strong> La figura 2.6
+      del libro promedia sobre los primeros <strong>1000</strong> pasos. Con esa ventana,
+      la curva de \(Q_0\) cae con fuerza en cuanto se pasa del óptimo — y esa caída
+      <em>también está en el libro</em>: su curva optimista baja de ≈1,44 en \(Q_0 = 1\) a
+      ≈1,31 en \(Q_0 = 4\). Aquí, con el horizonte puesto en 1000, sale una caída del mismo
+      tamaño.
+    </p>
+
+    <p class="aviso">
+      Lo que <em>no</em> es esa caída es una propiedad del método. Un \(Q_0\) grande induce
+      más exploración inicial, y con una ventana corta esa exploración se paga
+      <strong>dentro</strong> del intervalo que estás promediando. Al alargar el horizonte
+      el coste se amortiza: la caída del pico a \(Q_0 = 4\) pasa de <strong>0,33</strong>
+      con 400 pasos a <strong>0,14</strong> con 1000, <strong>0,06</strong> con 2000 y
+      <strong>0,03</strong> con 4000. Mueve el deslizador y compruébalo. Este módulo arranca
+      en 2000 —el doble que el libro— justo para que el efecto de horizonte no se confunda
+      con una debilidad de la inicialización optimista. Ponlo en 1000 si quieres reproducir
+      la figura del libro tal cual.
+    </p>
+
     <div class="controles">
+      <div class="control">
+        <label>Horizonte (pasos) <span class="valor" id="m4-pasos-v">2000</span></label>
+        <input type="range" id="m4-pasos" min="200" max="4000" step="200" value="2000">
+      </div>
       <div class="control">
         <label>Ejecuciones por punto <span class="valor" id="m4-runs-v">100</span></label>
         <input type="range" id="m4-runs" min="20" max="400" step="20" value="100">
@@ -262,7 +294,7 @@
     <header>
       <p class="etiqueta">MÓDULO 5</p>
       <h2>De bandits a MDP</h2>
-      <p class="fuente">Tema1_Intro#slide-30 · #slide-31</p>
+      <p class="fuente">1_Tema1#page-28 · #page-29 · material de Lucía: Tema1_Intro#slide-30 · #slide-31</p>
     </header>
 
     <p class="explicacion">

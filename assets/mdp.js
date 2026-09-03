@@ -3,8 +3,8 @@
    Sin dependencias. Módulo ES: se usa igual desde el navegador y desde node.
 
    Reproduce las dos rejillas del Tema 2:
-     · rejilla3x3()        → Tema2_MDP#slide-8 y #slide-9
-     · rejillaNavegacion() → Tema2_MDP#slide-17 y #slide-18
+     · rejilla3x3()        → 2_Tema2_wclp#slide-6 a #slide-8
+     · rejillaNavegacion() → 2_Tema2_wclp#slide-15 y #slide-16
    ========================================================================== */
 
 /* ----------------------------------------------------------------------- *
@@ -14,7 +14,7 @@
 /**
  * Un MDP se representa con la tabla de dinámica ya calculada:
  *   P[s][a] = [{ s2, r, p }, ...]   con  Σ p = 1
- * que es exactamente p(s',r|s,a) de Tema2_MDP#slide-6.
+ * que es exactamente p(s',r|s,a) de 2_Tema2_wclp#slide-5.
  */
 export function crearMDP({ nombre, nEstados, acciones, etiquetas, terminales, P, geometria = null }) {
   return {
@@ -50,7 +50,7 @@ function combinar(transiciones) {
 }
 
 /* ----------------------------------------------------------------------- *
- * 2. Rejilla 3x3 — Tema2_MDP#slide-8
+ * 2. Rejilla 3x3 — 2_Tema2_wclp#slide-6
  *
  *      1  2  3
  *      4  5  6
@@ -112,7 +112,7 @@ export function rejilla3x3() {
 }
 
 /* ----------------------------------------------------------------------- *
- * 3. Rejilla de navegación 4x4 — Tema2_MDP#slide-17
+ * 3. Rejilla de navegación 4x4 — 2_Tema2_wclp#slide-15
  *
  *       1   2   3*  4*        * viento (celdas 3 y 4)
  *       5   6   7   8·        · remolino (celda 8), R = -5 al entrar
@@ -282,7 +282,7 @@ export function normalizar(fila) {
  * ----------------------------------------------------------------------- */
 
 /**
- * Resuelve las ecuaciones de Bellman como sistema lineal (Tema2_MDP#slide-15):
+ * Resuelve las ecuaciones de Bellman como sistema lineal (2_Tema2_wclp#slide-17):
  *   v = r_π + γ P_π v   →   (I − γ P_π) v = r_π
  * Devuelve null si el sistema es singular (p. ej. γ = 1 con una política que
  * nunca alcanza el terminal): ese caso también es informativo.
@@ -371,7 +371,7 @@ export function evaluarIterativa(mdp, pi, gamma, { tolerancia = 1e-8, maxBarrido
   return { v, historial, barridos, convergido: delta <= tolerancia };
 }
 
-/** q_π(s,a) = Σ p(s',r|s,a) [ r + γ v_π(s') ] — Tema2_MDP#slide-14 */
+/** q_π(s,a) = Σ p(s',r|s,a) [ r + γ v_π(s') ] — 2_Tema2_wclp#slide-13 */
 export function qDeV(mdp, v, gamma) {
   const q = [];
   for (let s = 0; s < mdp.nEstados; s++) {
@@ -385,7 +385,7 @@ export function qDeV(mdp, v, gamma) {
 }
 
 /* ----------------------------------------------------------------------- *
- * 6. Optimalidad — Tema2_MDP#slide-19 a #slide-21
+ * 6. Optimalidad — 2_Tema2_wclp#slide-18 y #slide-19
  * ----------------------------------------------------------------------- */
 
 /** Iteración de valor: v_*(s) = max_a Σ p(s',r|s,a)[r + γ v_*(s')] */
@@ -417,7 +417,7 @@ export function iteracionValor(mdp, gamma, { tolerancia = 1e-10, maxBarridos = 5
 
 /**
  * Política greedy respecto de q. Devuelve TODOS los empates por estado:
- * es la respuesta a "¿puede haber varias políticas óptimas?" (#slide-19).
+ * es la respuesta a "¿puede haber varias políticas óptimas?" (2_Tema2_wclp#slide-18).
  */
 export function politicaGreedy(mdp, q, tolerancia = 1e-9) {
   const politica = [];
@@ -461,13 +461,13 @@ export function residuoOptimalidad(mdp, v, gamma) {
 }
 
 /* ----------------------------------------------------------------------- *
- * 7. Diagramas de backup — Tema2_MDP#slide-16 a #slide-18
+ * 7. Diagramas de backup — 2_Tema2_wclp#slide-16 (Lucía pide además el estado 4: Tema2_MDP#slide-18)
  * ----------------------------------------------------------------------- */
 
 /**
  * Ramas del diagrama de backup de un estado, listas para dibujar.
  * Para el estado 1 de la rejilla de navegación devuelve exactamente el árbol
- * de #slide-18: N→1, S→5, O→1, E→2, todos con r = −1.
+ * de 2_Tema2_wclp#slide-16: N→1, S→5, O→1, E→2, todos con r = −1.
  */
 export function ramasBackup(mdp, s) {
   if (mdp.esTerminal(s)) return [];
@@ -492,7 +492,7 @@ export function estadosSucesores(mdp, s) {
 }
 
 /* ----------------------------------------------------------------------- *
- * 8. Simulación de episodios y retorno — Tema2_MDP#slide-10
+ * 8. Simulación de episodios y retorno — 2_Tema2_wclp#slide-9
  * ----------------------------------------------------------------------- */
 
 /**
@@ -514,7 +514,7 @@ export function simularEpisodio(mdp, pi, s0, rng, { maxPasos = 200 } = {}) {
 
 /**
  * G_t para cada instante de una lista de recompensas.
- * G_t = R_{t+1} + γ R_{t+2} + ... (Tema2_MDP#slide-10)
+ * G_t = R_{t+1} + γ R_{t+2} + ... (2_Tema2_wclp#slide-9)
  */
 export function retornos(recompensas, gamma) {
   const g = new Array(recompensas.length).fill(0);
@@ -527,7 +527,7 @@ export function retornos(recompensas, gamma) {
 }
 
 /* ----------------------------------------------------------------------- *
- * 9. Consultas sobre la dinámica — Tema2_MDP#slide-8
+ * 9. Consultas sobre la dinámica — 2_Tema2_wclp#slide-6 (las cuatro preguntas son de Tema2_MDP#slide-8, material de Lucía)
  * ----------------------------------------------------------------------- */
 
 /** p(s', r | s, a) tal cual lo preguntan las diapositivas. */
@@ -537,7 +537,7 @@ export function probabilidad(mdp, s2, r, s, a) {
   return encontrada ? encontrada.p : 0;
 }
 
-/** Número total de transiciones (s,a) del MDP: el "cubo" de #slide-9. */
+/** Número total de transiciones (s,a) del MDP: el "cubo" de 2_Tema2_wclp#slide-7. */
 export function cuentaTransiciones(mdp) {
   let pares = 0;
   let ramas = 0;

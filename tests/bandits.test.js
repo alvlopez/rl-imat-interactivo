@@ -24,7 +24,7 @@ function nivelFinal(serie) {
 }
 
 /* ===================================================================== *
- * El banco de pruebas — Tema1_Intro#slide-23
+ * El banco de pruebas — 1_Tema1#page-24
  * ===================================================================== */
 
 test("banco de pruebas: q_*(a) ~ N(0,1) y R_t ~ N(q_*(a),1)", () => {
@@ -63,7 +63,7 @@ test("promedio muestral: Q_t(a) converge a q_*(a) (ley de los grandes números)"
 });
 
 /* ===================================================================== *
- * Exploración vs. explotación — #slide-24 a #slide-26
+ * Exploración vs. explotación — 1_Tema1#page-25 a #page-27
  * ===================================================================== */
 
 test("ε-greedy explora aproximadamente una fracción ε de los pasos", () => {
@@ -85,7 +85,7 @@ test("ε-greedy explora aproximadamente una fracción ε de los pasos", () => {
   );
 });
 
-test("UCB prueba todos los brazos antes de repetir ninguno (#slide-26)", () => {
+test("UCB prueba todos los brazos antes de repetir ninguno (1_Tema1#page-27)", () => {
   const k = 10;
   const bandit = crearBandit({ k, rngProblema: generador(8), rngRuido: generador(9) });
   const agente = crearAgente({ tipo: TIPOS.UCB, k, c: 2, rng: generador(10) });
@@ -99,7 +99,7 @@ test("UCB prueba todos los brazos antes de repetir ninguno (#slide-26)", () => {
   assert.equal(elegidos.size, k);
 });
 
-test("la política greedy pura se estanca en un subóptimo (#slide-24)", () => {
+test("la política greedy pura se estanca en un subóptimo (1_Tema1#page-25)", () => {
   const resultados = ejecutar({
     configuraciones: [
       { id: "greedy", tipo: TIPOS.EPSILON, epsilon: 0, alpha: null, q0: 0 },
@@ -126,7 +126,7 @@ test("ε = 0.1 en 1000 pasos reproduce el nivel de la figura del libro (~1.4)", 
   assert.ok(nivel > 1.25 && nivel < 1.5, `recompensa media final = ${nivel}`);
 });
 
-test("a la larga ε = 0.01 supera a ε = 0.1: responde a la pregunta de #slide-24", () => {
+test("a la larga ε = 0.01 supera a ε = 0.1: responde a la pregunta de Tema1_Intro#slide-24 (material de Lucía)", () => {
   const resultados = ejecutar({
     configuraciones: [
       { id: "eps01", tipo: TIPOS.EPSILON, epsilon: 0.1, alpha: null, q0: 0 },
@@ -147,7 +147,7 @@ test("a la larga ε = 0.01 supera a ε = 0.1: responde a la pregunta de #slide-2
   );
 });
 
-test("los valores iniciales optimistas exploran aun siendo greedy (#slide-25)", () => {
+test("los valores iniciales optimistas exploran aun siendo greedy (1_Tema1#page-26)", () => {
   const resultados = ejecutar({
     configuraciones: [
       { id: "optimista", tipo: TIPOS.OPTIMISTA, epsilon: 0, alpha: 0.1, q0: 5 },
@@ -171,7 +171,7 @@ test("los valores iniciales optimistas exploran aun siendo greedy (#slide-25)", 
 });
 
 /* ===================================================================== *
- * No estacionariedad — responde a #slide-21, #slide-25 y #slide-26
+ * No estacionariedad — responde a 1_Tema1#page-21, #page-26 y #page-27
  * ===================================================================== */
 
 test("con entorno cambiante el paso constante sigue al óptimo y el promedio muestral no", () => {
@@ -210,7 +210,7 @@ test("sin deriva, el promedio muestral no es peor que el paso constante", () => 
 });
 
 /* ===================================================================== *
- * Gradient bandits — #slide-28
+ * Gradient bandits — 1_Tema1#page-30
  * ===================================================================== */
 
 test("el baseline protege al gradient bandit de un desplazamiento de la recompensa", () => {
@@ -245,7 +245,7 @@ test("el gradient bandit mantiene una distribución de probabilidad válida", ()
 });
 
 /* ===================================================================== *
- * Estudio de parámetros — #slide-29
+ * Estudio de parámetros — Tema1_Intro#slide-29 (solo material de Lucía)
  * ===================================================================== */
 
 test("los rangos del estudio de parámetros son potencias de dos", () => {
@@ -273,7 +273,7 @@ test("la curva de ε-greedy tiene un máximo interior (no es monótona)", () => 
 });
 
 /* ===================================================================== *
- * Bandit manual — el ejemplo del jamón, #slide-17
+ * Bandit manual — el ejemplo del jamón, 1_Tema1#page-17
  * ===================================================================== */
 
 test("bandit manual: valores del ejemplo del jamón y regret bien contado", () => {

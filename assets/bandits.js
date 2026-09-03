@@ -3,8 +3,12 @@
    Sin dependencias. Módulo ES: se usa igual desde el navegador, desde un
    Web Worker y desde node.
 
-   Reproduce el banco de pruebas de 10 brazos de Tema1_Intro#slide-23 y las
-   cuatro estrategias de exploración de #slide-24 a #slide-29.
+   Material de referencia: MaterialAlvaro/1_Tema1.pdf (se cita #page-N). Cuando
+   algo solo esté en el material de Lucía, se dice explícitamente.
+
+   Reproduce el banco de pruebas de 10 brazos de 1_Tema1#page-24 y las cuatro
+   estrategias de exploración de #page-23 (resumen), #page-25 (ε-greedy),
+   #page-26 (valores optimistas), #page-27 (UCB) y #page-30 (gradient bandits).
    ========================================================================== */
 
 import { generador, argmax } from "./nucleo.js";
@@ -14,13 +18,13 @@ import { generador, argmax } from "./nucleo.js";
  * ----------------------------------------------------------------------- */
 
 /**
- * Banco de pruebas de Tema1_Intro#slide-23:
+ * Banco de pruebas de 1_Tema1#page-24:
  *   q_*(a) ~ N(mediaQ, sigmaQ)  ·  R_t ~ N(q_*(a), sigmaR)
  *
  * Con `deriva > 0` el problema se vuelve NO ESTACIONARIO: cada q_*(a) da un
  * paso aleatorio en cada instante. Es el caso que las diapositivas plantean
  * dos veces sin resolver ("¿tiene sensibilidad a cambios posteriores en el
- * entorno?", #slide-25 y #slide-26).
+ * entorno?", 1_Tema1#page-26 y #page-27).
  */
 export function crearBandit({
   k = 10,
@@ -73,7 +77,7 @@ export const TIPOS = {
  * Agente de bandits con la interfaz mínima { elegir(), actualizar(a, r) }.
  *
  *   alpha = null  →  promedio muestral, Q_{n+1} = Q_n + (1/n)[R_n − Q_n]
- *   alpha = 0.1   →  paso constante, promedio ponderado por recencia (#slide-21)
+ *   alpha = 0.1   →  paso constante, promedio ponderado por recencia (1_Tema1#page-21)
  */
 export function crearAgente({
   tipo = TIPOS.EPSILON,
@@ -110,7 +114,7 @@ export function crearAgente({
     elegir() {
       switch (tipo) {
         case TIPOS.UCB: {
-          // los brazos no probados se consideran maximizadores (#slide-26)
+          // los brazos no probados se consideran maximizadores (1_Tema1#page-27)
           for (let a = 0; a < k; a++) if (N[a] === 0) return a;
           const puntuacion = new Float64Array(k);
           const lnT = Math.log(t + 1);
@@ -168,7 +172,7 @@ function semillaDe(base, indice) {
 
 /**
  * Ejecuta varias configuraciones sobre EXACTAMENTE los mismos problemas, que
- * es lo que hace justa la comparación de #slide-24 a #slide-29.
+ * es lo que hace justa la comparación de 1_Tema1#page-25 a #page-27.
  *
  * configuraciones: [{ id, tipo, epsilon, c, alpha, q0, conBaseline }]
  * Devuelve, por configuración, la recompensa media y el % de acción óptima
@@ -238,7 +242,7 @@ export function ejecutar({
 }
 
 /* ----------------------------------------------------------------------- *
- * 4. Estudio de parámetros — Tema1_Intro#slide-29 (figura 2.6 del libro)
+ * 4. Estudio de parámetros — Tema1_Intro#slide-29 (figura 2.6; solo en el material de Lucía)
  * ----------------------------------------------------------------------- */
 
 /** Potencias de dos entre dos exponentes, ambos incluidos. */
@@ -285,7 +289,7 @@ export const CURVAS_BARRIDO = [
  * parámetro. Es caro: conviene lanzarlo en un Web Worker.
  */
 export function barridoParametros({
-  pasos = 1000,
+  pasos = 2000,
   ejecuciones = 100,
   semilla = 1,
   k = 10,
@@ -310,13 +314,13 @@ export function barridoParametros({
 }
 
 /* ----------------------------------------------------------------------- *
- * 5. Bandit interactivo de pocos brazos (el ejemplo del jamón, #slide-17)
+ * 5. Bandit interactivo de pocos brazos (el ejemplo del jamón, 1_Tema1#page-17 y #page-18)
  * ----------------------------------------------------------------------- */
 
 /**
  * Estado de un bandit que el alumno maneja a mano, tirada a tirada.
  * Lleva la cuenta del regret: "la máxima recompensa que puedo obtener vs. lo
- * que obtengo" (#slide-19).
+ * que obtengo" (1_Tema1#page-19).
  */
 export function crearBanditManual({ qEstrella, sigmaR = 0.25, semilla = 1 }) {
   const rng = generador(semilla);

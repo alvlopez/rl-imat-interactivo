@@ -64,7 +64,10 @@ function calcular(tarea, config, alProgresar) {
 
 function moduloBandit() {
   const NOMBRES = ["5J", "Joselito", "Covap"];
-  const VERDADEROS = [9.8, 9.2, 8.9];
+  // Valores verdaderos de 1_Tema1#page-17 y #page-19. Ojo: las muestras de
+  // #page-18 son 9,7 (5J) / 9,8 (Joselito) / 9,1 (Covap) — el 9,8 es una MUESTRA
+  // de Joselito, no el q_* de 5J. Confundirlos es el error que este módulo tenía.
+  const VERDADEROS = [9.5, 9.2, 8.9];
 
   const zonaTabla = $("#m1-tabla");
   const zonaHistorial = $("#m1-historial");
@@ -527,9 +530,13 @@ function moduloBarrido() {
   const boton = $("#m4-ejecutar");
   const progreso = $("#m4-progreso");
   let ultimo = null;
+  let pasosDeUltimo = 0;   // el horizonte con el que se calculó `ultimo`
 
   $("#m4-runs").addEventListener("input", (ev) => {
     $("#m4-runs-v").textContent = ev.target.value;
+  });
+  $("#m4-pasos").addEventListener("input", (ev) => {
+    $("#m4-pasos-v").textContent = ev.target.value;
   });
 
   boton.addEventListener("click", async () => {
@@ -540,8 +547,9 @@ function moduloBarrido() {
     dibujarVacio("Calculando…");
 
     try {
+      const pasos = Number($("#m4-pasos").value);
       const curvas = await calcular("barrido", {
-        pasos: 1000,
+        pasos,
         ejecuciones: Number($("#m4-runs").value),
         semilla: 1,
         deriva: $("#m4-deriva").checked ? 0.01 : 0,
@@ -549,6 +557,7 @@ function moduloBarrido() {
         progreso.firstElementChild.style.width = `${Math.round(fraccion * 100)}%`;
       });
       ultimo = curvas;
+      pasosDeUltimo = pasos;
       dibujar();
     } catch (error) {
       dibujarVacio("No se pudo completar el cálculo.");
@@ -581,7 +590,8 @@ function moduloBarrido() {
 
     pintar($("#m4-grafica"), graficaLineas(series, {
       ancho: 900, alto: 340, escalaX: "log2", ticksX: marcas,
-      ejeX: "ε   ·   α   ·   c   ·   Q₀", ejeY: "Recompensa media (1000 pasos)",
+      ejeX: "ε   ·   α   ·   c   ·   Q₀",
+      ejeY: `Recompensa media (${pasosDeUltimo} pasos)`,
     }));
     $("#m4-leyenda").replaceChildren(leyenda(series));
 
@@ -612,7 +622,7 @@ function moduloBarrido() {
         "Que UCB no necesita ajustar parámetros.",
       ],
       correcta: 0,
-      explicacion: "La figura compara los <em>máximos alcanzables</em> en un banco de pruebas concreto, estacionario y con 1000 pasos. La propia diapositiva avisa de que UCB es «difícil de extender a problemas de RL generales con espacios más complejos y aproximaciones».",
+      explicacion: "La figura compara los <em>máximos alcanzables</em> en un banco de pruebas concreto, estacionario y con un horizonte fijo. La propia diapositiva avisa de que UCB es «difícil de extender a problemas de RL generales con espacios más complejos y aproximaciones».",
     },
     {
       enunciado: "El eje horizontal vale a la vez para ε, α, c y \\(Q_0\\). ¿Qué hay que tener en cuenta al leerlo?",

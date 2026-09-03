@@ -40,7 +40,7 @@ const aNav = (nombre) => ACCIONES_NAV.indexOf(nombre);
 const idx = (mdp, etiqueta) => mdp.etiquetas.indexOf(String(etiqueta));
 
 /* ===================================================================== *
- * Rejilla 3×3 — Tema2_MDP#slide-8 y #slide-9
+ * Rejilla 3×3 — 2_Tema2_wclp#slide-6 a #slide-8
  * ===================================================================== */
 
 test("3×3: la dinámica es una distribución de probabilidad válida", () => {
@@ -57,7 +57,7 @@ test("3×3: la dinámica es una distribución de probabilidad válida", () => {
   }
 });
 
-test("3×3: las cuatro preguntas literales de #slide-8", () => {
+test("3×3: las cuatro preguntas literales de Tema2_MDP#slide-8 (material de Lucía)", () => {
   const mdp = rejilla3x3();
   const e = (n) => idx(mdp, n);
 
@@ -74,12 +74,12 @@ test("3×3: las cuatro preguntas literales de #slide-8", () => {
   assert.equal(probabilidad(mdp, e(3), -1, e(3), a3("dch")), 1);
 });
 
-test("3×3: 8 estados × 4 acciones = 32 transiciones (#slide-9)", () => {
+test("3×3: 8 estados × 4 acciones = 32 transiciones (2_Tema2_wclp#slide-7)", () => {
   const mdp = rejilla3x3();
   assert.equal(cuentaTransiciones(mdp).pares, 32);
 });
 
-test("3×3: el estado terminal siempre vale 0 (#slide-15)", () => {
+test("3×3: el estado terminal siempre vale 0 (2_Tema2_wclp#slide-17)", () => {
   const mdp = rejilla3x3();
   const pi = politicaEquiprobable(mdp);
   const v = evaluarLineal(mdp, pi, 1);
@@ -135,7 +135,7 @@ test("3×3: la política óptima llega al terminal en el mínimo número de paso
 });
 
 /* ===================================================================== *
- * Rejilla de navegación 4×4 — Tema2_MDP#slide-17 y #slide-18
+ * Rejilla de navegación 4×4 — 2_Tema2_wclp#slide-15 y #slide-16
  * ===================================================================== */
 
 test("navegación: la dinámica es una distribución de probabilidad válida", () => {
@@ -152,7 +152,7 @@ test("navegación: la dinámica es una distribución de probabilidad válida", (
   }
 });
 
-test("navegación: PRUEBA DE ORO — el diagrama de backup del estado 1 es el de #slide-18", () => {
+test("navegación: PRUEBA DE ORO — el diagrama de backup del estado 1 es el de 2_Tema2_wclp#slide-16", () => {
   const mdp = rejillaNavegacion();
   const ramas = ramasBackup(mdp, idx(mdp, 1));
 
@@ -218,7 +218,7 @@ test("navegación: solo se llega al terminal desde 16 yendo al este", () => {
   assert.equal(entradas, 1);
 });
 
-test("navegación: el ejercicio abierto de #slide-18 — backup de los estados 3 y 4", () => {
+test("navegación: el ejercicio abierto — backup del estado 3 (2_Tema2_wclp#slide-16) y del 4 (Tema2_MDP#slide-18)", () => {
   const mdp = rejillaNavegacion();
 
   // Estado 3 (viento): N y S deterministas; O y E con la rama del viento.
@@ -261,7 +261,7 @@ test("iteración de valor: la solución satisface la ecuación de optimalidad", 
   }
 });
 
-test("v_* domina a v_π para cualquier política (definición de óptima, #slide-19)", () => {
+test("v_* domina a v_π para cualquier política (definición de óptima, 2_Tema2_wclp#slide-18)", () => {
   const mdp = rejillaNavegacion();
   const gamma = 0.95;
   const { v: vOptimo } = iteracionValor(mdp, gamma);
@@ -310,7 +310,7 @@ test("resolverSistema resuelve un sistema conocido y detecta la singularidad", (
   assert.equal(resolverSistema([[1, 1], [2, 2]], [1, 2]), null);
 });
 
-test("retornos: G_t = R_{t+1} + γ G_{t+1} (#slide-10)", () => {
+test("retornos: G_t = R_{t+1} + γ G_{t+1} (2_Tema2_wclp#slide-9)", () => {
   const g = retornos([-1, -1, -1], 0.5);
   assert.ok(Math.abs(g[2] - -1) < 1e-12);
   assert.ok(Math.abs(g[1] - -1.5) < 1e-12);

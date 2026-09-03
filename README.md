@@ -71,11 +71,36 @@ No comprueban «que el código no falle», sino **que el código reproduce el ma
 clase**. Los importantes son los de contraste:
 
 - El diagrama de backup del estado 1 de la rejilla 4×4 sale `N→1, S→5, O→1, E→2` con
-  `r = −1`: exactamente el de `Tema2_MDP#slide-18`.
-- Las cuatro probabilidades de `Tema2_MDP#slide-8` dan 1, 0, 0 y 1.
+  `r = −1`: exactamente el de `2_Tema2_wclp#slide-16`.
+- Las cuatro probabilidades de `Tema2_MDP#slide-8` (material de Lucía) dan 1, 0, 0 y 1.
 - `v_*` de la rejilla 3×3 coincide con la distancia Manhattan al terminal.
 - ε = 0.1 alcanza ≈ 1.4 de recompensa media a los 1000 pasos, como la figura del libro.
 - El estudio de parámetros sitúa los óptimos donde los sitúa la figura 2.6.
+- **La opción correcta de un cuestionario sigue siendo la correcta después de barajar**
+  (`tests/quiz.test.js`). Es el test que impide que el barajado convierta un acierto en
+  un fallo.
+
+### Material de referencia
+
+La colección de referencia es **`Teoria/Diapos/MaterialAlvaro/`**, que es la que se usa
+en clase: el T1 se cita como `1_Tema1#page-N` (solo hay PDF) y el T2 como
+`2_Tema2_wclp#slide-N`. Cuando un contenido solo existe en el material de Lucía, la cita
+lo dice explícitamente. La correspondencia entre las dos colecciones está en
+`Teoria/referencia/mapa-diapositivas.md`.
+
+Tres cosas están **solo** en el material de Lucía y se citan como tales: el estudio de
+parámetros del módulo T1-M4 (figura 2.6, `Tema1_Intro#slide-29`), las cuatro
+probabilidades literales de `Tema2_MDP#slide-8`, y la extensión del ejercicio de backup
+al estado 4 (`Tema2_MDP#slide-18`; Álvaro pide solo el 3).
+
+### El orden de las opciones de los cuestionarios
+
+Las 27 preguntas se redactan con la correcta en primera posición, y `crearQuiz` las
+baraja **en cada carga de página** (`barajarOpciones`, en `nucleo.js`). Es una excepción
+deliberada a la reproducibilidad por semilla del resto del sitio: si el orden fuera
+estable, «elige siempre la a)» sería una estrategia ganadora. Corolario: **ninguna
+explicación puede referirse a una opción por letra ni por posición**, y hay un test que
+lo vigila.
 
 Si se toca un motor y uno de estos falla, lo que está mal es el código, no el test.
 

@@ -722,11 +722,49 @@ export function arbolBackup(estadoRaiz, ramas, opciones = {}) {
  * preguntas: [{ enunciado (HTML), opciones: [HTML], correcta: índice,
  *               explicacion (HTML) }]
  */
+/**
+ * Permuta las opciones de una pregunta dejando la correcta en una posición
+ * muestreada uniformemente. Devuelve una pregunta nueva; no toca la original.
+ *
+ * Existe porque las preguntas se escriben con la correcta en la primera
+ * posición (es lo cómodo al redactarlas) y eso convierte «elige siempre la a)»
+ * en una estrategia ganadora. El barajado se hace al renderizar, así que cada
+ * módulo puede seguir declarando sus preguntas como datos sin preocuparse.
+ *
+ * @param {{opciones: string[], correcta: number}} pregunta
+ * @param {{entero: (n: number) => number}} rng
+ */
+export function barajarOpciones(pregunta, rng) {
+  const { opciones, correcta } = pregunta;
+  const n = opciones.length;
+  const destino = rng.entero(n);
+
+  // Las demás opciones se colocan barajadas (Fisher-Yates) en los huecos que
+  // quedan, para que el orden de los distractores tampoco sea siempre el mismo.
+  const otras = opciones.filter((_, i) => i !== correcta);
+  for (let i = otras.length - 1; i > 0; i--) {
+    const j = rng.entero(i + 1);
+    [otras[i], otras[j]] = [otras[j], otras[i]];
+  }
+
+  const nuevas = new Array(n);
+  nuevas[destino] = opciones[correcta];
+  let k = 0;
+  for (let i = 0; i < n; i++) if (i !== destino) nuevas[i] = otras[k++];
+
+  return { ...pregunta, opciones: nuevas, correcta: destino };
+}
+
 export function crearQuiz(contenedor, preguntas, titulo = "Comprueba que lo has entendido") {
   contenedor.classList.add("quiz");
   contenedor.innerHTML = `<h3>${titulo}</h3>`;
 
-  preguntas.forEach((p, iPregunta) => {
+  // Excepción deliberada a la regla de reproducibilidad por semilla del resto
+  // del sitio: el orden de las opciones debe cambiar en CADA carga, o el alumno
+  // memoriza posiciones en vez de razonar. Las simulaciones sí siguen sembradas.
+  const rngQuiz = generador((Date.now() ^ (Math.random() * 0xffffffff)) >>> 0);
+
+  preguntas.map((p) => barajarOpciones(p, rngQuiz)).forEach((p, iPregunta) => {
     const bloque = document.createElement("div");
     bloque.className = "pregunta";
     const idOpciones = `q-${Math.random().toString(36).slice(2, 8)}`;
