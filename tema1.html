@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tema 1 · Introducción y bandits — RL IMAT</title>
+<title data-t="meta.titulo.tema1">Tema 1 · Introducción y bandits — RL IMAT</title>
 <meta name="description" content="Recurso interactivo del Tema 1 de Aprendizaje por Refuerzo (IMAT): k-armed bandits, banco de pruebas de 10 brazos, exploración frente a explotación, estudio de parámetros y puente hacia los MDP.">
 <link rel="stylesheet" href="assets/estilo.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
@@ -14,11 +14,11 @@
 
 <header class="cabecera">
   <div class="contenedor">
-    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema">interactivo</span></a>
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
     <nav>
-      <a href="index.html">Inicio</a>
-      <a href="tema1.html">Tema 1 · Introducción</a>
-      <a href="tema2.html">Tema 2 · MDP</a>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
     </nav>
     <div class="herramientas"></div>
   </div>
@@ -27,9 +27,9 @@
 <main class="contenedor">
 
   <div class="portada-tema">
-    <p class="kicker">Tema 1 · Sutton &amp; Barto, capítulos 1 y 2</p>
-    <h1>Introducción y <span style="white-space:nowrap"><em>k</em>-armed bandits</span></h1>
-    <p class="entradilla">
+    <p class="kicker" data-t="t1.kicker">Tema 1 · Sutton &amp; Barto, capítulos 1 y 2</p>
+    <h1 data-t="t1.h1">Introducción y <span style="white-space:nowrap"><em>k</em>-armed bandits</span></h1>
+    <p class="entradilla" data-t="t1.entradilla">
       Las figuras del tema, pero corriendo de verdad y con tus parámetros. Aquí se
       responden las tres preguntas que las diapositivas dejan en el aire: quién gana a la
       larga entre ε = 0.1 y ε = 0.01, si el promedio muestral sirve cuando el entorno
@@ -37,11 +37,11 @@
     </p>
     <nav class="indice" aria-label="Módulos del tema">
       <ol>
-        <li><a href="#m1"><span class="num">1</span> El problema del bandit</a></li>
-        <li><a href="#m2"><span class="num">2</span> Banco de pruebas de 10 brazos</a></li>
-        <li><a href="#m3"><span class="num">3</span> Comparador de estrategias</a></li>
-        <li><a href="#m4"><span class="num">4</span> Estudio de parámetros</a></li>
-        <li><a href="#m5"><span class="num">5</span> De bandits a MDP</a></li>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t1.indice.m1">El problema del bandit</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t1.indice.m2">Banco de pruebas de 10 brazos</span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t1.indice.m3">Comparador de estrategias</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t1.indice.m4">Estudio de parámetros</span></a></li>
+        <li><a href="#m5"><span class="num">5</span> <span data-t="t1.indice.m5">De bandits a MDP</span></a></li>
       </ol>
     </nav>
   </div>
@@ -49,12 +49,12 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m1">
     <header>
-      <p class="etiqueta">MÓDULO 1</p>
-      <h2>El problema del bandit: estimar \(q_*(a)\) tirando</h2>
-      <p class="fuente">1_Tema1#page-16 a #page-21 · material de Lucía: Tema1_Intro#slide-14 a #slide-19</p>
+      <p class="etiqueta" data-t="t1.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t1.m1.h2">El problema del bandit: estimar \(q_*(a)\) tirando</h2>
+      <p class="fuente" data-t="t1.m1.fuente">1_Tema1#page-16 a #page-21 · material de Lucía: Tema1_Intro#slide-14 a #slide-19</p>
     </header>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t1.m1.explicacion">
       El ejemplo del jamón de clase, con sus valores reales:
       \(q_*(\text{5J}) = 9{,}5\), \(q_*(\text{Jlt}) = 9{,}2\), \(q_*(\text{Cv}) = 8{,}9\).
       El agente <strong>no los conoce</strong>: solo tiene estimaciones \(Q_t(a)\) que
@@ -64,18 +64,18 @@
 
     <div class="controles">
       <div class="control">
-        <label>Prueba un jamón</label>
+        <label data-t="t1.m1.probar">Prueba un jamón</label>
         <div class="grupo-botones" id="m1-brazos"></div>
       </div>
       <div class="control">
-        <label>Automático</label>
+        <label data-t="t1.m1.automatico">Automático</label>
         <div class="grupo-botones">
-          <button type="button" id="m1-greedy">10 tiradas greedy</button>
-          <button type="button" id="m1-reset">Reiniciar</button>
+          <button type="button" id="m1-greedy" data-t="t1.m1.greedy">10 tiradas greedy</button>
+          <button type="button" id="m1-reset" data-t="t1.m1.reiniciar">Reiniciar</button>
         </div>
       </div>
       <div class="control">
-        <label>Semilla</label>
+        <label data-t="t1.m1.semilla">Semilla</label>
         <input type="number" id="m1-semilla" value="7" min="1" step="1">
       </div>
     </div>
@@ -84,14 +84,14 @@
       <div>
         <div class="tabla-scroll"><table class="datos" id="m1-tabla"></table></div>
         <div class="metricas">
-          <div class="metrica"><div class="etiq">Tiradas</div><div class="cifra" id="m1-tiradas">0</div></div>
-          <div class="metrica"><div class="etiq">Recompensa media</div><div class="cifra" id="m1-media">—</div></div>
-          <div class="metrica"><div class="etiq">Regret acumulado</div><div class="cifra" id="m1-regret">0,00</div></div>
+          <div class="metrica"><div class="etiq" data-t="t1.m1.tiradas">Tiradas</div><div class="cifra" id="m1-tiradas">0</div></div>
+          <div class="metrica"><div class="etiq" data-t="t1.m1.recompensaMedia">Recompensa media</div><div class="cifra" id="m1-media">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t1.m1.regret">Regret acumulado</div><div class="cifra" id="m1-regret">0,00</div></div>
         </div>
         <p class="explicacion nota" id="m1-diagnostico"></p>
       </div>
       <div>
-        <p class="viz-titulo">Historial de tiradas</p>
+        <p class="viz-titulo" data-t="t1.m1.historial">Historial de tiradas</p>
         <div class="tabla-scroll" style="max-height:320px"><table class="datos" id="m1-historial"></table></div>
       </div>
     </div>
@@ -102,12 +102,12 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m2">
     <header>
-      <p class="etiqueta">MÓDULO 2</p>
-      <h2>El banco de pruebas de 10 brazos</h2>
-      <p class="fuente">1_Tema1#page-24 · material de Lucía: Tema1_Intro#slide-23</p>
+      <p class="etiqueta" data-t="t1.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t1.m2.h2">El banco de pruebas de 10 brazos</h2>
+      <p class="fuente" data-t="t1.m2.fuente">1_Tema1#page-24 · material de Lucía: Tema1_Intro#slide-23</p>
     </header>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t1.m2.explicacion">
       El entorno estándar del tema: \(q_*(a) \sim \mathcal{N}(0,1)\) y, al tirar del brazo
       \(a\), \(R_t \sim \mathcal{N}(q_*(a), 1)\). En la diapositiva esta figura es una
       imagen fija; aquí cada semilla es un problema distinto.
@@ -118,17 +118,17 @@
 
     <div class="controles">
       <div class="control">
-        <label>Semilla del problema</label>
+        <label data-t="t1.m2.semilla">Semilla del problema</label>
         <input type="number" id="m2-semilla" value="1" min="1" step="1">
       </div>
       <div class="control">
         <label>&nbsp;</label>
         <div class="grupo-botones">
-          <button type="button" class="primario" id="m2-nuevo">Nueva instancia</button>
+          <button type="button" class="primario" id="m2-nuevo" data-t="t1.m2.nueva">Nueva instancia</button>
         </div>
       </div>
       <div class="control">
-        <label>Brazos <span class="valor" id="m2-k-v">10</span></label>
+        <label><span data-t="t1.m2.brazos">Brazos</span> <span class="valor" id="m2-k-v">10</span></label>
         <input type="range" id="m2-k" min="3" max="20" step="1" value="10">
       </div>
     </div>
@@ -142,12 +142,12 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m3">
     <header>
-      <p class="etiqueta">MÓDULO 3</p>
-      <h2>Comparador de estrategias de exploración</h2>
-      <p class="fuente">1_Tema1#page-21 · #page-25 a #page-27 · material de Lucía: Tema1_Intro#slide-21 · #slide-24 a #slide-28</p>
+      <p class="etiqueta" data-t="t1.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t1.m3.h2">Comparador de estrategias de exploración</h2>
+      <p class="fuente" data-t="t1.m3.fuente">1_Tema1#page-21 · #page-25 a #page-27 · material de Lucía: Tema1_Intro#slide-21 · #slide-24 a #slide-28</p>
     </header>
 
-    <div class="pregunta-diapo">
+    <div class="pregunta-diapo" data-t="t1.m3.pregunta">
       <p><em>«Los valores iniciales optimistas son insensibles a los cambios en el entorno
         que ocurren después de un tiempo»</em>
         &nbsp;·&nbsp; <em>«UCB es insensible a los cambios en el entorno que ocurren después
@@ -161,11 +161,11 @@
         (Tema1_Intro#slide-21, 1_Tema1#page-21). Las tres se responden en este módulo.</span>
     </div>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t1.m3.explicacion">
       Todas las estrategias se enfrentan <strong>a los mismos problemas</strong>, así que la
       comparación es justa. Dos controles hacen el trabajo:
     </p>
-    <ul class="explicacion">
+    <ul class="explicacion" data-t="t1.m3.lista">
       <li><strong>El horizonte.</strong> La figura del libro se corta a los 1000 pasos.
         Llévalo a 10&nbsp;000 y observa cómo ε = 0.01 alcanza y adelanta a ε = 0.1: explora
         menos, pero cuando por fin encuentra el mejor brazo lo explota casi siempre.</li>
@@ -178,42 +178,42 @@
 
     <div class="controles">
       <div class="control">
-        <label>Pasos <span class="valor" id="m3-pasos-v">1000</span></label>
+        <label><span data-t="t1.m3.pasos">Pasos</span> <span class="valor" id="m3-pasos-v">1000</span></label>
         <input type="range" id="m3-pasos" min="200" max="10000" step="200" value="1000">
       </div>
       <div class="control">
-        <label>Ejecuciones <span class="valor" id="m3-runs-v">200</span></label>
+        <label><span data-t="t1.m3.runs">Ejecuciones</span> <span class="valor" id="m3-runs-v">200</span></label>
         <input type="range" id="m3-runs" min="20" max="1000" step="20" value="200">
       </div>
       <div class="control">
-        <label>Semilla</label>
+        <label data-t="t1.m3.semilla">Semilla</label>
         <input type="number" id="m3-semilla" value="2026" min="1" step="1">
       </div>
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m3-deriva">
-          Entorno no estacionario
+          <span data-t="t1.m3.deriva">Entorno no estacionario</span>
         </label>
       </div>
       <div class="control">
         <label>&nbsp;</label>
         <div class="grupo-botones">
-          <button type="button" class="primario" id="m3-ejecutar">Ejecutar</button>
+          <button type="button" class="primario" id="m3-ejecutar" data-t="t1.m3.ejecutar">Ejecutar</button>
         </div>
       </div>
     </div>
 
-    <p class="viz-titulo">Estrategias en juego</p>
+    <p class="viz-titulo" data-t="t1.m3.estrategias">Estrategias en juego</p>
     <div id="m3-estrategias" class="controles" style="align-items:flex-start"></div>
 
     <div class="barra-progreso" id="m3-progreso" hidden><i></i></div>
 
     <div class="viz">
-      <p class="viz-titulo">Recompensa media</p>
+      <p class="viz-titulo" data-t="t1.m3.grRecompensa">Recompensa media</p>
       <div id="m3-gr-recompensa"></div>
     </div>
     <div class="viz" style="margin-top:1rem">
-      <p class="viz-titulo">% de veces que se elige la acción óptima</p>
+      <p class="viz-titulo" data-t="t1.m3.grOptimo">% de veces que se elige la acción óptima</p>
       <div id="m3-gr-optimo"></div>
     </div>
     <div id="m3-leyenda"></div>
@@ -225,19 +225,19 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m4">
     <header>
-      <p class="etiqueta">MÓDULO 4</p>
-      <h2>Estudio de parámetros</h2>
-      <p class="fuente">Solo en el material de Lucía: Tema1_Intro#slide-29 (figura 2.6 del libro)</p>
+      <p class="etiqueta" data-t="t1.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t1.m4.h2">Estudio de parámetros</h2>
+      <p class="fuente" data-t="t1.m4.fuente">Solo en el material de Lucía: Tema1_Intro#slide-29 (figura 2.6 del libro)</p>
     </header>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t1.m4.explicacion">
       La última figura del tema resume todo lo anterior: para cada estrategia, la recompensa
       media en los primeros 2000 pasos en función de <em>su</em> parámetro. Todas las curvas
       tienen forma de campana invertida — hay un punto dulce, y pasarse de exploración es
       tan malo como quedarse corto. Como es un cálculo largo, corre en segundo plano.
     </p>
 
-    <p class="aviso">
+    <p class="aviso" data-t="t1.m4.aviso1">
       <strong>El horizonte no es un detalle: es parte del resultado.</strong> La figura 2.6
       del libro promedia sobre los primeros <strong>1000</strong> pasos. Con esa ventana,
       la curva de \(Q_0\) cae con fuerza en cuanto se pasa del óptimo — y esa caída
@@ -246,7 +246,7 @@
       tamaño.
     </p>
 
-    <p class="aviso">
+    <p class="aviso" data-t="t1.m4.aviso2">
       Lo que <em>no</em> es esa caída es una propiedad del método. Un \(Q_0\) grande induce
       más exploración inicial, y con una ventana corta esa exploración se paga
       <strong>dentro</strong> del intervalo que estás promediando. Al alargar el horizonte
@@ -260,23 +260,23 @@
 
     <div class="controles">
       <div class="control">
-        <label>Horizonte (pasos) <span class="valor" id="m4-pasos-v">2000</span></label>
+        <label><span data-t="t1.m4.horizonte">Horizonte (pasos)</span> <span class="valor" id="m4-pasos-v">2000</span></label>
         <input type="range" id="m4-pasos" min="200" max="4000" step="200" value="2000">
       </div>
       <div class="control">
-        <label>Ejecuciones por punto <span class="valor" id="m4-runs-v">100</span></label>
+        <label><span data-t="t1.m4.runs">Ejecuciones por punto</span> <span class="valor" id="m4-runs-v">100</span></label>
         <input type="range" id="m4-runs" min="20" max="400" step="20" value="100">
       </div>
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m4-deriva">
-          Entorno no estacionario
+          <span data-t="t1.m4.deriva">Entorno no estacionario</span>
         </label>
       </div>
       <div class="control">
         <label>&nbsp;</label>
         <div class="grupo-botones">
-          <button type="button" class="primario" id="m4-ejecutar">Calcular</button>
+          <button type="button" class="primario" id="m4-ejecutar" data-t="t1.m4.calcular">Calcular</button>
         </div>
       </div>
     </div>
@@ -292,12 +292,12 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m5">
     <header>
-      <p class="etiqueta">MÓDULO 5</p>
-      <h2>De bandits a MDP</h2>
-      <p class="fuente">1_Tema1#page-28 · #page-29 · material de Lucía: Tema1_Intro#slide-30 · #slide-31</p>
+      <p class="etiqueta" data-t="t1.m5.etiqueta">MÓDULO 5</p>
+      <h2 data-t="t1.m5.h2">De bandits a MDP</h2>
+      <p class="fuente" data-t="t1.m5.fuente">1_Tema1#page-28 · #page-29 · material de Lucía: Tema1_Intro#slide-30 · #slide-31</p>
     </header>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t1.m5.explicacion">
       Un bandit es «RL sin estados»: cada decisión es independiente de las anteriores.
       Añade piezas al entorno y verás en qué se convierte el problema — y por qué el
       Tema 2 necesita toda la maquinaria de los MDP.
@@ -307,13 +307,13 @@
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m5-estados">
-          El entorno tiene estados
+          <span data-t="t1.m5.estados">El entorno tiene estados</span>
         </label>
       </div>
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m5-transicion">
-          Las acciones cambian el estado
+          <span data-t="t1.m5.transicion">Las acciones cambian el estado</span>
         </label>
       </div>
     </div>
@@ -331,14 +331,14 @@
   </section>
 
   <footer class="pie">
-    <p><a class="siguiente" href="tema2.html">Tema 2 · Procesos de Decisión de Markov →</a></p>
-    <p>
+    <p><a class="siguiente" href="tema2.html" data-t="t1.pie.siguiente">Tema 2 · Procesos de Decisión de Markov →</a></p>
+    <p data-t="t1.pie.1">
       Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
       Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
       Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
       Introduction</em>, 2.ª ed., capítulos 1 y 2.
     </p>
-    <p class="suave">
+    <p class="suave" data-t="t1.pie.2">
       Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
       el mismo resultado.
     </p>

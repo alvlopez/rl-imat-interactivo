@@ -41,6 +41,8 @@ web/
 │   ├── mdp.js              motor de MDP finitos (Tema 2)
 │   ├── bandits.js          motor de k-armed bandits (Tema 1)
 │   ├── calculo-worker.js   Web Worker para las simulaciones largas
+│   ├── i18n.js             capa de idioma: t(), botón EN/ES, ?idioma=
+│   ├── en.js               diccionario inglés (el español NO está aquí)
 │   ├── tema1.js            los cinco módulos del Tema 1
 │   └── tema2.js            los cinco módulos del Tema 2
 ├── tests/                  node --test, sin dependencias
@@ -92,6 +94,54 @@ Tres cosas están **solo** en el material de Lucía y se citan como tales: el es
 parámetros del módulo T1-M4 (figura 2.6, `Tema1_Intro#slide-29`), las cuatro
 probabilidades literales de `Tema2_MDP#slide-8`, y la extensión del ejercicio de backup
 al estado 4 (`Tema2_MDP#slide-18`; Álvaro pide solo el 3).
+
+### Idioma: español por defecto, inglés como capa
+
+El sitio está en **español**, y el inglés es una **capa de traducción encima**. El botón
+`EN` / `ES` de la cabecera cambia de idioma; se recuerda en el navegador y se puede
+compartir un enlace directo con `?idioma=en`.
+
+**El español no vive en ningún diccionario**: vive donde siempre, en el HTML y en las
+cadenas del JS. `assets/en.js` solo contiene el inglés. Esto tiene dos consecuencias que
+son la razón del diseño:
+
+- no hay dos copias del español que puedan desincronizarse;
+- **si falta una clave inglesa, sale el español**, no un hueco ni un error.
+
+Cómo se marca el texto traducible:
+
+| Dónde | Cómo |
+|---|---|
+| HTML | `data-t="clave"` en el elemento; el valor del diccionario es HTML |
+| Atributos | `data-t-title` y `data-t-etiqueta` (para `title` y `aria-label`) |
+| JS | `t("clave", "texto en español")`, con `{parametros}` opcionales |
+| Cuestionarios | `crearQuiz(zona, preguntas, { claves: "t1.m3.quiz" })` — busca `<prefijo>.<i>.enunciado`, `.opciones` y `.explicacion`. **El banco en español no se toca** |
+
+Tres cuidados que no son evidentes y que ya han costado un fallo:
+
+1. **Nunca marques un `<input>`**: es un elemento vacío y `innerHTML` no hace nada. Ni un
+   contenedor que envuelva un `id` que el JS necesite, porque lo destruirías. En esos
+   casos se envuelve solo el texto en un `<span data-t>`.
+2. **Los identificadores del motor no se traducen.** `ACCIONES_3X3` y `ACCIONES_NAV` son
+   índices y claves, y los tests dependen de ellos: se traduce cómo se *muestran*, con
+   `nombreAccion()` y `nombreDir()`. En inglés la brújula es **N/S/W/E**, no N/S/O/E.
+3. **El formato numérico también es idioma**: `1,50` frente a `1.50`, `79 %` frente a
+   `79%`. Lo resuelven `num()` y `pct()` en `nucleo.js`; no lo repitas a mano.
+
+**Las citas cambian de sistema.** En español se cita la diapositiva
+(`1_Tema1#page-24`); en inglés, la **sección y la figura de Sutton & Barto**, porque quien
+lee esa versión no tiene el material de clase y porque secciones y figuras son estables
+entre ediciones, y los números de página no.
+
+Cambiar de idioma **recarga la página**. Es deliberado: la mitad del texto lo generan los
+módulos al vuelo, y repintarlos de forma reactiva sería una fuente permanente de bloques
+a medio traducir. El precio es perder el estado de las simulaciones.
+
+`tests/i18n.test.js` cubre lo que de verdad puede fallar aquí: que **toda** clave usada
+en HTML, en JS y en los cuestionarios tenga inglés; que no sobren claves; que las listas
+de opciones conserven su longitud (si no, `correcta` apuntaría a otra opción); y que
+ninguna traducción se haya quedado en español. Para añadir un idioma basta otro fichero
+como `en.js` y una entrada en `IDIOMAS`.
 
 ### El orden de las opciones de los cuestionarios
 

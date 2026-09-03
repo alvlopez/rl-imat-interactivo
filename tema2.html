@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tema 2 · Procesos de Decisión de Markov — RL IMAT</title>
+<title data-t="meta.titulo.tema2">Tema 2 · Procesos de Decisión de Markov — RL IMAT</title>
 <meta name="description" content="Recurso interactivo del Tema 2 de Aprendizaje por Refuerzo (IMAT): dinámica del MDP, política y retorno, funciones de valor, diagramas de backup y optimalidad de Bellman.">
 <link rel="stylesheet" href="assets/estilo.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
@@ -14,11 +14,11 @@
 
 <header class="cabecera">
   <div class="contenedor">
-    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema">interactivo</span></a>
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
     <nav>
-      <a href="index.html">Inicio</a>
-      <a href="tema1.html">Tema 1 · Introducción</a>
-      <a href="tema2.html">Tema 2 · MDP</a>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
     </nav>
     <div class="herramientas"></div>
   </div>
@@ -27,9 +27,9 @@
 <main class="contenedor">
 
   <div class="portada-tema">
-    <p class="kicker">Tema 2 · Sutton &amp; Barto, capítulo 3</p>
-    <h1>Procesos de Decisión de Markov</h1>
-    <p class="entradilla">
+    <p class="kicker" data-t="t2.kicker">Tema 2 · Sutton &amp; Barto, capítulo 3</p>
+    <h1 data-t="t2.h1">Procesos de Decisión de Markov</h1>
+    <p class="entradilla" data-t="t2.entradilla">
       Las dos rejillas que se usan en clase, pero manipulables. Aquí se responden las
       preguntas que las diapositivas dejan planteadas: las cuatro probabilidades de la
       dinámica, cuántas ecuaciones salen de la cuadrícula, el diagrama de backup de los
@@ -37,11 +37,11 @@
     </p>
     <nav class="indice" aria-label="Módulos del tema">
       <ol>
-        <li><a href="#m1"><span class="num">1</span> La dinámica del MDP</a></li>
-        <li><a href="#m2"><span class="num">2</span> Política y retorno</a></li>
-        <li><a href="#m3"><span class="num">3</span> Funciones de valor</a></li>
-        <li><a href="#m4"><span class="num">4</span> Diagramas de backup</a></li>
-        <li><a href="#m5"><span class="num">5</span> Optimalidad</a></li>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t2.indice.m1">La dinámica del MDP</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t2.indice.m2">Política y retorno</span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t2.indice.m3">Funciones de valor</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t2.indice.m4">Diagramas de backup</span></a></li>
+        <li><a href="#m5"><span class="num">5</span> <span data-t="t2.indice.m5">Optimalidad</span></a></li>
       </ol>
     </nav>
   </div>
@@ -51,19 +51,19 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m1">
     <header>
-      <p class="etiqueta">MÓDULO 1</p>
-      <h2>La dinámica del MDP: \(p(s',r \mid s,a)\)</h2>
-      <p class="fuente">2_Tema2_wclp#slide-6 a #slide-8 · las cuatro probabilidades son del material de Lucía: Tema2_MDP#slide-8 · #slide-9</p>
+      <p class="etiqueta" data-t="t2.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t2.m1.h2">La dinámica del MDP: \(p(s',r \mid s,a)\)</h2>
+      <p class="fuente" data-t="t2.m1.fuente">2_Tema2_wclp#slide-6 a #slide-8 · las cuatro probabilidades son del material de Lucía: Tema2_MDP#slide-8 · #slide-9</p>
     </header>
 
-    <div class="pregunta-diapo">
+    <div class="pregunta-diapo" data-t="t2.m1.pregunta">
       <p>La diapositiva plantea cuatro probabilidades y las deja sin resolver:
         <em>\(p(5,-1\mid 2,\text{abajo})\)</em>, <em>\(p(5,-1\mid 2,\text{izq})\)</em>,
         <em>\(p(5,0\mid 2,\text{abajo})\)</em> y <em>\(p(3,-1\mid 3,\text{dch})\)</em>.</p>
       <span class="de-donde">Respóndelas tú primero y compruébalas abajo.</span>
     </div>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t2.m1.explicacion">
       Recompensa \(-1\) en toda transición; si el agente sale del tablero se queda donde
       estaba. Elige un estado en la rejilla y una acción: se resalta a dónde puede ir y
       con qué probabilidad.
@@ -71,26 +71,26 @@
 
     <div class="controles" id="m1-controles">
       <div class="control">
-        <label>Acción desde el estado seleccionado</label>
+        <label data-t="t2.m1.accionLabel">Acción desde el estado seleccionado</label>
         <div class="grupo-botones" id="m1-acciones"></div>
       </div>
       <div class="control">
-        <label>Estado</label>
+        <label data-t="t2.m1.estadoLabel">Estado</label>
         <div class="fila"><span class="mono" id="m1-estado">1</span>
-          <span class="suave">— o pulsa una celda</span></div>
+          <span class="suave" data-t="t2.m1.oPulsa">— o pulsa una celda</span></div>
       </div>
     </div>
 
     <div class="dos-columnas">
       <div>
-        <div class="viz"><p class="viz-titulo">Rejilla 3×3</p><div id="m1-rejilla"></div></div>
+        <div class="viz"><p class="viz-titulo" data-t="t2.m1.rejilla">Rejilla 3×3</p><div id="m1-rejilla"></div></div>
         <p class="explicacion nota" id="m1-recuento"></p>
       </div>
       <div>
         <p class="viz-titulo">Distribución \(p(s',r \mid s,a)\)</p>
         <div class="tabla-scroll"><table class="datos" id="m1-tabla"></table></div>
 
-        <h3 style="margin-top:1.2rem">Las preguntas de la diapositiva</h3>
+        <h3 style="margin-top:1.2rem" data-t="t2.m1.h3preguntas">Las preguntas de la diapositiva</h3>
         <div class="grupo-botones" id="m1-preguntas"></div>
         <div id="m1-respuesta" class="retro" hidden></div>
       </div>
@@ -104,12 +104,12 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m2">
     <header>
-      <p class="etiqueta">MÓDULO 2</p>
-      <h2>Política \(\pi(a \mid s)\) y retorno \(G_t\)</h2>
-      <p class="fuente">2_Tema2_wclp#slide-9 · #slide-10 · material de Lucía: Tema2_MDP#slide-10 · #slide-11</p>
+      <p class="etiqueta" data-t="t2.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t2.m2.h2">Política \(\pi(a \mid s)\) y retorno \(G_t\)</h2>
+      <p class="fuente" data-t="t2.m2.fuente">2_Tema2_wclp#slide-9 · #slide-10 · material de Lucía: Tema2_MDP#slide-10 · #slide-11</p>
     </header>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t2.m2.explicacion">
       La política reparte probabilidad entre las acciones de cada estado. El retorno es lo
       que de verdad quiere maximizar el agente:
       \(G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots\)
@@ -119,21 +119,21 @@
 
     <div class="controles">
       <div class="control">
-        <label>Política</label>
+        <label data-t="t2.m2.politicaLabel">Política</label>
         <div class="grupo-botones" id="m2-presets"></div>
       </div>
       <div class="control">
-        <label>Descuento <span class="valor" id="m2-gamma-v">1.00</span></label>
+        <label><span data-t="t2.descuento">Descuento</span> <span class="valor" id="m2-gamma-v">1.00</span></label>
         <input type="range" id="m2-gamma" min="0" max="1" step="0.05" value="1">
       </div>
       <div class="control">
-        <label>Semilla</label>
+        <label data-t="t2.m2.semilla">Semilla</label>
         <input type="number" id="m2-semilla" value="2026" min="1" step="1">
       </div>
       <div class="control">
         <label>&nbsp;</label>
         <div class="grupo-botones">
-          <button type="button" class="primario" id="m2-lanzar">Lanzar episodio</button>
+          <button type="button" class="primario" id="m2-lanzar" data-t="t2.m2.lanzar">Lanzar episodio</button>
         </div>
       </div>
     </div>
@@ -141,14 +141,14 @@
     <div class="dos-columnas">
       <div>
         <div class="viz">
-          <p class="viz-titulo">Rejilla y política — pulsa una celda para editarla</p>
+          <p class="viz-titulo" data-t="t2.m2.vizRejilla">Rejilla y política — pulsa una celda para editarla</p>
           <div id="m2-rejilla"></div>
         </div>
         <div id="m2-editor"></div>
       </div>
       <div>
-        <p class="viz-titulo">Trayectoria y descomposición del retorno</p>
-        <div id="m2-episodio"><p class="suave">Pulsa «Lanzar episodio».</p></div>
+        <p class="viz-titulo" data-t="t2.m2.vizTrayectoria">Trayectoria y descomposición del retorno</p>
+        <div id="m2-episodio"><p class="suave" data-t="t2.m2.sinEpisodio">Pulsa «Lanzar episodio».</p></div>
       </div>
     </div>
 
@@ -160,17 +160,17 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m3">
     <header>
-      <p class="etiqueta">MÓDULO 3</p>
-      <h2>Funciones de valor \(v_\pi\) y \(q_\pi\)</h2>
-      <p class="fuente">2_Tema2_wclp#slide-11 a #slide-14 · #slide-17 (el SISTEMA de ecuaciones) · material de Lucía: Tema2_MDP#slide-12 a #slide-15</p>
+      <p class="etiqueta" data-t="t2.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t2.m3.h2">Funciones de valor \(v_\pi\) y \(q_\pi\)</h2>
+      <p class="fuente" data-t="t2.m3.fuente">2_Tema2_wclp#slide-11 a #slide-14 · #slide-17 (el SISTEMA de ecuaciones) · material de Lucía: Tema2_MDP#slide-12 a #slide-15</p>
     </header>
 
-    <div class="pregunta-diapo">
+    <div class="pregunta-diapo" data-t="t2.m3.pregunta">
       <p><em>«¿Cuántas ecuaciones salen de esta cuadrícula?»</em></p>
       <span class="de-donde">Tema2_MDP#slide-15 — el sistema se resuelve aquí, y también barrido a barrido.</span>
     </div>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t2.m3.explicacion">
       La ecuación de Bellman
       \(v_\pi(s)=\sum_a \pi(a\mid s)\sum_{s',r} p(s',r\mid s,a)\,[\,r+\gamma v_\pi(s')\,]\)
       es un sistema lineal: una ecuación por estado. Se puede resolver de golpe
@@ -181,20 +181,20 @@
 
     <div class="controles">
       <div class="control">
-        <label>Descuento <span class="valor" id="m3-gamma-v">1.00</span></label>
+        <label><span data-t="t2.descuento">Descuento</span> <span class="valor" id="m3-gamma-v">1.00</span></label>
         <input type="range" id="m3-gamma" min="0.05" max="1" step="0.05" value="1">
       </div>
       <div class="control">
-        <label>Mostrar</label>
+        <label data-t="t2.m3.mostrarLabel">Mostrar</label>
         <div class="grupo-botones" id="m3-vista"></div>
       </div>
       <div class="control">
         <label>&nbsp;</label>
         <div class="grupo-botones">
-          <button type="button" class="primario" id="m3-resolver">Resolver el sistema</button>
-          <button type="button" id="m3-barrido">Un barrido</button>
-          <button type="button" id="m3-auto">Iterar hasta converger</button>
-          <button type="button" id="m3-reiniciar">Reiniciar a 0</button>
+          <button type="button" class="primario" id="m3-resolver" data-t="t2.m3.resolver">Resolver el sistema</button>
+          <button type="button" id="m3-barrido" data-t="t2.m3.barrido">Un barrido</button>
+          <button type="button" id="m3-auto" data-t="t2.m3.auto">Iterar hasta converger</button>
+          <button type="button" id="m3-reiniciar" data-t="t2.m3.reiniciar">Reiniciar a 0</button>
         </div>
       </div>
     </div>
@@ -205,9 +205,9 @@
       </div>
       <div>
         <div class="metricas">
-          <div class="metrica"><div class="etiq">Ecuaciones del sistema</div><div class="cifra" id="m3-ecuaciones">—</div></div>
-          <div class="metrica"><div class="etiq">Barridos hechos</div><div class="cifra" id="m3-barridos">0</div></div>
-          <div class="metrica"><div class="etiq">Cambio máximo</div><div class="cifra" id="m3-delta">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t2.m3.mEcuaciones">Ecuaciones del sistema</div><div class="cifra" id="m3-ecuaciones">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t2.m3.mBarridos">Barridos hechos</div><div class="cifra" id="m3-barridos">0</div></div>
+          <div class="metrica"><div class="etiq" data-t="t2.m3.mDelta">Cambio máximo</div><div class="cifra" id="m3-delta">—</div></div>
         </div>
         <p class="explicacion nota" id="m3-nota"></p>
         <div class="tabla-scroll"><table class="datos" id="m3-tabla"></table></div>
@@ -222,19 +222,19 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m4">
     <header>
-      <p class="etiqueta">MÓDULO 4</p>
-      <h2>Diagramas de <em>backup</em></h2>
-      <p class="fuente">2_Tema2_wclp#slide-15 (enunciado del entorno) · #slide-16 (ejercicio: estado 3) · el estado 4 lo pide el material de Lucía: Tema2_MDP#slide-18 · Problemas.pdf, problema 3</p>
+      <p class="etiqueta" data-t="t2.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t2.m4.h2">Diagramas de <em>backup</em></h2>
+      <p class="fuente" data-t="t2.m4.fuente">2_Tema2_wclp#slide-15 (enunciado del entorno) · #slide-16 (ejercicio: estado 3) · el estado 4 lo pide el material de Lucía: Tema2_MDP#slide-18 · Problemas.pdf, problema 3</p>
     </header>
 
-    <div class="pregunta-diapo">
+    <div class="pregunta-diapo" data-t="t2.m4.pregunta">
       <p><em>«Ejercicio: representa el diagrama de backup para el estado 3»</em></p>
       <span class="de-donde">2_Tema2_wclp#slide-16 — la diapositiva resuelve el estado 1 y deja
         el 3 abierto. En el material de Lucía (Tema2_MDP#slide-18) el ejercicio pide el 3
         <em>y</em> el 4: son justo los dos estados con viento, y aquí puedes generar los dos.</span>
     </div>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t2.m4.explicacion">
       El diagrama de backup dibuja de dónde sale el valor de un estado: la raíz es \(s\),
       los puntos negros son las acciones y los círculos de abajo los sucesores \(s'\), con
       su probabilidad y su recompensa. <strong>Pulsa cualquier estado de la rejilla</strong>
@@ -243,24 +243,24 @@
 
     <div class="controles">
       <div class="control">
-        <label>Ejemplos del material</label>
+        <label data-t="t2.m4.atajosLabel">Ejemplos del material</label>
         <div class="grupo-botones" id="m4-atajos"></div>
       </div>
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m4-viento-inv">
-          Invertir el sentido del viento
+          <span data-t="t2.m4.vientoInv">Invertir el sentido del viento</span>
         </label>
       </div>
     </div>
 
     <div class="dos-columnas tres-dos">
       <div>
-        <div class="viz"><p class="viz-titulo">Navegación 4×4</p><div id="m4-rejilla"></div></div>
+        <div class="viz"><p class="viz-titulo" data-t="t2.m4.vizRejilla">Navegación 4×4</p><div id="m4-rejilla"></div></div>
         <p class="explicacion nota" id="m4-leyenda"></p>
       </div>
       <div>
-        <div class="viz"><p class="viz-titulo" id="m4-titulo">Diagrama de backup</p><div id="m4-arbol"></div></div>
+        <div class="viz"><p class="viz-titulo" id="m4-titulo" data-t="t2.m4.vizArbol">Diagrama de backup</p><div id="m4-arbol"></div></div>
         <div class="tabla-scroll"><table class="datos" id="m4-tabla"></table></div>
       </div>
     </div>
@@ -275,17 +275,17 @@
   <!-- ================================================================= -->
   <section class="modulo" id="m5">
     <header>
-      <p class="etiqueta">MÓDULO 5</p>
-      <h2>Optimalidad: \(v_*\), \(q_*\) y \(\pi_*\)</h2>
-      <p class="fuente">2_Tema2_wclp#slide-18 · #slide-19 · material de Lucía: Tema2_MDP#slide-19 a #slide-21</p>
+      <p class="etiqueta" data-t="t2.m5.etiqueta">MÓDULO 5</p>
+      <h2 data-t="t2.m5.h2">Optimalidad: \(v_*\), \(q_*\) y \(\pi_*\)</h2>
+      <p class="fuente" data-t="t2.m5.fuente">2_Tema2_wclp#slide-18 · #slide-19 · material de Lucía: Tema2_MDP#slide-19 a #slide-21</p>
     </header>
 
-    <div class="pregunta-diapo">
+    <div class="pregunta-diapo" data-t="t2.m5.pregunta">
       <p><em>«Siempre hay al menos una política mejor o igual al resto. ¿Puede haber varias políticas óptimas?»</em></p>
       <span class="de-donde">Tema2_MDP#slide-19 — las celdas con más de una flecha son la respuesta.</span>
     </div>
 
-    <p class="explicacion">
+    <p class="explicacion" data-t="t2.m5.explicacion">
       La ecuación de optimalidad de Bellman sustituye la media sobre \(\pi\) por un máximo:
       \(v_*(s)=\max_a \sum_{s',r} p(s',r\mid s,a)\,[\,r+\gamma v_*(s')\,]\).
       Compara lo que vale moverse al azar con lo que vale actuar de forma óptima, y fíjate
@@ -294,17 +294,17 @@
 
     <div class="controles">
       <div class="control">
-        <label>Descuento <span class="valor" id="m5-gamma-v">1.00</span></label>
+        <label><span data-t="t2.descuento">Descuento</span> <span class="valor" id="m5-gamma-v">1.00</span></label>
         <input type="range" id="m5-gamma" min="0.5" max="1" step="0.01" value="1">
       </div>
       <div class="control">
-        <label>Qué se resuelve</label>
+        <label data-t="t2.m5.modoLabel">Qué se resuelve</label>
         <div class="grupo-botones" id="m5-modo"></div>
       </div>
       <div class="control control-linea">
         <label class="interruptor">
           <input type="checkbox" id="m5-flechas" checked>
-          Mostrar la política
+          <span data-t="t2.m5.mostrarPolitica">Mostrar la política</span>
         </label>
       </div>
     </div>
@@ -315,8 +315,8 @@
       </div>
       <div>
         <div class="metricas">
-          <div class="metrica"><div class="etiq">Políticas óptimas distintas</div><div class="cifra" id="m5-cuantas">—</div></div>
-          <div class="metrica"><div class="etiq">Coste desde el estado 1</div><div class="cifra" id="m5-v1">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t2.m5.mCuantas">Políticas óptimas distintas</div><div class="cifra" id="m5-cuantas">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t2.m5.mV1">Coste desde el estado 1</div><div class="cifra" id="m5-v1">—</div></div>
         </div>
         <p class="explicacion nota" id="m5-nota"></p>
         <div class="tabla-scroll"><table class="datos" id="m5-tabla"></table></div>
@@ -328,15 +328,15 @@
 
   <footer class="pie">
     <p>
-      <a class="siguiente" href="tema1.html">← Tema 1 · Introducción y bandits</a>
+      <a class="siguiente" href="tema1.html" data-t="t2.pie.anterior">← Tema 1 · Introducción y bandits</a>
     </p>
-    <p>
+    <p data-t="t2.pie.1">
       Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
       Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
       Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
       Introduction</em>, 2.ª ed., capítulo 3.
     </p>
-    <p class="suave">
+    <p class="suave" data-t="t2.pie.2">
       Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
       el mismo resultado.
     </p>

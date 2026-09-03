@@ -12,6 +12,7 @@
    ========================================================================== */
 
 import { generador, argmax } from "./nucleo.js";
+import { t } from "./i18n.js";
 
 /* ----------------------------------------------------------------------- *
  * 1. El entorno: banco de pruebas de k brazos
@@ -277,7 +278,7 @@ export const CURVAS_BARRIDO = [
   },
   {
     id: "optimista",
-    nombre: "greedy con inicialización optimista",
+    nombre: t("t1.curva.optimista", "greedy con inicialización optimista"),
     parametro: "Q₀",
     valores: potencias(-2, 2),
     config: (valor) => ({ tipo: TIPOS.OPTIMISTA, epsilon: 0, alpha: 0.1, q0: valor }),

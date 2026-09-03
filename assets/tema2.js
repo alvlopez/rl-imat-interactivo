@@ -8,6 +8,8 @@ import {
   colorCalor, textoSobre, generador, alCambiarTema, renderizarMatematicas,
 } from "./nucleo.js";
 
+import { t } from "./i18n.js";
+
 import {
   rejilla3x3, rejillaNavegacion, ACCIONES_3X3,
   politicaEquiprobable, politicaDeterminista, normalizar,
@@ -20,6 +22,12 @@ iniciarPagina();
 
 /** Las cuatro acciones de ambas rejillas están en el orden N, S, O, E. */
 const DIRS = ["N", "S", "O", "E"];
+
+/* Los nombres de acción del motor son identificadores, no texto: se usan como
+   índice y como clave. Aquí se traduce solo su presentación. En inglés la
+   brújula es N/S/W/E — la "O" de Oeste se leería como "O" de nada. */
+const nombreAccion = (id) => t(`t2.accion.${id}`, id);
+const nombreDir = (d) => t(`t2.dir.${d}`, d);
 const $ = (sel) => document.querySelector(sel);
 
 /** Repintar todos los módulos cuando cambia el tema (los SVG llevan colores fijos). */
@@ -77,7 +85,7 @@ function moduloDinamica() {
 
   const marcarAccion = grupoRadio(
     zonaAcciones,
-    ACCIONES_3X3.map((nombre, i) => ({ texto: nombre, valor: i })),
+    ACCIONES_3X3.map((nombre, i) => ({ texto: nombreAccion(nombre), valor: i })),
     a,
     (valor) => { a = valor; dibujar(); },
   );
@@ -105,7 +113,9 @@ function moduloDinamica() {
         subetiqueta: destino ? `p = ${num(destino.p, 2)}` : null,
         color,
         textoColor: destino ? "#ffffff" : textoColor,
-        titulo: e === terminal ? "Estado terminal" : `Estado ${mdp3.etiquetas[e]}`,
+        titulo: e === terminal
+          ? t("t2.estadoTerminal", "Estado terminal")
+          : t("t2.estadoN", "Estado {e}", { e: mdp3.etiquetas[e] }),
         flechas: e === s && !mdp3.esTerminal(e) ? [DIRS[a]] : null,
         colorFlecha: tono("--azul"),
       });
@@ -119,8 +129,10 @@ function moduloDinamica() {
     salidaEstado.textContent = mdp3.etiquetas[s];
 
     if (mdp3.esTerminal(s)) {
-      zonaTabla.innerHTML = `<tbody><tr><td colspan="3" class="suave">
-        T es terminal: no hay transiciones y \\(v(\\mathrm{T}) = 0\\).</td></tr></tbody>`;
+      zonaTabla.innerHTML = `<tbody><tr><td colspan="3" class="suave">${
+        t("t2.m1.terminalSinTransiciones",
+          "T es terminal: no hay transiciones y \\(v(\\mathrm{T}) = 0\\).")
+      }</td></tr></tbody>`;
       renderizarMatematicas(zonaTabla);
       return;
     }
@@ -134,7 +146,7 @@ function moduloDinamica() {
     const nulas = `
       <tr class="suave">
         <td colspan="3" style="text-align:left">
-          Cualquier otra combinación \\((s', r)\\) tiene probabilidad 0.
+          ${t("t2.m1.otrasNulas", "Cualquier otra combinación \\((s', r)\\) tiene probabilidad 0.")}
         </td>
       </tr>`;
     zonaTabla.innerHTML = `
@@ -145,16 +157,20 @@ function moduloDinamica() {
 
   /* --- las cuatro preguntas literales de la diapositiva --- */
   const preguntas = [
-    { texto: "p(5,−1 | 2, abajo)", s2: "5", r: -1, s: "2", a: "abajo" },
-    { texto: "p(5,−1 | 2, izq)", s2: "5", r: -1, s: "2", a: "izq" },
-    { texto: "p(5, 0 | 2, abajo)", s2: "5", r: 0, s: "2", a: "abajo" },
-    { texto: "p(3,−1 | 3, dch)", s2: "3", r: -1, s: "3", a: "dch" },
-  ];
+    { id: "a", s2: "5", r: -1, s: "2", a: "abajo" },
+    { id: "b", s2: "5", r: -1, s: "2", a: "izq" },
+    { id: "c", s2: "5", r: 0, s: "2", a: "abajo" },
+    { id: "d", s2: "3", r: -1, s: "3", a: "dch" },
+  ].map((p) => ({
+    ...p,
+    // el rótulo lleva el nombre de la acción, que sí se traduce
+    texto: `p(${p.s2},${p.r === 0 ? " 0" : "−1"} | ${p.s}, ${nombreAccion(p.a)})`,
+  }));
   const razones = {
-    "p(5,−1 | 2, abajo)": "Bajar desde 2 lleva siempre a 5, y toda transición da −1. Es determinista.",
-    "p(5,−1 | 2, izq)": "Desde 2 hacia la izquierda se llega a 1, no a 5. Esa transición no existe.",
-    "p(5, 0 | 2, abajo)": "El estado sí es el correcto, pero la recompensa no: aquí <em>toda</em> transición vale −1, nunca 0. La dinámica es conjunta sobre (s′, r).",
-    "p(3,−1 | 3, dch)": "Desde 3 hacia la derecha se sale del tablero, así que el agente se queda en 3 — y cobra igualmente su −1.",
+    a: t("t2.m1.razon.a", "Bajar desde 2 lleva siempre a 5, y toda transición da −1. Es determinista."),
+    b: t("t2.m1.razon.b", "Desde 2 hacia la izquierda se llega a 1, no a 5. Esa transición no existe."),
+    c: t("t2.m1.razon.c", "El estado sí es el correcto, pero la recompensa no: aquí <em>toda</em> transición vale −1, nunca 0. La dinámica es conjunta sobre (s′, r)."),
+    d: t("t2.m1.razon.d", "Desde 3 hacia la derecha se sale del tablero, así que el agente se queda en 3 — y cobra igualmente su −1."),
   };
 
   const zonaPreguntas = $("#m1-preguntas");
@@ -173,17 +189,18 @@ function moduloDinamica() {
       zonaRespuesta.hidden = false;
       zonaRespuesta.dataset.estado = valor > 0 ? "ok" : "mal";
       zonaRespuesta.innerHTML =
-        `<strong>${p.texto} = ${num(valor, 2)}</strong><br>${razones[p.texto]}`;
+        `<strong>${p.texto} = ${num(valor, 2)}</strong><br>${razones[p.id]}`;
     });
     zonaPreguntas.appendChild(boton);
   });
 
   const { pares, ramas } = cuentaTransiciones(mdp3);
-  $("#m1-recuento").innerHTML =
-    `8 estados no terminales × 4 acciones = <strong>${pares} pares (s, a)</strong>
+  $("#m1-recuento").innerHTML = t("t2.m1.recuento",
+    `8 estados no terminales × 4 acciones = <strong>{pares} pares (s, a)</strong>
      — el «cubo de profundidad 4» de la diapositiva. Como aquí la dinámica es
-     determinista, cada par tiene una sola rama: ${ramas} transiciones con
-     probabilidad no nula.`;
+     determinista, cada par tiene una sola rama: {ramas} transiciones con
+     probabilidad no nula.`,
+    { pares, ramas });
 
   dibujar();
   repintadores.push(dibujar);
@@ -222,7 +239,7 @@ function moduloDinamica() {
       correcta: 0,
       explicacion: "La acción existe y se ejecuta; simplemente el estado siguiente coincide con el actual. Y como <em>toda</em> transición da \\(-1\\), chocar contra la pared cuesta lo mismo que avanzar: por eso la política óptima nunca lo hace.",
     },
-  ]);
+  ], { claves: "t2.m1.quiz" });
 }
 
 /* ======================================================================= *
@@ -249,8 +266,8 @@ function moduloPolitica() {
   });
 
   grupoRadio($("#m2-presets"), [
-    { texto: "Equiprobable", valor: "equi", titulo: "π(a|s) = 0.25 para las cuatro acciones" },
-    { texto: "Determinista hacia T", valor: "det", titulo: "Una sola acción con probabilidad 1 en cada estado" },
+    { texto: t("t2.m2.preset.equi", "Equiprobable"), valor: "equi", titulo: "π(a|s) = 0.25 para las cuatro acciones" },
+    { texto: t("t2.m2.preset.det", "Determinista hacia T"), valor: "det", titulo: "Una sola acción con probabilidad 1 en cada estado" },
   ], "equi", (valor) => {
     compartido.politica = valor === "equi" ? politicaEquiprobable(mdp3) : haciaTerminal();
     compartido.cambio();
@@ -270,8 +287,10 @@ function moduloPolitica() {
         etiqueta: mdp3.etiquetas[e],
         color: esTerminal ? tono("--superficie-3") : tono("--superficie"),
         flechas,
-        titulo: esTerminal ? "Terminal" : DIRS
-          .map((d, a) => `${d}: ${num(compartido.politica[e][a], 2)}`).join("  "),
+        titulo: esTerminal
+          ? t("t2.terminal", "Terminal")
+          : DIRS.map((d, a) => `${nombreDir(d)}: ${num(compartido.politica[e][a], 2)}`)
+              .join("  "),
       });
     }
     pintar(zonaRejilla, rejilla({
@@ -283,8 +302,10 @@ function moduloPolitica() {
 
   function dibujarEditor() {
     if (mdp3.esTerminal(seleccion)) {
-      zonaEditor.innerHTML = `<p class="explicacion nota">
-        El estado terminal no tiene política: el episodio acaba ahí.</p>`;
+      zonaEditor.innerHTML = `<p class="explicacion nota">${
+        t("t2.m2.terminalSinPolitica",
+          "El estado terminal no tiene política: el episodio acaba ahí.")
+      }</p>`;
       return;
     }
     const fila = compartido.politica[seleccion];
@@ -293,11 +314,11 @@ function moduloPolitica() {
       <div class="controles" style="margin-bottom:0">
         ${ACCIONES_3X3.map((nombre, a) => `
           <div class="control">
-            <label class="literal">${nombre} <span class="valor" data-v="${a}">${num(fila[a], 2)}</span></label>
+            <label class="literal">${nombreAccion(nombre)} <span class="valor" data-v="${a}">${num(fila[a], 2)}</span></label>
             <input type="range" data-a="${a}" min="0" max="1" step="0.05" value="${fila[a]}">
           </div>`).join("")}
       </div>
-      <p class="explicacion nota">Las probabilidades se renormalizan solas para que sumen 1.</p>`;
+      <p class="explicacion nota">${t("t2.m2.renormaliza", "Las probabilidades se renormalizan solas para que sumen 1.")}</p>`;
 
     zonaEditor.querySelectorAll("input[data-a]").forEach((input) => {
       input.addEventListener("input", () => {
@@ -337,7 +358,7 @@ function moduloPolitica() {
       <tr>
         <td class="mono">${t}</td>
         <td class="mono">${mdp3.etiquetas[p.s]}</td>
-        <td>${ACCIONES_3X3[p.a]}</td>
+        <td>${nombreAccion(ACCIONES_3X3[p.a])}</td>
         <td class="mono">${p.r}</td>
         <td class="mono">${num(g[t], 3)}</td>
       </tr>`).join("");
@@ -349,11 +370,11 @@ function moduloPolitica() {
     zonaEpisodio.innerHTML = `
       <div class="metricas">
         <div class="metrica">
-          <div class="etiq">Pasos hasta T</div>
+          <div class="etiq">${t("t2.m2.pasosHastaT", "Pasos hasta T")}</div>
           <div class="cifra">${terminado ? pasos.length : "> 300"}</div>
         </div>
         <div class="metrica">
-          <div class="etiq">Retorno G<sub>0</sub></div>
+          <div class="etiq">${t("t2.m2.retornoG0", "Retorno G<sub>0</sub>")}</div>
           <div class="cifra ${g[0] > -6 ? "buena" : "mala"}">${num(g[0], 2)}</div>
         </div>
       </div>
@@ -367,7 +388,8 @@ function moduloPolitica() {
         </table>
       </div>
       ${pasos.length > maxFilas
-        ? `<p class="explicacion nota">… y ${pasos.length - maxFilas} pasos más.</p>` : ""}`;
+        ? `<p class="explicacion nota">${t("t2.m2.masPasos", "… y {n} pasos más.",
+            { n: pasos.length - maxFilas })}</p>` : ""}`;
     renderizarMatematicas(zonaEpisodio);
   });
 
@@ -408,7 +430,7 @@ function moduloPolitica() {
       correcta: 0,
       explicacion: "El orden entre políticas se define estado a estado: \\(\\pi \\ge \\pi' \\iff v_\\pi(s)\\ge v_{\\pi'}(s)\\) para todo \\(s\\). Además un episodio suelto es una muestra: hay que mirar el valor esperado, que es justo lo que calcula el módulo 3.",
     },
-  ]);
+  ], { claves: "t2.m2.quiz" });
 }
 
 /* ======================================================================= *
@@ -430,7 +452,7 @@ function moduloValores() {
 
   grupoRadio($("#m3-vista"), [
     { texto: "v(s)", valor: "v" },
-    { texto: "q(s,a)", valor: "q", titulo: "Los cuatro valores de acción, en cuñas" },
+    { texto: t("t2.m3.vista.q", "q(s,a)"), valor: "q", titulo: "Los cuatro valores de acción, en cuñas" },
   ], "v", (valor) => { vista = valor; dibujar(); });
 
   $("#m3-gamma").addEventListener("input", (ev) => {
@@ -452,9 +474,10 @@ function moduloValores() {
   $("#m3-resolver").addEventListener("click", () => {
     const solucion = evaluarLineal(mdp3, compartido.politica, gamma);
     if (!solucion) {
-      zonaNota.innerHTML = `<strong>El sistema es singular.</strong> Con esta política y
-        \\(\\gamma = 1\\) hay estados desde los que nunca se alcanza T, así que el valor
-        no está definido: el retorno diverge. Baja \\(\\gamma\\) o cambia la política.`;
+      zonaNota.innerHTML = t("t2.m3.singular",
+        `<strong>El sistema es singular.</strong> Con esta política y
+         \\(\\gamma = 1\\) hay estados desde los que nunca se alcanza T, así que el valor
+         no está definido: el retorno diverge. Baja \\(\\gamma\\) o cambia la política.`);
       renderizarMatematicas(zonaNota);
       return;
     }
@@ -533,7 +556,7 @@ function moduloValores() {
               mejor: Math.abs(valor - mejor) < 1e-9,
             };
           }),
-          titulo: mdp3.acciones.map((n, a) => `q(${mdp3.etiquetas[s]}, ${n}) = ${num(valores[a], 3)}`).join("\n"),
+          titulo: mdp3.acciones.map((n, a) => `q(${mdp3.etiquetas[s]}, ${nombreAccion(n)}) = ${num(valores[a], 3)}`).join("\n"),
         });
       } else {
         celdas.push({
@@ -548,20 +571,26 @@ function moduloValores() {
     }
 
     pintar(zonaRejilla, rejilla({ celdas, lado: 88 }));
-    titulo.innerHTML = vista === "v" ? "v<sub>π</sub>(s)" : "q<sub>π</sub>(s,a) — la cuña resaltada es la mejor acción";
+    titulo.innerHTML = vista === "v"
+      ? t("t2.m3.titulo.v", "v<sub>π</sub>(s)")
+      : t("t2.m3.titulo.q", "q<sub>π</sub>(s,a) — la cuña resaltada es la mejor acción");
 
     $("#m3-ecuaciones").textContent = String(mdp3.nEstados);
-    $("#m3-barridos").textContent = exacto ? "exacto" : String(barridos);
+    $("#m3-barridos").textContent =
+      exacto ? t("t2.m3.exacto", "exacto") : String(barridos);
     $("#m3-delta").textContent = ultimoDelta === null ? "—" : num(ultimoDelta, 4);
 
     zonaNota.innerHTML = exacto
-      ? `Resuelto como sistema lineal: <strong>${mdp3.nEstados} ecuaciones con ${mdp3.nEstados}
-         incógnitas</strong> (8 estados más el terminal, cuyo valor es 0 por definición).
-         Es la respuesta a la pregunta de la diapositiva.`
-      : `Cada barrido aplica la ecuación de Bellman a todos los estados a la vez. Fíjate en
-         que la información va «goteando» desde T hacia atrás: en el primer barrido solo
-         cambian los estados que tocan el terminal. Eso es exactamente lo que hará la
-         programación dinámica del Tema 3.`;
+      ? t("t2.m3.nota.exacto",
+          `Resuelto como sistema lineal: <strong>{n} ecuaciones con {n}
+           incógnitas</strong> (8 estados más el terminal, cuyo valor es 0 por definición).
+           Es la respuesta a la pregunta que deja abierta el material.`,
+          { n: mdp3.nEstados })
+      : t("t2.m3.nota.iterativo",
+          `Cada barrido aplica la ecuación de Bellman a todos los estados a la vez. Fíjate en
+           que la información va «goteando» desde T hacia atrás: en el primer barrido solo
+           cambian los estados que tocan el terminal. Eso es exactamente lo que hará la
+           programación dinámica del Tema 3.`);
 
     const filas = [];
     for (let s = 0; s < mdp3.nEstados; s++) {
@@ -574,7 +603,7 @@ function moduloValores() {
     }
     zonaTabla.innerHTML = `
       <thead><tr><th>s</th><th>v<sub>π</sub></th>
-        ${mdp3.acciones.map((n) => `<th>q(·,${n})</th>`).join("")}</tr></thead>
+        ${mdp3.acciones.map((n) => `<th>q(·,${nombreAccion(n)})</th>`).join("")}</tr></thead>
       <tbody>${filas.join("")}</tbody>`;
     renderizarMatematicas(zonaNota);
   }
@@ -617,7 +646,7 @@ function moduloValores() {
       correcta: 0,
       explicacion: "La matriz \\(\\mathbf{I}-\\gamma \\mathbf{P}_\\pi\\) es invertible con \\(\\gamma=1\\) siempre que el terminal se alcance con probabilidad 1 desde todo estado. Una política que se quedase dando vueltas sin llegar a T sí haría divergir el retorno, y ahí el sistema se vuelve singular.",
     },
-  ]);
+  ], { claves: "t2.m3.quiz" });
 }
 
 /* ======================================================================= *
@@ -672,9 +701,9 @@ function celdasNavegacion(mdpNav, { valores = null, politica = null, seleccion =
       borde: esRemolino ? tono("--mal") : null,
       flechas,
       titulo: [
-        `Estado ${mdpNav.etiquetas[s]}`,
-        esRemolino ? "Remolino: entrar aquí cuesta −5" : null,
-        conViento ? `Viento: sopla hacia el ${conViento}` : null,
+        t("t2.estadoN", "Estado {e}", { e: mdpNav.etiquetas[s] }),
+        esRemolino ? t("t2.m4.remolino", "Remolino: entrar aquí cuesta −5") : null,
+        conViento ? t("t2.m4.viento", "Viento: sopla hacia el {dir}", { dir: conViento }) : null,
         valores ? `v = ${num(valores[s], 3)}` : null,
       ].filter(Boolean).join("\n"),
     });
@@ -683,8 +712,10 @@ function celdasNavegacion(mdpNav, { valores = null, politica = null, seleccion =
 }
 
 const BANDAS_VIENTO = [
-  { fila: 0, col: 2, ancho: 2, alto: 1, color: "none", texto: "Viento Este", textoArriba: true },
-  { fila: 3, col: 1, ancho: 1, alto: 1, color: "none", texto: "Viento Sur" },
+  { fila: 0, col: 2, ancho: 2, alto: 1, color: "none",
+    texto: t("t2.banda.vientoEste", "Viento Este"), textoArriba: true },
+  { fila: 3, col: 1, ancho: 1, alto: 1, color: "none",
+    texto: t("t2.banda.vientoSur", "Viento Sur") },
 ];
 
 function moduloBackup() {
@@ -698,10 +729,10 @@ function moduloBackup() {
   let seleccion = 0; // estado "1", el del ejemplo de la diapositiva
 
   grupoRadio($("#m4-atajos"), [
-    { texto: "Estado 1", valor: 1, titulo: "El ejemplo resuelto en la diapositiva 18" },
-    { texto: "Estado 3", valor: 3, titulo: "Ejercicio abierto de la diapositiva 18" },
-    { texto: "Estado 4", valor: 4, titulo: "Ejercicio abierto de la diapositiva 18" },
-    { texto: "Estado 11", valor: 11, titulo: "El que pide el problema 3 de Problemas.pdf" },
+    { texto: t("t2.m4.atajo.1", "Estado 1"), valor: 1, titulo: t("t2.m4.atajo.1.ayuda", "El ejemplo resuelto en la diapositiva 18") },
+    { texto: t("t2.m4.atajo.3", "Estado 3"), valor: 3, titulo: t("t2.m4.atajo.3.ayuda", "Ejercicio abierto de la diapositiva 18") },
+    { texto: t("t2.m4.atajo.4", "Estado 4"), valor: 4, titulo: t("t2.m4.atajo.4.ayuda", "Ejercicio abierto de la diapositiva 18") },
+    { texto: t("t2.m4.atajo.11", "Estado 11"), valor: 11, titulo: t("t2.m4.atajo.11.ayuda", "El que pide el problema 3 de Problemas.pdf") },
   ], 1, (etiqueta) => {
     seleccion = mdpNav.etiquetas.indexOf(String(etiqueta));
     dibujar();
@@ -722,10 +753,10 @@ function moduloBackup() {
     }));
 
     const etiqueta = mdpNav.etiquetas[seleccion];
-    titulo.textContent = `Diagrama de backup del estado ${etiqueta}`;
+    titulo.textContent = t("t2.m4.tituloArbol", "Diagrama de backup del estado {e}", { e: etiqueta });
 
     if (mdpNav.esTerminal(seleccion)) {
-      zonaArbol.innerHTML = `<p class="suave">T es terminal: no tiene diagrama de backup.</p>`;
+      zonaArbol.innerHTML = `<p class="suave">${t("t2.m4.terminalSinArbol", "T es terminal: no tiene diagrama de backup.")}</p>`;
       zonaTabla.innerHTML = "";
       return;
     }
@@ -745,22 +776,23 @@ function moduloBackup() {
       <tbody>${filas}</tbody>`;
 
     const sucesores = estadosSucesores(mdpNav, seleccion).map((s) => mdpNav.etiquetas[s]);
-    $("#m4-leyenda").innerHTML = `
-      Azul: viento (celdas 3 y 4). Verde: viento (celdas 10 y 14). Rojo: el remolino
-      (estado 8), donde <em>entrar</em> cuesta −5. T solo se alcanza desde el 16 yendo al este.
-      <br><strong>Para actualizar v(${etiqueta}) hacen falta los valores de:</strong>
-      <span class="mono">${sucesores.join(", ")}</span>.`;
+    $("#m4-leyenda").innerHTML =
+      t("t2.m4.leyenda",
+        `Azul: viento (celdas 3 y 4). Verde: viento (celdas 10 y 14). Rojo: el remolino
+         (estado 8), donde <em>entrar</em> cuesta −5. T solo se alcanza desde el 16 yendo al este.`) +
+      `<br><strong>${t("t2.m4.paraActualizar", "Para actualizar v({e}) hacen falta los valores de:", { e: etiqueta })}</strong>
+       <span class="mono">${sucesores.join(", ")}</span>.`;
   }
 
-  $("#m4-aviso").innerHTML = `
-    <strong>Sobre el sentido del viento.</strong> El enunciado dice «Viento Este» y «Viento
-    Sur» sin aclarar si el viento va hacia ese punto cardinal o viene de él. Lo fija la
-    trayectoria T1 del problema 3 de <span class="mono">Problemas.pdf</span>:
-    <span class="mono">… (2,right), (3,right), (3,down) …</span> — desde el estado 3 el
-    agente va al este y <em>no se mueve</em>. Como la celda 4 existe, no puede ser un rebote:
-    solo cabe la regla «en dirección opuesta al viento → 0.25 de no moverse». Por tanto el
-    viento Este <em>procede</em> del este y sopla hacia el oeste, y el viento Sur sopla hacia
-    el norte. El interruptor de arriba permite ver el criterio contrario.`;
+  $("#m4-aviso").innerHTML = t("t2.m4.aviso",
+    `<strong>Sobre el sentido del viento.</strong> El enunciado dice «Viento Este» y «Viento
+     Sur» sin aclarar si el viento va hacia ese punto cardinal o viene de él. Lo fija la
+     trayectoria T1 del problema 3 de <span class="mono">Problemas.pdf</span>:
+     <span class="mono">… (2,right), (3,right), (3,down) …</span> — desde el estado 3 el
+     agente va al este y <em>no se mueve</em>. Como la celda 4 existe, no puede ser un rebote:
+     solo cabe la regla «en dirección opuesta al viento → 0.25 de no moverse». Por tanto el
+     viento Este <em>procede</em> del este y sopla hacia el oeste, y el viento Sur sopla hacia
+     el norte. El interruptor de arriba permite ver el criterio contrario.`);
 
   dibujar();
   repintadores.push(dibujar);
@@ -799,7 +831,7 @@ function moduloBackup() {
       correcta: 0,
       explicacion: "El primer nivel de ramificación lo elige el <em>agente</em> con \\(\\pi(a\\mid s)\\); el segundo lo elige el <em>entorno</em> con \\(p(s',r\\mid s,a)\\). Los puntos negros son la frontera entre ambos.",
     },
-  ]);
+  ], { claves: "t2.m4.quiz" });
 }
 
 /* ======================================================================= *
@@ -817,8 +849,8 @@ function moduloOptimalidad() {
   let verFlechas = true;
 
   grupoRadio($("#m5-modo"), [
-    { texto: "Política óptima", valor: "optimo", titulo: "Ecuación de optimalidad de Bellman" },
-    { texto: "Política equiprobable", valor: "equi", titulo: "Evaluación de una política que se mueve al azar" },
+    { texto: t("t2.m5.modo.optima", "Política óptima"), valor: "optimo", titulo: t("t2.m5.modo.optima.ayuda", "Ecuación de optimalidad de Bellman") },
+    { texto: t("t2.m5.modo.equi", "Política equiprobable"), valor: "equi", titulo: "Evaluación de una política que se mueve al azar" },
   ], "optimo", (valor) => { modo = valor; dibujar(); });
 
   $("#m5-gamma").addEventListener("input", (ev) => {
@@ -853,25 +885,33 @@ function moduloOptimalidad() {
     });
     pintar(zonaRejilla, rejilla({ celdas, lado: 72, margen: 34, etiquetasBanda: BANDAS_VIENTO }));
 
-    titulo.innerHTML = esOptimo ? "v<sub>*</sub>(s) y π<sub>*</sub>" : "v<sub>π</sub>(s) con π equiprobable";
+    titulo.innerHTML = esOptimo
+      ? t("t2.m5.titulo.optima", "v<sub>*</sub>(s) y π<sub>*</sub>")
+      : t("t2.m5.titulo.equi", "v<sub>π</sub>(s) con π equiprobable");
     $("#m5-cuantas").textContent = esOptimo ? String(cuantas) : "—";
     $("#m5-v1").textContent = num(v[0], 2);
 
+    const notaDescuento = gamma < 1
+      ? " " + t("t2.m5.nota.descuento",
+          "Con \\(\\gamma = {g}\\) los empates cambian: el descuento altera qué caminos son indistinguibles.",
+          { g: numMat(gamma, 2) })
+      : "";
     $("#m5-nota").innerHTML = esOptimo
-      ? `Hay <strong>${conEmpate} estados con empate</strong> en el argmax, y por tanto
-         <strong>${cuantas} políticas deterministas óptimas distintas</strong>: esa es la
-         respuesta a la pregunta de la diapositiva. Todas comparten la misma \\(v_*\\) —
-         la función de valor óptima es única, la política óptima no.
-         ${gamma < 1 ? `Con \\(\\gamma = ${numMat(gamma, 2)}\\) los empates cambian: el descuento
-         altera qué caminos son indistinguibles.` : ""}`
-      : `Moverse al azar es carísimo: compara este \\(v_\\pi\\) con el \\(v_*\\) de la otra
-         vista. La diferencia en cada celda es lo que se gana por actuar bien, y es máxima
-         cerca del remolino, donde una acción equivocada cuesta −5.`;
+      ? t("t2.m5.nota.optima",
+          `Hay <strong>{empates} estados con empate</strong> en el argmax, y por tanto
+           <strong>{cuantas} políticas deterministas óptimas distintas</strong>: esa es la
+           respuesta a la pregunta que deja abierta el material. Todas comparten la misma
+           \\(v_*\\) — la función de valor óptima es única, la política óptima no.`,
+          { empates: conEmpate, cuantas }) + notaDescuento
+      : t("t2.m5.nota.equi",
+          `Moverse al azar es carísimo: compara este \\(v_\\pi\\) con el \\(v_*\\) de la otra
+           vista. La diferencia en cada celda es lo que se gana por actuar bien, y es máxima
+           cerca del remolino, donde una acción equivocada cuesta −5.`);
 
     const filas = [];
     for (let s = 0; s < mdpNav.nEstados; s++) {
       if (mdpNav.esTerminal(s)) continue;
-      const acciones = greedy[s].map((a) => mdpNav.acciones[a]).join(" / ");
+      const acciones = greedy[s].map((a) => nombreDir(mdpNav.acciones[a])).join(" / ");
       filas.push(`<tr${greedy[s].length > 1 ? ' class="destacada"' : ""}>
         <td class="mono">${mdpNav.etiquetas[s]}</td>
         <td class="mono">${num(v[s], 2)}</td>
@@ -879,7 +919,7 @@ function moduloOptimalidad() {
       </tr>`);
     }
     zonaTabla.innerHTML = `
-      <thead><tr><th>s</th><th>v(s)</th><th>acción(es) greedy</th></tr></thead>
+      <thead><tr><th>s</th><th>v(s)</th><th>${t("t2.m5.thGreedy", "acción(es) greedy")}</th></tr></thead>
       <tbody>${filas.join("")}</tbody>`;
     renderizarMatematicas($("#m5-nota"));
   }
@@ -921,7 +961,7 @@ function moduloOptimalidad() {
       correcta: 0,
       explicacion: "El remolino no atrapa ni termina el episodio: solo encarece las transiciones que acaban en él. Por eso la política óptima lo rodea, y por eso los estados desde los que es difícil evitarlo también pierden valor.",
     },
-  ]);
+  ], { claves: "t2.m5.quiz" });
 }
 
 /* ======================================================================= *

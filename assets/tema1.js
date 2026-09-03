@@ -9,6 +9,8 @@ import {
   COLORES_SERIE,
 } from "./nucleo.js";
 
+import { t } from "./i18n.js";
+
 import {
   TIPOS, crearBandit, crearBanditManual, ejecutar, barridoParametros,
 } from "./bandits.js";
@@ -94,8 +96,11 @@ function moduloBandit() {
 
   const botonVerdaderos = document.createElement("button");
   botonVerdaderos.type = "button";
-  botonVerdaderos.textContent = "Ver q*(a)";
-  botonVerdaderos.title = "Revelar los valores verdaderos, que el agente no conoce";
+  botonVerdaderos.textContent = t("t1.m1.verQ", "Ver q*(a)");
+  botonVerdaderos.title = t(
+    "t1.m1.verQ.ayuda",
+    "Revelar los valores verdaderos, que el agente no conoce",
+  );
   botonVerdaderos.addEventListener("click", () => {
     mostrarVerdaderos = !mostrarVerdaderos;
     botonVerdaderos.setAttribute("aria-pressed", String(mostrarVerdaderos));
@@ -120,7 +125,7 @@ function moduloBandit() {
         <td class="mono suave">${mostrarVerdaderos ? num(VERDADEROS[a], 1) : "?"}</td>
       </tr>`).join("");
     zonaTabla.innerHTML = `
-      <thead><tr><th>Acción</th><th>N(a)</th><th>Q<sub>t</sub>(a)</th><th>q<sub>*</sub>(a)</th></tr></thead>
+      <thead><tr><th>${t("t1.m1.thAccion", "Acción")}</th><th>N(a)</th><th>Q<sub>t</sub>(a)</th><th>q<sub>*</sub>(a)</th></tr></thead>
       <tbody>${filas}</tbody>`;
 
     $("#m1-tiradas").textContent = String(bandit.tiradas);
@@ -131,28 +136,35 @@ function moduloBandit() {
 
     const ultimas = bandit.historial.slice(-14).reverse();
     zonaHistorial.innerHTML = ultimas.length
-      ? `<thead><tr><th>t</th><th>A<sub>t</sub></th><th>R<sub>t</sub></th><th>Q tras</th></tr></thead>
+      ? `<thead><tr><th>t</th><th>A<sub>t</sub></th><th>R<sub>t</sub></th><th>${t("t1.m1.thQTras", "Q tras")}</th></tr></thead>
          <tbody>${ultimas.map((p) => `
            <tr><td class="mono">${p.t}</td><td>${NOMBRES[p.a]}</td>
            <td class="mono">${num(p.r, 2)}</td><td class="mono">${num(p.Q, 3)}</td></tr>`).join("")}</tbody>`
-      : `<tbody><tr><td class="suave">Todavía no has tirado de ninguna palanca.</td></tr></tbody>`;
+      : `<tbody><tr><td class="suave">${t("t1.m1.sinTiradas", "Todavía no has tirado de ninguna palanca.")}</td></tr></tbody>`;
 
     if (bandit.tiradas === 0) {
-      zonaDiagnostico.innerHTML = `Con \\(Q_0(a) = 0\\) para todos, la política greedy no
-        tiene con qué decidir: cualquier acción es «la mejor». Prueba uno.`;
+      zonaDiagnostico.innerHTML = t(
+        "t1.m1.diag.vacio",
+        `Con \\(Q_0(a) = 0\\) para todos, la política greedy no tiene con qué
+         decidir: cualquier acción es «la mejor». Prueba uno.`,
+      );
     } else {
       const sinProbar = NOMBRES.filter((_, a) => bandit.N[a] === 0);
       const acierta = greedy === bandit.accionOptima;
-      zonaDiagnostico.innerHTML = `
-        La política <em>greedy</em> elegiría ahora <strong>${NOMBRES[greedy]}</strong>
-        (\\(Q_t = ${numMat(bandit.Q[greedy], 3)}\\)).
-        ${acierta
-          ? "Acierta — pero fíjate en si lo ha hecho por conocimiento o por suerte."
-          : `<strong>Y se equivoca:</strong> el mejor es ${NOMBRES[bandit.accionOptima]}.`}
-        ${sinProbar.length
-          ? ` Todavía no has probado ${sinProbar.join(" ni ")}: greedy nunca lo hará por su cuenta,
-             porque explotar es siempre preferir lo que ya conoce.`
-          : ""}`;
+      const veredicto = acierta
+        ? t("t1.m1.diag.acierta", "Acierta — pero fíjate en si lo ha hecho por conocimiento o por suerte.")
+        : t("t1.m1.diag.falla", "<strong>Y se equivoca:</strong> el mejor es {mejor}.",
+            { mejor: NOMBRES[bandit.accionOptima] });
+      const pendientes = sinProbar.length
+        ? t("t1.m1.diag.sinProbar",
+            " Todavía no has probado {lista}: greedy nunca lo hará por su cuenta, porque explotar es siempre preferir lo que ya conoce.",
+            { lista: sinProbar.join(t("t1.m1.diag.ni", " ni ")) })
+        : "";
+      zonaDiagnostico.innerHTML =
+        t("t1.m1.diag.elegiria",
+          "La política <em>greedy</em> elegiría ahora <strong>{accion}</strong> (\\(Q_t = {valor}\\)).",
+          { accion: NOMBRES[greedy], valor: numMat(bandit.Q[greedy], 3) }) +
+        " " + veredicto + pendientes;
     }
     renderizarMatematicas(zonaDiagnostico);
   }
@@ -193,7 +205,7 @@ function moduloBandit() {
       correcta: 0,
       explicacion: "Es la plantilla que volverás a ver en Monte Carlo, en TD, en SARSA y en aproximación de funciones. Lo único que cambia entre métodos es qué se pone como <em>objetivo</em> y qué se usa como <em>StepSize</em>.",
     },
-  ]);
+  ], { claves: "t1.m1.quiz" });
 }
 
 /* ======================================================================= *
@@ -214,17 +226,23 @@ function moduloTestbed() {
 
     const ordenados = [...q].sort((a, b) => b - a);
     const brecha = ordenados[0] - ordenados[1];
-    $("#m2-nota").innerHTML = `
-      En esta instancia el mejor brazo es el <strong>${q.indexOf(ordenados[0]) + 1}</strong>
-      con \\(q_* = ${numMat(ordenados[0], 2)}\\), y le saca
-      <strong>${num(brecha, 2)}</strong> al segundo.
-      ${brecha < 0.25
-        ? "Es una brecha <em>muy pequeña</em>: hará falta muchísima exploración para distinguirlos, y la curva de «% de acción óptima» subirá despacio aunque el agente esté haciéndolo bien en recompensa."
-        : brecha > 0.8
-          ? "Es una brecha <em>grande</em>: casi cualquier estrategia lo encontrará pronto."
-          : "Es una brecha intermedia, la situación típica."}
-      Prueba varias semillas: las curvas del módulo 3 promedian cientos de instancias como
-      esta, y por eso salen suaves.`;
+    const juicio = brecha < 0.25
+      ? t("t1.m2.brecha.pequena", "Es una brecha <em>muy pequeña</em>: hará falta muchísima exploración para distinguirlos, y la curva de «% de acción óptima» subirá despacio aunque el agente esté haciéndolo bien en recompensa.")
+      : brecha > 0.8
+        ? t("t1.m2.brecha.grande", "Es una brecha <em>grande</em>: casi cualquier estrategia lo encontrará pronto.")
+        : t("t1.m2.brecha.media", "Es una brecha intermedia, la situación típica.");
+
+    $("#m2-nota").innerHTML =
+      t("t1.m2.nota",
+        "En esta instancia el mejor brazo es el <strong>{brazo}</strong> con \\(q_* = {valor}\\), y le saca <strong>{brecha}</strong> al segundo.",
+        {
+          brazo: q.indexOf(ordenados[0]) + 1,
+          valor: numMat(ordenados[0], 2),
+          brecha: num(brecha, 2),
+        }) +
+      " " + juicio + " " +
+      t("t1.m2.nota.cierre",
+        "Prueba varias semillas: las curvas del módulo 3 promedian cientos de instancias como esta, y por eso salen suaves.");
     renderizarMatematicas($("#m2-nota"));
   }
 
@@ -265,7 +283,7 @@ function moduloTestbed() {
       correcta: 0,
       explicacion: "Lo que se compara no es el resultado en <em>un</em> bandit sino el comportamiento medio sobre la distribución de problemas. Genera varias semillas aquí y verás lo distintas que pueden ser dos instancias.",
     },
-  ]);
+  ], { claves: "t1.m2.quiz" });
 }
 
 /* ======================================================================= *
@@ -274,23 +292,23 @@ function moduloTestbed() {
 
 const ESTRATEGIAS = [
   {
-    id: "eps01", nombre: "ε-greedy, ε = 0.1", parametro: "ε", valor: 0.1, activa: true,
+    id: "eps01", nombre: t("t1.estr.eps01", "ε-greedy, ε = 0.1"), parametro: "ε", valor: 0.1, activa: true,
     config: (v) => ({ tipo: TIPOS.EPSILON, epsilon: v, alpha: null, q0: 0 }),
   },
   {
-    id: "eps001", nombre: "ε-greedy, ε = 0.01", parametro: "ε", valor: 0.01, activa: true,
+    id: "eps001", nombre: t("t1.estr.eps001", "ε-greedy, ε = 0.01"), parametro: "ε", valor: 0.01, activa: true,
     config: (v) => ({ tipo: TIPOS.EPSILON, epsilon: v, alpha: null, q0: 0 }),
   },
   {
-    id: "greedy", nombre: "greedy (ε = 0)", parametro: "—", valor: 0, activa: true,
+    id: "greedy", nombre: t("t1.estr.greedy", "greedy (ε = 0)"), parametro: "—", valor: 0, activa: true,
     config: () => ({ tipo: TIPOS.EPSILON, epsilon: 0, alpha: null, q0: 0 }),
   },
   {
-    id: "alfa", nombre: "ε-greedy 0.1 con paso constante α", parametro: "α", valor: 0.1, activa: false,
+    id: "alfa", nombre: t("t1.estr.alfa", "ε-greedy 0.1 con paso constante α"), parametro: "α", valor: 0.1, activa: false,
     config: (v) => ({ tipo: TIPOS.EPSILON, epsilon: 0.1, alpha: v, q0: 0 }),
   },
   {
-    id: "optimista", nombre: "greedy optimista (α = 0.1)", parametro: "Q₀", valor: 5, activa: false,
+    id: "optimista", nombre: t("t1.estr.optimista", "greedy optimista (α = 0.1)"), parametro: "Q₀", valor: 5, activa: false,
     config: (v) => ({ tipo: TIPOS.OPTIMISTA, epsilon: 0, alpha: 0.1, q0: v }),
   },
   {
@@ -298,7 +316,7 @@ const ESTRATEGIAS = [
     config: (v) => ({ tipo: TIPOS.UCB, c: v, alpha: null, q0: 0 }),
   },
   {
-    id: "gradiente", nombre: "gradient bandit", parametro: "α", valor: 0.1, activa: false,
+    id: "gradiente", nombre: t("t1.estr.gradiente", "gradient bandit"), parametro: "α", valor: 0.1, activa: false,
     config: (v) => ({ tipo: TIPOS.GRADIENTE, alpha: v, conBaseline: true }),
   },
 ];
@@ -413,11 +431,13 @@ function moduloComparador() {
     }));
 
     pintar($("#m3-gr-recompensa"), graficaLineas(series, {
-      ancho: 900, alto: 300, ejeX: "Pasos", ejeY: "Recompensa media", yMin: 0,
+      ancho: 900, alto: 300, yMin: 0,
+      ejeX: t("eje.pasos", "Pasos"), ejeY: t("eje.recompensaMedia", "Recompensa media"),
     }));
     pintar($("#m3-gr-optimo"), graficaLineas(seriesOptimo, {
-      ancho: 900, alto: 300, ejeX: "Pasos", ejeY: "% acción óptima",
-      yMin: 0, yMax: 1, formatoY: (v) => `${Math.round(v * 100)} %`,
+      ancho: 900, alto: 300, yMin: 0, yMax: 1,
+      ejeX: t("eje.pasos", "Pasos"), ejeY: t("eje.pctOptimo", "% acción óptima"),
+      formatoY: (v) => `${Math.round(v * 100)}${t("pct.sufijo", " %")}`,
     }));
     $("#m3-leyenda").replaceChildren(leyenda(series));
 
@@ -433,9 +453,14 @@ function moduloComparador() {
       .sort((a, b) => b.valor - a.valor)[0];
 
     const partes = [
-      `Al final del horizonte (${config.pasos} pasos, promediando ${config.ejecuciones}
-       problemas) la estrategia que más veces acierta la acción óptima es
-       <strong>${mejor.nombre}</strong>, con ${pct(mejor.valor, 1)}.`,
+      t("t1.m3.lectura.mejor",
+        "Al final del horizonte ({pasos} pasos, promediando {runs} problemas) la estrategia que más veces acierta la acción óptima es <strong>{nombre}</strong>, con {pct}.",
+        {
+          pasos: config.pasos,
+          runs: config.ejecuciones,
+          nombre: mejor.nombre,
+          pct: pct(mejor.valor, 1),
+        }),
     ];
 
     const e01 = resultados.find((r) => r.id === "eps01");
@@ -443,21 +468,21 @@ function moduloComparador() {
     if (e01 && e001) {
       const cruce = buscarCruce(e001.optimo, e01.optimo);
       partes.push(cruce
-        ? `<strong>El cruce ocurre hacia el paso ${cruce}:</strong> a partir de ahí
-           ε = 0.01 supera a ε = 0.1. Explora diez veces menos, así que tarda mucho más
-           en encontrar el mejor brazo, pero una vez lo encuentra lo explota el 99 % del
-           tiempo en lugar del 90 %. Esa es la respuesta a la pregunta de la diapositiva.`
-        : `Con este horizonte todavía no se ve el cruce entre ε = 0.1 y ε = 0.01:
-           sube los pasos por encima de 5000 y vuelve a ejecutar.`);
+        ? t("t1.m3.lectura.cruce",
+            "<strong>El cruce ocurre hacia el paso {paso}:</strong> a partir de ahí ε = 0.01 supera a ε = 0.1. Explora diez veces menos, así que tarda mucho más en encontrar el mejor brazo, pero una vez lo encuentra lo explota el 99 % del tiempo en lugar del 90 %. Esa es la respuesta a la pregunta que deja abierta la figura del libro.",
+            { paso: cruce })
+        : t("t1.m3.lectura.sinCruce",
+            "Con este horizonte todavía no se ve el cruce entre ε = 0.1 y ε = 0.01: sube los pasos por encima de 5000 y vuelve a ejecutar."));
     }
 
     if (config.deriva > 0) {
-      partes.push(`Con el entorno en movimiento, el <strong>promedio muestral 1/n deja de
-        funcionar</strong>: reparte el mismo peso entre lo que vio al principio y lo que
-        acaba de ver, así que arrastra información caducada. El paso constante α mantiene
-        un promedio ponderado por recencia y sigue al óptimo. Es también la respuesta a
-        «¿se cumple \\(\\sum \\alpha_n^2 &lt; \\infty\\) para α constante?»: no se cumple,
-        y precisamente por eso el agente nunca deja de aprender.`);
+      partes.push(t("t1.m3.lectura.deriva",
+        `Con el entorno en movimiento, el <strong>promedio muestral 1/n deja de
+         funcionar</strong>: reparte el mismo peso entre lo que vio al principio y lo que
+         acaba de ver, así que arrastra información caducada. El paso constante α mantiene
+         un promedio ponderado por recencia y sigue al óptimo. Es también la respuesta a
+         «¿se cumple \\(\\sum \\alpha_n^2 &lt; \\infty\\) para α constante?»: no se cumple,
+         y precisamente por eso el agente nunca deja de aprender.`));
     }
 
     $("#m3-lectura").innerHTML = partes.join(" ");
@@ -519,7 +544,7 @@ function moduloComparador() {
       correcta: 0,
       explicacion: "Es exploración <em>por decepción</em>, y solo funciona al principio: cuando las estimaciones bajan al nivel real, el impulso se agota. Por eso es un truco de arranque y no una solución para entornos que cambian — pruébalo con la deriva activada y compáralo.",
     },
-  ]);
+  ], { claves: "t1.m3.quiz" });
 }
 
 /* ======================================================================= *
@@ -541,7 +566,7 @@ function moduloBarrido() {
 
   boton.addEventListener("click", async () => {
     boton.disabled = true;
-    boton.textContent = "Calculando…";
+    boton.textContent = t("boton.calculando", "Calculando…");
     progreso.hidden = false;
     progreso.firstElementChild.style.width = "0%";
     dibujarVacio("Calculando…");
@@ -564,7 +589,7 @@ function moduloBarrido() {
       $("#m4-lectura").textContent = `No se pudo completar el cálculo: ${error.message}`;
     } finally {
       boton.disabled = false;
-      boton.textContent = "Calcular";
+      boton.textContent = t("t1.m4.calcular", "Calcular");
       progreso.hidden = true;
     }
   });
@@ -591,25 +616,31 @@ function moduloBarrido() {
     pintar($("#m4-grafica"), graficaLineas(series, {
       ancho: 900, alto: 340, escalaX: "log2", ticksX: marcas,
       ejeX: "ε   ·   α   ·   c   ·   Q₀",
-      ejeY: `Recompensa media (${pasosDeUltimo} pasos)`,
+      ejeY: t("t1.m4.ejeY", "Recompensa media ({pasos} pasos)", { pasos: pasosDeUltimo }),
     }));
     $("#m4-leyenda").replaceChildren(leyenda(series));
 
     const resumen = ultimo.map((curva) => {
       const mejor = curva.medias.indexOf(Math.max(...curva.medias));
       const v = curva.valores[mejor];
-      return `<strong>${curva.nombre}</strong>: mejor con ${curva.parametro} =
-        ${v < 1 ? `1/${Math.round(1 / v)}` : v} (${num(curva.medias[mejor], 3)})`;
+      return t("t1.m4.resumen.item",
+        "<strong>{nombre}</strong>: mejor con {parametro} = {valor} ({media})",
+        {
+          nombre: curva.nombre,
+          parametro: curva.parametro,
+          valor: v < 1 ? `1/${Math.round(1 / v)}` : v,
+          media: num(curva.medias[mejor], 3),
+        });
     }).join(" · ");
 
-    $("#m4-lectura").innerHTML = `${resumen}.
-      Fíjate en que <em>todas</em> las curvas tienen forma de campana: pasarse de
-      exploración cuesta tanto como quedarse corto. Y en que el eje horizontal mezcla
-      parámetros que significan cosas distintas — la comparación válida es la altura del
-      máximo de cada curva, no su posición.`;
+    $("#m4-lectura").innerHTML = resumen + ". " + t("t1.m4.lectura",
+      `Fíjate en que <em>todas</em> las curvas tienen forma de campana: pasarse de
+       exploración cuesta tanto como quedarse corto. Y en que el eje horizontal mezcla
+       parámetros que significan cosas distintas — la comparación válida es la altura del
+       máximo de cada curva, no su posición.`);
   }
 
-  dibujarVacio("Pulsa «Calcular»: son unos segundos de simulación.");
+  dibujarVacio(t("t1.m4.pulsaCalcular", "Pulsa «Calcular»: son unos segundos de simulación."));
   repintadores.push(dibujar);
 
   crearQuiz($("#m4-quiz"), [
@@ -635,7 +666,7 @@ function moduloBarrido() {
       correcta: 0,
       explicacion: "Es un gráfico de barrido, no un espacio de parámetros común: cada curva recorre su propio parámetro en escala logarítmica. Compartir el eje es una comodidad visual del libro, y una fuente clásica de malinterpretación.",
     },
-  ]);
+  ], { claves: "t1.m4.quiz" });
 }
 
 /* ======================================================================= *
@@ -649,24 +680,27 @@ function moduloPuente() {
 
   const REGIMENES = {
     bandit: {
-      nombre: "k-armed bandit",
-      descripcion: `El entorno no tiene estados: cada decisión es independiente de las
-        anteriores, siempre estás en la misma situación. El agente solo tiene que estimar
-        \\(q_*(a)\\), un número por acción. Es «RL sin estados», y es todo el Tema 1.`,
+      nombre: t("t1.m5.reg.bandit.nombre", "k-armed bandit"),
+      descripcion: t("t1.m5.reg.bandit.desc",
+        `El entorno no tiene estados: cada decisión es independiente de las
+         anteriores, siempre estás en la misma situación. El agente solo tiene que estimar
+         \\(q_*(a)\\), un número por acción. Es «RL sin estados», y es todo el Tema 1.`),
     },
     contextual: {
-      nombre: "Bandit contextual (asociativo)",
-      descripcion: `Ahora el entorno presenta situaciones distintas y el agente debe
-        aprender \\(q_*(s,a)\\): qué acción es buena <em>en cada contexto</em>. Pero sus
-        acciones <strong>no cambian</strong> qué contexto vendrá después, así que sigue sin
-        haber consecuencias a largo plazo: basta con ser codicioso en cada situación.`,
+      nombre: t("t1.m5.reg.contextual.nombre", "Bandit contextual (asociativo)"),
+      descripcion: t("t1.m5.reg.contextual.desc",
+        `Ahora el entorno presenta situaciones distintas y el agente debe
+         aprender \\(q_*(s,a)\\): qué acción es buena <em>en cada contexto</em>. Pero sus
+         acciones <strong>no cambian</strong> qué contexto vendrá después, así que sigue sin
+         haber consecuencias a largo plazo: basta con ser codicioso en cada situación.`),
     },
     mdp: {
-      nombre: "Entorno general de RL — un MDP",
-      descripcion: `Las acciones influyen en los estados futuros, así que una recompensa
-        alta ahora puede costar recompensas mayores después (<em>delayed reward</em>). Ya no
-        basta con maximizar \\(R_{t+1}\\): hay que maximizar el <strong>retorno</strong>
-        \\(G_t\\). Aquí empieza el Tema 2.`,
+      nombre: t("t1.m5.reg.mdp.nombre", "Entorno general de RL — un MDP"),
+      descripcion: t("t1.m5.reg.mdp.desc",
+        `Las acciones influyen en los estados futuros, así que una recompensa
+         alta ahora puede costar recompensas mayores después (<em>delayed reward</em>). Ya no
+         basta con maximizar \\(R_{t+1}\\): hay que maximizar el <strong>retorno</strong>
+         \\(G_t\\). Aquí empieza el Tema 2.`),
     },
   };
 
@@ -733,18 +767,20 @@ function moduloPuente() {
     svg.appendChild(el("text", {
       x: 365, y: 196, "text-anchor": "middle", "font-size": 11,
       "font-weight": 700, fill: suave, "letter-spacing": "1",
-    }, "ENTORNO"));
+    }, t("t1.m5.diag.entorno", "ENTORNO")));
 
-    caja(275, 72, 180, 46, "PROCESO DE TRANSICIÓN", {
+    caja(275, 72, 180, 46, t("t1.m5.diag.transicion", "PROCESO DE TRANSICIÓN"), {
       atenuada: !hayTransicion,
       discontinua: !hayTransicion,
       borde: hayTransicion ? tono("--acento") : linea,
       grosor: hayTransicion ? 2 : 1.4,
     });
-    caja(275, 130, 180, 46, "PROCESO DE RECOMPENSA", { borde: tono("--azul") });
+    caja(275, 130, 180, 46, t("t1.m5.diag.recompensa", "PROCESO DE RECOMPENSA"),
+      { borde: tono("--azul") });
 
     /* agente */
-    caja(40, 105, 130, 60, "AGENTE", { tamano: 13, borde: tono("--acento"), grosor: 2 });
+    caja(40, 105, 130, 60, t("t1.m5.diag.agente", "AGENTE"),
+      { tamano: 13, borde: tono("--acento"), grosor: 2 });
 
     /* acción */
     flecha(170, 135, 273, 135, "a_t", { ey: 128, color: tono("--acento") });
@@ -778,11 +814,20 @@ function moduloPuente() {
     $("#m5-descripcion").innerHTML = info.descripcion;
 
     const filas = [
-      ["¿Hay estados?", "no", "sí", "sí"],
-      ["¿La acción afecta al futuro?", "no", "no", "sí"],
-      ["Qué se estima", "q<sub>*</sub>(a)", "q<sub>*</sub>(s,a)", "v<sub>π</sub>(s) o q<sub>π</sub>(s,a)"],
-      ["Qué se maximiza", "R<sub>t+1</sub>", "R<sub>t+1</sub> en cada contexto", "el retorno G<sub>t</sub>"],
-      ["Dónde se ve", "Tema 1", "Tema 1, final", "Tema 2 en adelante"],
+      [t("t1.m5.tabla.estados", "¿Hay estados?"),
+       t("t1.m5.tabla.no", "no"), t("t1.m5.tabla.si", "sí"), t("t1.m5.tabla.si", "sí")],
+      [t("t1.m5.tabla.futuro", "¿La acción afecta al futuro?"),
+       t("t1.m5.tabla.no", "no"), t("t1.m5.tabla.no", "no"), t("t1.m5.tabla.si", "sí")],
+      [t("t1.m5.tabla.estima", "Qué se estima"),
+       "q<sub>*</sub>(a)", "q<sub>*</sub>(s,a)",
+       t("t1.m5.tabla.vq", "v<sub>π</sub>(s) o q<sub>π</sub>(s,a)")],
+      [t("t1.m5.tabla.maximiza", "Qué se maximiza"), "R<sub>t+1</sub>",
+       t("t1.m5.tabla.rEnContexto", "R<sub>t+1</sub> en cada contexto"),
+       t("t1.m5.tabla.retorno", "el retorno G<sub>t</sub>")],
+      [t("t1.m5.tabla.donde", "Dónde se ve"),
+       t("t1.m5.tabla.tema1", "Tema 1"),
+       t("t1.m5.tabla.tema1final", "Tema 1, final"),
+       t("t1.m5.tabla.tema2", "Tema 2 en adelante")],
     ];
     const columna = { bandit: 1, contextual: 2, mdp: 3 };
     $("#m5-tabla").innerHTML = `
@@ -832,7 +877,7 @@ function moduloPuente() {
       correcta: 0,
       explicacion: "\\(\\gamma\\) pondera consecuencias futuras. Si mis acciones no tienen consecuencias sobre el estado, no hay nada que ponderar: el problema secuencial se descompone en decisiones independientes.",
     },
-  ]);
+  ], { claves: "t1.m5.quiz" });
 }
 
 /* ======================================================================= *

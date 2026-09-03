@@ -6,8 +6,10 @@
      · generador aleatorio con semilla (reproducibilidad)
      · cuatro tipos de gráfica en SVG: líneas, violín, rejilla y árbol de backup
      · componente de autocomprobación (quiz)
-     · conmutadores de tema y de modo clase
+     · conmutadores de idioma, de tema y de modo clase
    ========================================================================== */
+
+import { t, tLista, aplicarTraducciones, crearBotonIdioma, idiomaActivo } from "./i18n.js";
 
 /* ----------------------------------------------------------------------- *
  * 1. Aleatoriedad reproducible
@@ -87,9 +89,14 @@ export function argmaxTodos(valores, tolerancia = 1e-9) {
  * 2. Utilidades de formato y color
  * ----------------------------------------------------------------------- */
 
+/** Separador decimal del idioma activo: coma en español, punto en inglés. */
+function localeNumerica() {
+  return idiomaActivo() === "en" ? "en-US" : "es-ES";
+}
+
 export function num(x, decimales = 2) {
   if (!Number.isFinite(x)) return "—";
-  return x.toLocaleString("es-ES", {
+  return x.toLocaleString(localeNumerica(), {
     minimumFractionDigits: decimales,
     maximumFractionDigits: decimales,
   });
@@ -98,14 +105,15 @@ export function num(x, decimales = 2) {
 /**
  * Número para meter DENTRO de \( ... \). En LaTeX la coma es un separador y
  * lleva espacio detrás, así que "1,31" saldría como "1, 31". La convención
- * para la coma decimal es {,}.
+ * para la coma decimal es {,}. Con el punto decimal del inglés no hace falta.
  */
 export function numMat(x, decimales = 2) {
   return num(x, decimales).replace(",", "{,}");
 }
 
+/** El español separa el signo con espacio fino ("79 %"); el inglés no ("79%"). */
 export function pct(x, decimales = 0) {
-  return num(100 * x, decimales) + " %";
+  return num(100 * x, decimales) + (idiomaActivo() === "en" ? "%" : " %");
 }
 
 /** Lee una variable CSS del tema actual (para pintar el SVG con la paleta). */
@@ -203,7 +211,7 @@ export function graficaLineas(series, opciones = {}) {
     formatoY = (v) => num(v, 2),
     lineaCero = false,
     anotaciones = [],
-    mensaje = "Sin datos todavía.",
+    mensaje = t("grafica.sinDatos", "Sin datos todavía."),
   } = opciones;
 
   const m = { i: 58, d: 14, s: 14, f: 42 };
@@ -389,7 +397,8 @@ function formateaMarca(v) {
 export function graficaViolin(valores, opciones = {}) {
   const {
     ancho = 660, alto = 320, sigma = 1,
-    ejeY = "Distribución de la recompensa", ejeX = "Acción",
+    ejeY = t("violin.ejeY", "Distribución de la recompensa"),
+    ejeX = t("violin.ejeX", "Acción"),
     resaltado = null, seleccion = null, alSeleccionar = null,
   } = opciones;
 
@@ -755,22 +764,59 @@ export function barajarOpciones(pregunta, rng) {
   return { ...pregunta, opciones: nuevas, correcta: destino };
 }
 
-export function crearQuiz(contenedor, preguntas, titulo = "Comprueba que lo has entendido") {
+/**
+ * Devuelve la pregunta en el idioma activo.
+ *
+ * Las preguntas se declaran en español dentro de cada módulo, y su traducción
+ * se busca por clave: `<prefijo>.<i>.enunciado`, `.opciones` (lista con un
+ * elemento por opción, en el mismo orden) y `.explicacion`. Así el banco de
+ * preguntas en español no se toca al añadir un idioma; solo hace falta pasar
+ * el prefijo. Lo que no esté traducido se queda en español.
+ */
+function traducirPregunta(pregunta, prefijo, i) {
+  if (!prefijo) return pregunta;
+  const base = `${prefijo}.${i}`;
+  const opciones = tLista(`${base}.opciones`, pregunta.opciones);
+  if (opciones.length !== pregunta.opciones.length) {
+    // Una lista traducida a medias desalinearía `correcta`: mejor el español.
+    console.warn(`i18n: ${base}.opciones tiene otra longitud; se usa el español`);
+    return pregunta;
+  }
+  return {
+    ...pregunta,
+    enunciado: t(`${base}.enunciado`, pregunta.enunciado),
+    opciones,
+    explicacion: t(`${base}.explicacion`, pregunta.explicacion),
+  };
+}
+
+export function crearQuiz(contenedor, preguntas, opciones = {}) {
+  // Compatibilidad: antes el tercer argumento era el título como cadena.
+  const { titulo = null, claves = null } =
+    typeof opciones === "string" ? { titulo: opciones } : opciones;
+
   contenedor.classList.add("quiz");
-  contenedor.innerHTML = `<h3>${titulo}</h3>`;
+  const rotulo = titulo ?? t("quiz.titulo", "Comprueba que lo has entendido");
+  contenedor.innerHTML = `<h3>${rotulo}</h3>`;
 
   // Excepción deliberada a la regla de reproducibilidad por semilla del resto
   // del sitio: el orden de las opciones debe cambiar en CADA carga, o el alumno
   // memoriza posiciones en vez de razonar. Las simulaciones sí siguen sembradas.
   const rngQuiz = generador((Date.now() ^ (Math.random() * 0xffffffff)) >>> 0);
 
-  preguntas.map((p) => barajarOpciones(p, rngQuiz)).forEach((p, iPregunta) => {
+  // Traducir ANTES de barajar: así `correcta` se remapea sobre la lista que
+  // de verdad se pinta, y el invariante «opciones[correcta] es la correcta»
+  // se mantiene en los dos idiomas.
+  preguntas
+    .map((p, i) => traducirPregunta(p, claves, i))
+    .map((p) => barajarOpciones(p, rngQuiz))
+    .forEach((p, iPregunta) => {
     const bloque = document.createElement("div");
     bloque.className = "pregunta";
     const idOpciones = `q-${Math.random().toString(36).slice(2, 8)}`;
     bloque.innerHTML = `
       <p class="enunciado">${p.enunciado}</p>
-      <div class="opciones" role="group" aria-label="Opciones de la pregunta ${iPregunta + 1}" id="${idOpciones}"></div>
+      <div class="opciones" role="group" aria-label="${t("quiz.opcionesDe", "Opciones de la pregunta {n}", { n: iPregunta + 1 })}" id="${idOpciones}"></div>
       <div class="retro" hidden></div>`;
     const zonaOpciones = bloque.querySelector(".opciones");
     const retro = bloque.querySelector(".retro");
@@ -789,7 +835,7 @@ export function crearQuiz(contenedor, preguntas, titulo = "Comprueba que lo has 
         });
         retro.hidden = false;
         retro.dataset.estado = acierto ? "ok" : "mal";
-        retro.innerHTML = `<strong>${acierto ? "Correcto." : "No es esa."}</strong> ${p.explicacion}`;
+        retro.innerHTML = `<strong>${acierto ? t("quiz.correcto", "Correcto.") : t("quiz.incorrecto", "No es esa.")}</strong> ${p.explicacion}`;
         renderizarMatematicas(retro);
       });
       zonaOpciones.appendChild(boton);
@@ -878,12 +924,19 @@ export function iniciarPagina() {
   else if (modoUrl === "normal") delete raiz.dataset.modo;
   else if (leerPreferencia(CLAVE_MODO) === "clase") raiz.dataset.modo = "clase";
 
+  // El idioma se aplica ANTES de que los módulos pinten nada, para que no se
+  // vea el español un instante antes de cambiar al inglés.
+  aplicarTraducciones();
+
   const zona = document.querySelector(".herramientas");
   if (zona) {
     const btnModo = document.createElement("button");
     btnModo.type = "button";
-    btnModo.textContent = "Modo clase";
-    btnModo.title = "Amplía la tipografía y oculta el texto explicativo (para proyector)";
+    btnModo.textContent = t("chrome.modoClase", "Modo clase");
+    btnModo.title = t(
+      "chrome.modoClase.ayuda",
+      "Amplía la tipografía y oculta el texto explicativo (para proyector)",
+    );
     btnModo.setAttribute("aria-pressed", String(raiz.dataset.modo === "clase"));
     btnModo.addEventListener("click", () => {
       const activo = raiz.dataset.modo === "clase";
@@ -897,8 +950,8 @@ export function iniciarPagina() {
     const btnTema = document.createElement("button");
     btnTema.type = "button";
     btnTema.className = "icono-boton";
-    btnTema.title = "Cambiar entre tema claro y oscuro";
-    btnTema.setAttribute("aria-label", "Cambiar tema");
+    btnTema.title = t("chrome.tema.ayuda", "Cambiar entre tema claro y oscuro");
+    btnTema.setAttribute("aria-label", t("chrome.tema.etiqueta", "Cambiar tema"));
     const pintaIcono = () => {
       const oscuroActivo = raiz.dataset.tema
         ? raiz.dataset.tema === "oscuro"
@@ -916,7 +969,7 @@ export function iniciarPagina() {
       avisarCambioTema();
     });
 
-    zona.append(btnModo, btnTema);
+    zona.append(crearBotonIdioma(), btnModo, btnTema);
   }
 
   const aqui = location.pathname.split("/").pop() || "index.html";
