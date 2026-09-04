@@ -276,7 +276,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   color: var(--acento); font-weight: 700; font-size: .8rem;
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: .5rem;
 }
-.portada-tema .entradilla { font-size: 1.08rem; color: var(--texto-suave); max-width: 62ch; }
+.portada-tema .entradilla { font-size: 1.08rem; color: var(--texto-suave); max-width: none; line-height: 1.7; }
 
 .indice { margin: 1.5rem 0 0; }
 .indice ol {
@@ -321,6 +321,18 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .explicacion { max-width: 68ch; }
 .explicacion.nota { font-size: .92rem; color: var(--texto-suave); }
+
+/* Los bloques de estudio son texto y tablas a caja completa: la medida de 68ch
+   los dejaba como una columna estrecha pegada a la izquierda, con media caja
+   vacia al lado de tablas que si la llenaban. Aqui el texto ocupa el recuadro,
+   con algo mas de interlineado porque la linea es mas larga. Los modulos
+   interactivos NO se tocan: alli la columna estrecha convive con las graficas. */
+.modulo.solo-estudio .explicacion,
+.modulo.solo-estudio ul,
+.modulo.solo-estudio ol,
+.modulo.solo-estudio p { max-width: none; }
+.modulo.solo-estudio .explicacion,
+.modulo.solo-estudio li { line-height: 1.72; }
 
 .aviso {
   font-size: .88rem; border: 1px dashed var(--borde-fuerte);
