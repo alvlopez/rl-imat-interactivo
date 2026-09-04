@@ -37,6 +37,12 @@
   --mal:     #c0392b;
   --mal-bg:  #fbeae8;
 
+  /* Alias semánticos que consumen los SVG desde JS (`tono("--peligro")` es el
+     color por omisión del segundo juego de flechas de `rejilla()`). */
+  --exito:   #2e7d54;
+  --peligro: #c0392b;
+  --aviso:   #b8730c;
+
   /* --- mapa de calor de valores --- */
   --calor-bajo:  #7b3f9d;
   --calor-medio: #f3f1ec;
@@ -86,6 +92,10 @@
     --mal:     #ef7d70;
     --mal-bg:  #351c1a;
 
+    --exito:   #5fc48f;
+    --peligro: #ef7d70;
+    --aviso:   #f0a22e;
+
     --calor-bajo:  #9a63bd;
     --calor-medio: #2b2933;
     --calor-alto:  #3fae7c;
@@ -124,6 +134,10 @@
   --ok-bg:   #16301f;
   --mal:     #ef7d70;
   --mal-bg:  #351c1a;
+
+  --exito:   #5fc48f;
+  --peligro: #ef7d70;
+  --aviso:   #f0a22e;
 
   --calor-bajo:  #9a63bd;
   --calor-medio: #2b2933;
@@ -340,6 +354,18 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   color: var(--texto-suave); margin: 0 0 .5rem;
 }
 
+/* Cajas de pseudocódigo. Tienen su propia regla en vez de ir metidas dentro de
+   un .viz: no son una visualización, y así conservan el interlineado y el
+   desbordamiento horizontal propios de un bloque de código. */
+pre.codigo {
+  margin: .4rem 0 1rem;
+  padding: .9rem 1rem;
+  background: var(--superficie-2); border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde-fuerte); border-radius: var(--radio-s);
+  font-family: var(--mono); font-size: .82rem; line-height: 1.55;
+  color: var(--texto); overflow-x: auto; white-space: pre;
+}
+
 /* ========================= tablas ========================= */
 
 table.datos {
@@ -350,6 +376,10 @@ table.datos th, table.datos td {
   text-align: right; padding: .34rem .55rem; border-bottom: 1px solid var(--borde);
 }
 table.datos th:first-child, table.datos td:first-child { text-align: left; }
+/* .texto: tablas cuyas celdas son prosa y no cifras (mapa del tema, ecuaciones
+   clave, errores frecuentes y glosario del Tema 3). Alinear a la derecha un
+   párrafo lo hace ilegible. */
+table.datos.texto th, table.datos.texto td { text-align: left; }
 table.datos thead th {
   /* Tampoco aquí: las cabeceras son s, r, p(s′,r|s,a), v_π, q_π… */
   font-size: .8rem; font-weight: 700; letter-spacing: .01em;
@@ -368,6 +398,9 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 /* marcadores numéricos grandes */
 .metricas { display: flex; flex-wrap: wrap; gap: 1.5rem; margin: .8rem 0; }
 .metrica .etiq { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--texto-suave); }
+/* Rótulo de métrica que reproduce notación (Δ, θ, v_π, «política-estable»):
+   las mayúsculas la romperían, igual que en .control > label.literal. */
+.metrica .etiq.literal { text-transform: none; letter-spacing: 0; }
 .metrica .cifra { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
 .metrica .cifra.buena { color: var(--ok); }
 .metrica .cifra.mala  { color: var(--mal); }
@@ -446,6 +479,10 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 :root[data-modo="clase"] .portada-tema .entradilla,
 :root[data-modo="clase"] .fuente,
 :root[data-modo="clase"] .aviso { display: none; }
+/* Los bloques de estudio de la Parte A son prosa, cita y aviso: en modo clase
+   se les oculta TODO el contenido y quedaba una tarjeta vacía con solo el
+   título. Se ocultan enteros. */
+:root[data-modo="clase"] .modulo.solo-estudio { display: none; }
 :root[data-modo="clase"] .modulo { padding: 1.75rem 2rem 2rem; }
 :root[data-modo="clase"] .dos-columnas { gap: 2rem; }
 :root[data-modo="clase"] button,
@@ -456,6 +493,18 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 :root[data-modo="clase"] .metrica .cifra { font-size: 2.2rem; }
 :root[data-modo="clase"] table.datos { font-size: 1.05rem; }
 :root[data-modo="clase"] .pregunta-diapo { font-size: 1.15rem; }
+
+/* Lienzos marcados como escalables (el diagrama de las dos rectas del T3):
+   en proyector se estiran hasta el doble de su tamaño natural. Lo que crece
+   con ellos son los rótulos, que van en unidades del viewBox —incluidos el
+   dy y el font-size de los subíndices, que son proporcionales—. El tope de
+   1200 px existe para que el lienzo no se coma media pantalla de alto: al
+   conservar la proporción, todo el ancho que gana lo gana también en alto. */
+:root[data-modo="clase"] .lienzo-escalable { --lienzo-max: min(100%, 1200px); }
+/* La leyenda es HTML, no va dentro del viewBox: hay que subirla aparte para
+   que no se quede en letra pequeña junto a un diagrama del doble de tamaño. */
+:root[data-modo="clase"] .lienzo-escalable + .leyenda { font-size: 1.2rem; }
+:root[data-modo="clase"] .lienzo-escalable + .leyenda i { width: 1.4rem; height: .28rem; }
 
 /* ========================= utilidades ========================= */
 

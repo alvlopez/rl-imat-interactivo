@@ -16,7 +16,7 @@ import { t, tLista, clavesDe, fijarIdiomaParaPruebas, IDIOMAS } from "../assets/
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const HTML = ["index.html", "tema1.html", "tema2.html"];
+const HTML = ["index.html", "tema1.html", "tema2.html", "tema3.html"];
 const JS = readdirSync(join(RAIZ, "assets"))
   .filter((f) => f.endsWith(".js") && f !== "en.js" && f !== "i18n.js")
   .map((f) => join("assets", f));
@@ -187,4 +187,63 @@ test("el catálogo de idiomas y el diccionario son coherentes", () => {
   assert.deepEqual(Object.keys(IDIOMAS), ["es", "en"]);
   assert.equal(clavesDe("es").length, 0, "el español no vive en un diccionario");
   assert.ok(clavesDe("en").length > 100, "el inglés parece incompleto");
+});
+
+/* ======================================================================= *
+ * Notación: subíndices escritos con guion bajo literal
+ *
+ * Fuera de \(...\) el guion bajo no compone nada: «v_π» se lee en pantalla
+ * tal cual, con el guion, y eso rompe la regla de que los símbolos coincidan
+ * carácter a carácter con los de la diapositiva. La forma correcta en texto
+ * que va al DOM —y también en los rótulos de los SVG, que aceptan la misma
+ * marca— es v<sub>π</sub>. Este test es la red para que no vuelva a colarse,
+ * en español y en inglés a la vez.
+ * ======================================================================= */
+
+const SUBINDICE_CRUDO = /[A-Za-zπΠ]_[πk*0-9]/;
+
+/* Las cajas de pseudocódigo son transcripción literal en monoespaciado: ahí
+ * Σ_{s',r}, argmax_a y π_* comparten una misma convención de texto plano y
+ * subrayar solo π_* la rompería. Se dejan fuera a propósito. */
+const CAJAS_PSEUDOCODIGO = ["t3.b6.caja", "t3.m3.caja", "t3.m5.caja"];
+
+/** Deja solo lo que llega a la pantalla como texto: sin LaTeX ni comentarios. */
+function soloInterfaz(src) {
+  return src
+    .replace(/\\\[[\s\S]*?\\\]/g, " ")                   // LaTeX de bloque
+    .replace(/\\\([\s\S]*?\\\)/g, " ")                   // LaTeX en línea
+    .replace(/<!--[\s\S]*?-->/g, " ")                    // comentarios HTML
+    .replace(/<pre[\s\S]*?<\/pre>/g, " ")                // cajas de pseudocódigo
+    .replace(/\/\*[\s\S]*?\*\//g, " ")                   // comentarios JS de bloque
+    .replace(/(^|[^:])\/\/.*$/gm, "$1")                  // comentarios JS de línea
+    .replace(/\b[A-Z][A-Z0-9]*(_[A-Z0-9]+)+\b/g, " ");   // IDENTIFICADORES_ASI
+}
+
+/** Las líneas de un texto que llevan un subíndice sin marcar. */
+function lineasSospechosas(texto) {
+  return soloInterfaz(texto)
+    .split("\n")
+    .filter((linea) => SUBINDICE_CRUDO.test(linea))
+    .map((linea) => linea.trim().slice(0, 90));
+}
+
+test("el español no escribe subíndices con guion bajo fuera de LaTeX", () => {
+  const malas = [];
+  for (const f of [...HTML, ...JS]) {
+    for (const linea of lineasSospechosas(readFileSync(join(RAIZ, f), "utf8"))) {
+      malas.push(`${f}: ${linea}`);
+    }
+  }
+  assert.deepEqual(malas, [], `usa <sub>…</sub>:\n  ${malas.join("\n  ")}`);
+});
+
+test("el inglés no escribe subíndices con guion bajo fuera de LaTeX", () => {
+  const malas = [];
+  for (const [clave, valor] of Object.entries(EN)) {
+    if (CAJAS_PSEUDOCODIGO.includes(clave)) continue;
+    for (const texto of Array.isArray(valor) ? valor : [valor]) {
+      for (const linea of lineasSospechosas(texto)) malas.push(`${clave}: ${linea}`);
+    }
+  }
+  assert.deepEqual(malas, [], `usa <sub>…</sub>:\n  ${malas.join("\n  ")}`);
 });

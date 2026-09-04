@@ -983,4 +983,1415 @@ export const EN = {
     "The whirlpool neither traps the agent nor ends the episode: it merely makes the " +
     "transitions that end in it more expensive. That is why the optimal policy goes around " +
     "it, and why states from which it is hard to avoid also lose value.",
+
+  /* ===================================================================== *
+   * Unit 3 — Dynamic programming
+   *
+   * Slide citations become Sutton & Barto sections: whoever reads the
+   * English version does not have the Spanish lecture decks.
+   * ===================================================================== */
+
+  "nav.tema3": "Unit 3 · Dynamic programming",
+  "meta.titulo.tema3": "Unit 3 · Dynamic programming — RL IMAT",
+
+  /* --- tarjeta del índice ------------------------------------------------ */
+  "index.t3.num": "Unit 3 · Sutton, ch. 4",
+  "index.t3.h2": "Dynamic programming",
+  "index.t3.suave":
+    "Evaluate, improve, repeat: a single board, the 4×4 gridworld of "
+    + "<em>Example 4.1</em>.",
+  "index.t3.lista":
+    "<li>What each threshold \\(\\theta\\) costs in sweeps</li>"
+    + "<li>The policy improvement theorem over all 56 possible changes</li>"
+    + "<li>The last line of policy iteration, which may never stop</li>"
+    + "<li>The optimal policy is ready 170 sweeps before the values are</li>"
+    + "<li>Value iteration and the three GPI trajectories</li>",
+  "t2.pie.siguiente": "Unit 3 · Dynamic programming →",
+
+  /* --- portada e índice -------------------------------------------------- */
+  "t3.kicker": "Unit 3 · Sutton &amp; Barto, chapter 4",
+  "t3.h1": "Dynamic programming",
+  "t3.entradilla":
+    "One single board for the whole unit: the 4×4 gridworld of <em>Example 4.1</em> "
+    + "in the book. This is where we answer the questions the lectures leave open: "
+    + "what exactly the threshold \\(\\theta\\) costs, when one policy really improves "
+    + "on another, why the last line of policy iteration may never terminate, how many "
+    + "sweeps before evaluation converges the optimal policy is already there, and what "
+    + "value iteration draws on the two-lines diagram.",
+  "t3.semillaLabel": "Seed",
+  "t3.semilla": "Seed 2026 · everything random on this page is reproduced from it",
+  "t3.indice.m1": "Iterative evaluation and the threshold \\(\\theta\\)",
+  "t3.indice.m2": "Policy improvement theorem",
+  "t3.indice.m3": "Policy iteration and its last line",
+  "t3.indice.m4": "The optimal policy shows up earlier",
+  "t3.indice.m5": "Value iteration",
+  "t3.indice.m6": "Generalised policy iteration",
+
+  /* --- A3 · mapa del tema ------------------------------------------------ */
+  "t3.mapa.h2": "Map of the unit",
+  "t3.mapa.cab": "<th>Concept</th><th>Where it comes from</th><th>Where it leads</th>",
+  "t3.mapa.f1":
+    "<td>The three problems</td>"
+    + "<td>Value functions from Unit 2 and the goal of finding \\(\\pi_*\\)</td>"
+    + "<td>Places DP: it is planning, and that is why it needs the model "
+    + "\\(p(s',r\\mid s,a)\\)</td>",
+  "t3.mapa.f2":
+    "<td>Prediction</td>"
+    + "<td>The Bellman equation for \\(v_\\pi\\) from Unit 2, turned into an assignment</td>"
+    + "<td>Iterative policy evaluation → module 1</td>",
+  "t3.mapa.f3":
+    "<td>Search strategy</td>"
+    + "<td>Searching over every policy is out: there are \\(4^{14}\\) of them</td>"
+    + "<td>The evaluate → improve → has it changed? loop</td>",
+  "t3.mapa.f4":
+    "<td>Improvement theorem</td>"
+    + "<td>Comparing \\(q_\\pi(s,a)\\) with \\(v_\\pi(s)\\)</td>"
+    + "<td>Grants permission to change the policy without making it worse → module 2</td>",
+  "t3.mapa.f5":
+    "<td>Greedy operator</td>"
+    + "<td>The theorem applied to every state at once</td>"
+    + "<td>Turns a \\(v\\) into a policy</td>",
+  "t3.mapa.f6":
+    "<td>Policy iteration</td>"
+    + "<td>Prediction + greedy operator, alternated</td>"
+    + "<td>Converges in a finite number of iterations → module 3</td>",
+  "t3.mapa.f7":
+    "<td>Efficiency</td>"
+    + "<td>Figure 4.1: the policy stops changing well before \\(v_k\\) converges</td>"
+    + "<td>Justifies truncating evaluation → module 4</td>",
+  "t3.mapa.f8":
+    "<td>Value iteration</td>"
+    + "<td>Truncating evaluation to a single sweep</td>"
+    + "<td>The update that will come back as Q-learning in Unit 4 → module 5</td>",
+  "t3.mapa.f9":
+    "<td>GPI</td>"
+    + "<td>Forget granularity: evaluate and improve, in any proportion</td>"
+    + "<td>The skeleton of almost every RL method → module 6</td>",
+
+  /* --- B1 · intro -------------------------------------------------------- */
+  "t3.b1.h2": "From value functions to the optimal policy",
+  "t3.b1.fuente": "Sutton &amp; Barto, chapter 4 (opening) and §8.1",
+  "t3.b1.p1":
+    "Two things carry over from Unit 2: the value functions \\(v_\\pi\\) and \\(q_\\pi\\), "
+    + "always defined <strong>with respect to a policy</strong>, and the fact that there is "
+    + "at least one optimal policy \\(\\pi_*\\), attaining the maximum \\(v_*(s)\\) "
+    + "<strong>in every state simultaneously</strong>. Finding one of them is the central "
+    + "goal of the field.",
+  "t3.b1.p2":
+    "One almost always starts from a suboptimal, sometimes entirely arbitrary policy, and "
+    + "uses it as a foothold to search for optimal ones. Dynamic programming is the "
+    + "collection of algorithms that do this <strong>given a perfect model of the "
+    + "environment as an MDP</strong>. Its recipe fits in one sentence: <em>turn the "
+    + "Bellman equations into update rules</em>.",
+  "t3.b1.p3":
+    "Mind one difference that Unit 4 will make explicit: dynamic programming "
+    + "<strong>replaces</strong> the old value with the new one. There is no step size "
+    + "\\(\\alpha\\), no \\(\\alpha(\\text{target}-\\text{estimate})\\). That arrives once "
+    + "we have to learn from samples instead of computing expectations.",
+
+  /* --- B1b · los tres problemas ------------------------------------------ */
+  "t3.b1b.h2": "The three problems",
+  "t3.b1b.fuente":
+    "Sutton &amp; Barto §4.1 (prediction), §6.1 (control) and §8.1 (planning)",
+  "t3.b1b.p1": "The three definitions, as stated in the lectures:",
+  "t3.b1b.li1":
+    "<strong>Prediction</strong>: finding \\(v\\) and \\(q\\) under a given policy. This is "
+    + "what the book calls <em>policy evaluation</em>.",
+  "t3.b1b.li2":
+    "<strong>Control</strong>: finding a policy that maximises the value function, that is, "
+    + "an optimal policy.",
+  "t3.b1b.li3":
+    "<strong>Planning</strong>: same as control, but <strong>using a model of the "
+    + "environment</strong>. It is any computational process that takes a model as input "
+    + "and produces or improves a policy.",
+  "t3.b1b.p2":
+    "Planning methods tend to learn faster, but a model that is both trustworthy and cheap "
+    + "enough to run millions of times is rarely available. That is why control is the "
+    + "problem one usually faces in practice. Even so, a great many control methods are "
+    + "built on top of dynamic programming algorithms: that is the reason to spend a whole "
+    + "unit on a planning method requiring a model that often does not exist.",
+  "t3.b1b.nota":
+    "Two honest warnings. First: the course material carries two versions. One speaks of "
+    + "<strong>three</strong> problems and the other of <strong>two sub-problems</strong>, "
+    + "prediction and control, with planning “implicit in relying on the model”. This page "
+    + "follows the three-problem version. Second: chapter 4 of the book <strong>only defines "
+    + "prediction</strong> there; “control” first appears in chapter 5 and “planning” is "
+    + "defined in §8.1. That dynamic programming is planning is a claim of chapter 8, not "
+    + "of chapter 4.",
+
+  /* --- B2 · predicción --------------------------------------------------- */
+  "t3.b2.h2": "Prediction: iterative policy evaluation",
+  "t3.b2.fuente":
+    "Sutton &amp; Barto §4.1, equations (4.4) and (4.5), and the <em>Iterative Policy "
+    + "Evaluation</em> box",
+  "t3.b2.p1":
+    "Given a policy, we need the value of every state. The Bellman equation is a "
+    + "<strong>system of \\(|\\mathcal{S}|\\) linear equations in \\(|\\mathcal{S}|\\) "
+    + "unknowns</strong>: it can be solved in one go, and that was already done in Unit 2. "
+    + "Here it is solved by <strong>iterating</strong>, which is what one does in practice.",
+  "t3.b2.p2":
+    "Each iteration updates <strong>every</strong> state once: that is a <strong>sweep"
+    + "</strong>. The update is called <strong>expected</strong> because it averages over "
+    + "all possible successor states rather than over a sampled one; that is precisely the "
+    + "difference that will separate dynamic programming from the methods of Unit 4.",
+  "t3.b2.p3":
+    "\\(\\mathcal{S}^+\\) is the set of states <strong>including the terminal one</strong>; "
+    + "\\(\\mathcal{S}\\) are the non-terminal ones. Initialising \\(V\\) is arbitrary "
+    + "<strong>except that \\(V(\\text{terminal})=0\\)</strong>, and the sweep visits only "
+    + "\\(\\mathcal{S}\\). Forget that exception and, with \\(\\gamma=1\\), evaluation "
+    + "converges to something that is not \\(v_\\pi\\), with unbounded error.",
+  "t3.entorno.terminal":
+    "The terminal state is shaded in two corners of the figure, but <strong>formally it is "
+    + "a single state</strong>. This page uses two absorbing cells of value 0, which is "
+    + "equivalent: no non-terminal state can tell which of the two it reaches.",
+  "t3.b2.p4":
+    "Module 3 of Unit 2 already iterated the Bellman equation on the 3×3 gridworld and "
+    + "announced “…which is what the dynamic programming of Unit 3 will do”. This is the "
+    + "sequel: the same loop, now on the book’s board, with an explicit and adjustable "
+    + "stopping rule \\(\\Delta&lt;\\theta\\), and hooked up to policy improvement.",
+  "t3.b2.continua": "Continues in module 1 →",
+
+  /* --- MÓDULO 1 ---------------------------------------------------------- */
+  "t3.m1.etiqueta": "MODULE 1",
+  "t3.m1.h2": "Iterative evaluation and the threshold \\(\\theta\\)",
+  "t3.m1.fuente":
+    "Sutton &amp; Barto §4.1, <em>Iterative Policy Evaluation</em> box and Figure 4.1",
+  "t3.m1.determinista": "Deterministic: the seed plays no part.",
+  "t3.m1.pregunta":
+    "<p>Two consecutive lecture slides titled <em>“Policy iteration: some remarks”</em> "
+    + "contain not a single written remark: they are just the figures of Example 4.1. And "
+    + "the one remark that does get written down in the whole unit —“convergence is "
+    + "asymptotic, which is why we need \\(\\theta\\)”— never says <strong>what each "
+    + "\\(\\theta\\) costs</strong>.</p>"
+    + "<span class=\"de-donde\">Sutton &amp; Barto §4.1 and Figure 4.1 — the price in sweeps "
+    + "of each threshold is measured here.</span>",
+  "t3.m1.explicacion":
+    "The policy is fixed: the equiprobable one, \\(\\pi(a\\mid s)=0.25\\), the same as in "
+    + "Figure 4.1. Move the threshold \\(\\theta\\) and watch two things at once: how many "
+    + "sweeps it takes to satisfy \\(\\Delta&lt;\\theta\\), and what happens to the greedy "
+    + "policy drawn on the grid.",
+  "t3.m1.thetaLabel": "Threshold (\\(\\theta\\))",
+  "t3.m1.marchaLabel": "Run",
+  "t3.m1.barrido": "One sweep",
+  "t3.m1.auto": "Iterate until Δ &lt; θ",
+  "t3.m1.reiniciar": "Reset to 0",
+  "t3.m1.modoLabel": "Update",
+  "t3.m1.modoSinc": "Two arrays (synchronous)",
+  "t3.m1.modoInsitu": "In place",
+  "t3.m1.viz1": "V(s) and the greedy policy with respect to V",
+  "t3.m1.mBarridos": "Sweeps done",
+  "t3.m1.mDelta": "Maximum change (\\(\\Delta\\))",
+  "t3.m1.mDistancia": "Distance to \\(v_\\pi\\)",
+  "t3.m1.mPrevistos": "Sweeps this \\(\\theta\\) demands",
+  "t3.m1.viz2": "How each state converges",
+  "t3.m1.vacio": "No sweeps yet: the curve appears as soon as you take the first one.",
+  "t3.m1.serie1": "State 1",
+  "t3.m1.serie2": "State 2",
+  "t3.m1.serie3": "State 3",
+  "t3.m1.serie5": "State 5",
+  "t3.m1.anot": "k = 3: the greedy policy is already optimal",
+  "t3.m1.anotStop": "Δ < θ",
+  "t3.m1.ejeX": "Sweep k",
+  "t3.m1.ejeY": "V(s)",
+  "t3.m1.tope": "Reached the cap of 5000 sweeps without meeting the criterion.",
+  "t3.m1.notaFin":
+    "Stopped at sweep {k} with \\(\\Delta={delta}\\) &lt; \\(\\theta={theta}\\). The values "
+    + "are {dist} away from the limit \\(-14/-20/-22\\). The greedy policy drawn here is the "
+    + "same one as at sweep 3.",
+  "t3.m1.notaInsitu":
+    "With in-place updating the intermediate values are <strong>no longer those of Figure "
+    + "4.1</strong>: the sweep uses new values as soon as they are available, in increasing "
+    + "index order (row-major). The limit is the same and is reached sooner, but the "
+    + "sequence \\(v_k\\) is a different one.",
+  "t3.m1.notaFig":
+    "This is row \\(k={k}\\) of Figure 4.1 in the book. One detail: at \\(k=2\\) the book "
+    + "prints \\(-1.7\\), whereas the exact value is \\(-1.75\\); it is the only cell in the "
+    + "whole figure where the rounding declared in the caption does not hold.",
+  "t3.m1.avisoParada":
+    "<strong>A detail of the loop that the pseudocode leaves open.</strong> The box in the "
+    + "book says <em>“repeat … until \\(\\Delta&lt;\\theta\\)”</em>. With a strict comparison "
+    + "and \\(\\theta=1\\), on this board it would <strong>never stop</strong>: the first "
+    + "sweeps give \\(\\Delta\\) exactly equal to 1, and “1 &lt; 1” is false. This module "
+    + "iterates <strong>while \\(\\Delta&gt;\\theta\\)</strong> —that is, it stops as soon as "
+    + "\\(\\Delta\\le\\theta\\)— which is why \\(\\theta=1\\) stops after a single sweep. It "
+    + "is a choice, not an oversight: the book says nothing about the tie.",
+  "t3.m1.notaCurso":
+    "Sweep {k}. Keep sweeping, or press “Iterate until \\(\\Delta<\\theta\\)” to see what "
+    + "this threshold costs.",
+
+  "t3.m1.quiz.0.enunciado":
+    "With \\(\\theta=10^{-1}\\) evaluation stops after 47 sweeps and with "
+    + "\\(\\theta=10^{-4}\\) after 173. What changes in the greedy policy with respect to "
+    + "\\(V\\)?",
+  "t3.m1.quiz.0.opciones": [
+    "Nothing: it is the same policy in both cases, and it already was at sweep 3.",
+    "It changes in the four corner states, which are the last ones to converge.",
+    "It changes in every state, because the values are different.",
+    "There is no way to tell without computing \\(q_\\pi\\) explicitly.",
+  ],
+  "t3.m1.quiz.0.explicacion":
+    "The values keep dropping towards \\(-14/-20/-22\\), but the <strong>ordering</strong> "
+    + "among the actions of each state stops changing at sweep 3. The greedy policy depends "
+    + "only on that ordering, not on the magnitudes. Lowering \\(\\theta\\) buys numerical "
+    + "precision, not a better policy.",
+
+  "t3.m1.quiz.1.enunciado":
+    "Why does the initialisation require \\(V(\\text{terminal})=0\\) instead of “an "
+    + "arbitrary value” as in every other state?",
+  "t3.m1.quiz.1.opciones": [
+    "Because the sweep never updates the terminal state, so that value stays fixed forever "
+      + "and contaminates all the others through \\(r+\\gamma V(s')\\).",
+    "Because otherwise the matrix of the linear system is singular.",
+    "Because the terminal state has no available actions.",
+    "Because with \\(\\gamma<1\\) the terminal value is discounted to zero anyway.",
+  ],
+  "t3.m1.quiz.1.explicacion":
+    "The loop visits only \\(\\mathcal{S}\\), the non-terminal states, yet it uses "
+    + "\\(V(s')\\) with \\(s'\\) possibly terminal. That value is never corrected: if it is "
+    + "not 0, evaluation converges to something other than \\(v_\\pi\\), and with "
+    + "\\(\\gamma=1\\) the offset is unbounded. It is exactly the condition that the policy "
+    + "iteration box in the book leaves out.",
+
+  "t3.m1.quiz.2.enunciado":
+    "At sweep 2 the figure in the book prints \\(-1.7\\) for state 1 while this page shows "
+    + "\\(-1.75\\). Who is wrong?",
+  "t3.m1.quiz.2.opciones": [
+    "Nobody: \\(-1.75\\) is the exact value and \\(-1.7\\) is how the book printed it; "
+      + "rounded to two significant figures it would have been \\(-1.8\\).",
+    "The book: the correct value is \\(-1.70\\) and this page computes it wrongly.",
+    "This page: with in-place updating the result would be \\(-1.7\\).",
+    "It depends on the order in which states are swept.",
+  ],
+  "t3.m1.quiz.2.explicacion":
+    "The exact value is \\(-7/4\\). It is the only cell in the entire figure where the "
+    + "rounding declared in the caption fails; at sweep 10, for instance, it does round "
+    + "correctly. And it has nothing to do with sweep order: in place mode that cell holds "
+    + "a completely different value after two sweeps.",
+
+  /* --- B3 · estrategia de búsqueda --------------------------------------- */
+  "t3.b3.h2": "The strategy for finding an optimal policy",
+  "t3.b3.fuente": "Sutton &amp; Barto §4.3 and §4.7",
+  "t3.b3.p1":
+    "Searching directly over every policy is not an option: on this 14 non-terminal state, "
+    + "4 action gridworld there are \\(4^{14}\\), more than 268 million deterministic "
+    + "policies. Dynamic programming finds an optimal one in time <strong>polynomial"
+    + "</strong> in the number of states and actions, and in that sense it is exponentially "
+    + "faster than any direct search.",
+  "t3.b3.p2":
+    "The strategy is a loop of four boxes: define a first policy, <strong>predict</strong> "
+    + "its values, ask whether it can be improved and, if it can, improve it and predict "
+    + "again. Note where the loop rejoins: <strong>it goes back into “prediction”, not into "
+    + "“define the first policy”</strong>. Initialisation sits outside the cycle, which is "
+    + "why each evaluation starts from the values of the previous policy rather than from "
+    + "scratch.",
+  "t3.b3.vizTitulo": "The strategy, with the same topology as the lecture diagram",
+  "t3.b3.d.titulo": "Flow chart of the search for an optimal policy",
+  "t3.b3.d.inicio": "START",
+  "t3.b3.d.definir": "DEFINE FIRST POLICY (π)",
+  "t3.b3.d.prediccion": "PREDICTION",
+  "t3.b3.d.rombo": "CAN π BE IMPROVED?",
+  "t3.b3.d.fin": "END",
+  "t3.b3.d.mejorar": "IMPROVE POLICY",
+  "t3.b3.d.no": "No",
+  "t3.b3.d.si": "Yes",
+  "t3.b3.d.evaluacion": "(policy evaluation)",
+  "t3.b3.p3":
+    "The two missing pieces that close that loop are the subject of the next two blocks: a "
+    + "<strong>criterion</strong> to decide whether one policy is better than another (the "
+    + "improvement theorem) and a <strong>procedure</strong> that produces the improved "
+    + "policy (the greedy operator).",
+
+  /* --- B4 · teorema de mejora -------------------------------------------- */
+  "t3.b4.h2": "Policy improvement theorem",
+  "t3.b4.fuente":
+    "Sutton &amp; Barto §4.2, policy improvement theorem, eqs. (4.6), (4.7) and (4.8)",
+  "t3.b4.p1":
+    "We work with <strong>deterministic</strong> policies. Let \\(\\pi\\) and \\(\\pi'\\) be "
+    + "two of them. If in <strong>every</strong> state the action chosen by \\(\\pi'\\) is "
+    + "worth, according to \\(\\pi\\), at least as much as what \\(\\pi\\) gets there:",
+  /* Llevan texto dentro de la fórmula («para todo»), por eso se traducen. */
+  "t3.b4.eq1":
+    "\\[ q_\\pi\\big(s,\\pi'(s)\\big) \\;\\ge\\; v_\\pi(s) \\qquad "
+    + "\\text{for all } s\\in\\mathcal{S} \\]",
+  "t3.b4.eq2":
+    "\\[ v_{\\pi'}(s) \\;\\ge\\; v_\\pi(s) \\qquad "
+    + "\\text{for all } s\\in\\mathcal{S} \\]",
+  "t3.b4.p2":
+    "then \\(\\pi'\\) is <strong>as good as or better than</strong> \\(\\pi\\) in every "
+    + "state:",
+  "t3.b4.p3":
+    "And if the first inequality is <strong>strict</strong> in some state, so is the second "
+    + "one in that state. The special case used all the time is the simplest: \\(\\pi'\\) "
+    + "identical to \\(\\pi\\) except in one state. There the condition holds trivially "
+    + "elsewhere and it is enough to compare \\(q_\\pi(s,a)\\) with \\(v_\\pi(s)\\) in the "
+    + "state being changed.",
+  "t3.b4.p4":
+    "What if the new greedy policy turns out to be <strong>just as good, but no better"
+    + "</strong>? Then \\(v_\\pi = v_{\\pi'}\\) and that value function satisfies "
+    + "\\(v_{\\pi'}(s)=\\max_a\\sum_{s',r}p(s',r\\mid s,a)[r+\\gamma v_{\\pi'}(s')]\\), which "
+    + "is exactly the <strong>Bellman optimality equation</strong>. Hence \\(v_{\\pi'}=v_*\\) "
+    + "and <strong>both policies are optimal</strong>. Put the other way round: policy "
+    + "improvement always yields a strictly better policy, <strong>unless the starting one "
+    + "was already optimal</strong>. That is why “the policy has not changed” is a "
+    + "legitimate stopping rule.",
+  "t3.b4.erratum":
+    "<strong>Note on the course material:</strong> one lecture slide concludes “clearly "
+    + "<strong>π</strong> is as good as or better than <strong>π′</strong>”, with the two "
+    + "policies <strong>swapped</strong>. From the hypothesis \\(q_\\pi(s,\\pi'(s))\\ge "
+    + "v_\\pi(s)\\) it follows that <strong>π′</strong> is as good as or better than "
+    + "<strong>π</strong>, which is how it is stated here and in the other lecture "
+    + "collection.",
+  "t3.b4.p5":
+    "All of this extends to stochastic policies with no change in the statement. When "
+    + "several actions attain the maximum there is no need to pick just one: probability may "
+    + "be split among them in any way, subject only to <strong>non</strong>-maximising "
+    + "actions receiving zero probability.",
+  "t3.b4.continua": "Continues in module 2 →",
+
+  /* --- MÓDULO 2 ---------------------------------------------------------- */
+  "t3.m2.etiqueta": "MODULE 2",
+  "t3.m2.h2": "Improvement theorem: when is \\(\\pi'\\) better than \\(\\pi\\)?",
+  "t3.m2.fuente":
+    "Sutton &amp; Barto §4.2, policy improvement theorem, eqs. (4.7)–(4.8) · exact values, "
+    + "solved as a linear system",
+  "t3.m2.determinista": "Deterministic: the seed plays no part.",
+  "t3.m2.pregunta":
+    "<p><em>“What can we say about the black, red, green and blue policies?”</em></p>"
+    + "<span class=\"de-donde\">A lecture slide poses this question as a live poll and never "
+    + "answers it, there or later.</span>",
+  "t3.m2.explicacion":
+    "The <strong>black</strong> policy is \\(\\pi\\): go down until the bottom row, then go "
+    + "right. Pick a state, change <strong>one single</strong> action —the <strong>red"
+    + "</strong> arrow— and see what happens. The theorem only asks you to compare two "
+    + "numbers: \\(q_\\pi(s,a)\\), what the new action is worth measured with the values of "
+    + "\\(\\pi\\), and \\(v_\\pi(s)\\), what \\(\\pi\\) gets there.",
+  "t3.m2.adaptacion":
+    "This demo carries over to the 4×4 board a lecture figure that poses the same question "
+    + "on a 3×3 gridworld with four colour-coded policies and leaves it unanswered. The "
+    + "colours are kept: black for \\(\\pi\\), red for the alternative.",
+  "t3.m2.accionLabel": "Alternative action in the selected state",
+  "t3.m2.estadoLabel": "State",
+  "t3.m2.oPulsa": "— or click a cell",
+  "t3.m2.mostrarLabel": "Show",
+  "t3.m2.reiniciar": "Back to π",
+  "t3.m2.viz1": "The two policies on the grid",
+  "t3.m2.viz2": "The four action values of the selected state",
+  "t3.m2.mMejoran": "Changes that improve",
+  "t3.m2.mIgualan": "Changes that tie",
+  "t3.m2.mEmpeoran": "Changes that worsen",
+  "t3.m2.deN": "{n} of 56",
+  "t3.m2.thAccion": "Action",
+  "t3.m2.thQ": "\\(q_\\pi(s,a)\\)",
+  "t3.m2.thCmp": "against \\(v_\\pi(s)\\)",
+  "t3.m2.esPi": "← chosen by \\(\\pi\\)",
+  "t3.m2.esPi2": "← the alternative (\\(\\pi'\\))",
+  "t3.m2.vistaV": "v<sub>π</sub>",
+  "t3.m2.vistaV2": "v<sub>π′</sub>",
+  "t3.m2.vistaDif": "v<sub>π′</sub> − v<sub>π</sub>",
+  "t3.m2.verSinCambio":
+    "You picked the same action as \\(\\pi\\): \\(\\pi'=\\pi\\) and there is nothing to "
+    + "compare. Try another one.",
+  "t3.m2.verInfinito":
+    "\\(q_\\pi(s,a)={q}\\) <strong>&lt;</strong> \\(v_\\pi(s)={v}\\), and on top of that "
+    + "\\(\\pi'\\) <strong>stops reaching the terminal state</strong> from some state. With "
+    + "\\(\\gamma=1\\) that means \\(v_{\\pi'}=-\\infty\\) there: the episode never ends. "
+    + "Note that this only happens when the hypothesis of the theorem fails — no "
+    + "coincidence, it is a consequence of it.",
+  "t3.m2.verMejor":
+    "\\(q_\\pi(s,a)={q}\\) <strong>&gt;</strong> \\(v_\\pi(s)={v}\\). The hypothesis of the "
+    + "theorem holds with strict inequality, so \\(\\pi'\\) is <strong>strictly better"
+    + "</strong> than \\(\\pi\\): it improves in {n} state(s) and worsens in none.",
+  "t3.m2.verIgual":
+    "\\(q_\\pi(s,a)={q}\\) <strong>=</strong> \\(v_\\pi(s)={v}\\). The hypothesis holds, but "
+    + "without strict inequality: \\(v_{\\pi'}=v_\\pi\\) <strong>in all fourteen states"
+    + "</strong>. The theorem promises “as good as or better”, and here it is “as good as”.",
+  "t3.m2.verPeor":
+    "\\(q_\\pi(s,a)={q}\\) <strong>&lt;</strong> \\(v_\\pi(s)={v}\\). The hypothesis of the "
+    + "theorem does <strong>not</strong> hold, and the theorem says nothing: here it turns "
+    + "out that \\(\\pi'\\) is worse, in {n} state(s).",
+  "t3.m2.notaConteo":
+    "Of the \\(14\\times4=56\\) single-action changes that can be made to \\(\\pi\\), "
+    + "<strong>only 2 genuinely improve it</strong>. Find them. The other 54 either give "
+    + "exactly the same or make things worse, and 24 of them break the policy to the point "
+    + "that it stops terminating.",
+  "t3.m2.respuestaWooclap":
+    "<strong>Answer to the question on the slide:</strong> from the figure all one can say "
+    + "is that a policy differing from the black one <strong>in a single state</strong> is "
+    + "as good as or better than the black one <strong>if \\(q\\) does not drop in that "
+    + "state</strong>; and nothing more. In particular two alternatives changing different "
+    + "states <strong>cannot be compared with each other</strong>, nor the green one with "
+    + "the blue one: the theorem always compares a policy against <strong>the</strong> "
+    + "policy whose \\(v\\) has been computed, never two alternatives against one another.",
+
+  "t3.m2.quiz.0.enunciado":
+    "You change the action of state 5 from “down” to “right” and it turns out that "
+    + "\\(q_\\pi(5,E)=v_\\pi(5)=-4\\). What does the theorem guarantee?",
+  "t3.m2.quiz.0.opciones": [
+    "That \\(v_{\\pi'}(x)\\ge v_\\pi(x)\\) in every state; here it holds with equality "
+      + "everywhere.",
+    "That \\(\\pi'\\) is strictly better than \\(\\pi\\) in state 5.",
+    "Nothing, since the theorem demands strict inequality.",
+    "That \\(\\pi'\\) is optimal, because the maximum is attained by two actions.",
+  ],
+  "t3.m2.quiz.0.explicacion":
+    "The hypothesis is \\(\\ge\\), not \\(>\\): it holds, and so does the conclusion, also "
+    + "as \\(\\ge\\). Strict improvement is only guaranteed where the hypothesis is strict, "
+    + "and here it is strict in no state. Two actions tying says nothing about optimality: "
+    + "this policy L has 22 ties and none of them makes it optimal.",
+
+  "t3.m2.quiz.1.enunciado":
+    "On policy L, only 2 of the 56 single-action changes improve anything. What does that "
+    + "tell us about the greedy operator?",
+  "t3.m2.quiz.1.opciones": [
+    "That it finds both in a single pass, because it takes the \\(\\arg\\max\\) in "
+      + "<strong>every</strong> state at once.",
+    "That the greedy operator will need at least 27 passes to try every change.",
+    "That policy L is already nearly optimal, since almost no change improves it.",
+    "That the improvement theorem cannot be applied here.",
+  ],
+  "t3.m2.quiz.1.explicacion":
+    "The greedy operator does not try changes one at a time: it computes "
+    + "\\(\\arg\\max_a q_\\pi(s,a)\\) in each state and changes them all in the same pass. "
+    + "And beware of reading “nearly optimal” into this: policy L gives \\(-5\\) in state 1 "
+    + "where the optimum is \\(-1\\); few <strong>single-action</strong> changes improving "
+    + "it does not mean it is close to optimal.",
+
+  "t3.m2.quiz.2.enunciado":
+    "Some changes make \\(v_{\\pi'}=-\\infty\\) in several states. Can that happen to a "
+    + "change satisfying \\(q_\\pi(s,\\pi'(s))\\ge v_\\pi(s)\\)?",
+  "t3.m2.quiz.2.opciones": [
+    "No: if the hypothesis holds, the theorem gives \\(v_{\\pi'}\\ge v_\\pi\\), which is "
+      + "finite, so \\(\\pi'\\) must still reach the terminal state.",
+    "Yes, because the theorem says nothing about episode termination.",
+    "Yes, but only with \\(\\gamma<1\\).",
+    "No, because \\(-\\infty\\) can never arise in a finite MDP.",
+  ],
+  "t3.m2.quiz.2.explicacion":
+    "The value \\(-\\infty\\) shows up because \\(\\gamma=1\\) and the episode never ends: "
+    + "the sum of \\(-1\\) rewards is unbounded. And the theorem rules it out by itself, "
+    + "without mentioning termination: it lower-bounds \\(v_{\\pi'}\\) by \\(v_\\pi\\), which "
+    + "is finite. On this gridworld the 24 changes that break termination all sit, without "
+    + "exception, among those that make things worse.",
+
+  /* --- B5 · operadores de mejora ----------------------------------------- */
+  "t3.b5.h2": "Improvement operators: the greedy operator",
+  "t3.b5.fuente": "Sutton &amp; Barto §4.2, eq. (4.9)",
+  "t3.b5.p1":
+    "To exploit the theorem and get something practical, all we need is an <strong>"
+    + "improvement operator</strong>: something that, given a value function, returns a "
+    + "policy. The commonest one is the <strong>greedy</strong> operator: in each state, "
+    + "compute the action value of the four actions and keep the one attaining the maximum, "
+    + "<strong>breaking ties arbitrarily</strong>.",
+  "t3.b5.p2":
+    "That second identity is what makes it possible to work with \\(v\\) alone throughout "
+    + "the unit: <strong>with the model \\(p(s',r\\mid s,a)\\) at hand, the \\(q\\) values "
+    + "are recovered from the \\(v\\) values</strong> by a one-step sum. That is why the "
+    + "algorithms are stated over the state-value function, and \\(q\\) shows up only where "
+    + "it is needed, inside the <code>argmax</code>. The course material uses this identity "
+    + "without naming it; here it is named.",
+  "t3.b5.p3":
+    "By construction the greedy operator satisfies the hypothesis of the theorem in every "
+    + "state, so the policy it returns is always as good as or better than the starting one. "
+    + "That “breaking ties arbitrarily” looks like a harmless detail, and it is not: it is "
+    + "exactly what allows the algorithm of the next block to never terminate.",
+  "t3.b5.nota":
+    "The word “operator” does not belong to chapter 4. The book writes (4.9) and nothing "
+    + "else; Bellman operators with their fixed point appear much later, in §11.5. It is "
+    + "standard and useful vocabulary, but do not attribute it to chapter 4.",
+
+  /* --- B6 · iteración de política ---------------------------------------- */
+  "t3.b6.h2": "Policy iteration",
+  "t3.b6.fuente": "Sutton &amp; Barto §4.3 and the <em>Policy Iteration</em> box",
+  "t3.b6.p1":
+    "We now have both pieces: an algorithm to <strong>predict</strong> the value function of "
+    + "a policy and an <strong>operator</strong> to improve a given policy. Alternating them "
+    + "gives policy iteration:",
+  "t3.b6.p2":
+    "\\(E\\) is a complete <strong>evaluation</strong> of the policy and \\(I\\) is an "
+    + "<strong>improvement</strong>. Each policy is a strict improvement over the previous "
+    + "one unless it is already optimal, and since a finite MDP has finitely many "
+    + "deterministic policies, the process <strong>terminates in a finite number of "
+    + "iterations</strong>. Each evaluation also starts from the value function of the "
+    + "previous policy, which speeds it up a lot: the value function changes little from one "
+    + "policy to the next.",
+  "t3.b6.p3": "The algorithm, as projected in the lectures:",
+  "t3.b6.caja": "Policy iteration, to estimate π ≈ π_*\n\n"
+    + "1. Initialisation\n"
+    + "   V(s) ∈ ℝ  and  π(s) ∈ A(s)  arbitrary for all s ∈ S\n\n"
+    + "2. Policy evaluation\n"
+    + "   Repeat:\n"
+    + "       Δ ← 0\n"
+    + "       For each s ∈ S:\n"
+    + "           v ← V(s)\n"
+    + "           V(s) ← Σ_{s',r} p(s',r | s, π(s)) [ r + γ V(s') ]\n"
+    + "           Δ ← max(Δ, |v − V(s)|)\n"
+    + "   until Δ &lt; θ\n\n"
+    + "3. Policy improvement\n"
+    + "   policy-stable ← true\n"
+    + "   For each s ∈ S:\n"
+    + "       old-action ← π(s)\n"
+    + "       π(s) ← argmax_a Σ_{s',r} p(s',r | s, a) [ r + γ V(s') ]\n"
+    + "       If old-action ≠ π(s), then policy-stable ← false\n"
+    + "   If policy-stable, stop and return V ≈ v_*  and  π ≈ π_*;  else go to 2",
+  "t3.b6.p4":
+    "Two things worth looking at in that box before turning the page. First: the "
+    + "initialisation <strong>does not say \\(V(\\text{terminal})=0\\)</strong>, although the "
+    + "other two boxes of the chapter do. Second, and more serious: <strong>the last line "
+    + "does not always stop</strong>. Both are worked on in module 3.",
+  "t3.b6.continua": "Continues in module 3 →",
+
+  /* --- MÓDULO 3 ---------------------------------------------------------- */
+  "t3.m3.etiqueta": "MODULE 3",
+  "t3.m3.h2": "Policy iteration, and the last line that does not always stop",
+  "t3.m3.fuente":
+    "Sutton &amp; Barto §4.3, <em>Policy Iteration</em> box, and Exercise 4.4 · synchronous "
+    + "updating",
+  "t3.m3.pregunta":
+    "<p><em>“If old-action ≠ π(s), then policy-stable ← false.”</em> Neither lecture "
+    + "collection says anything about this line. Switch tie-breaking to random and watch the "
+    + "round counter.</p>"
+    + "<span class=\"de-donde\">Both collections reproduce the box verbatim, with no comment. "
+    + "The book leaves it as Exercise 4.4.</span>",
+  "t3.m3.explicacion":
+    "The algorithm alternates two phases: <strong>E</strong>, evaluating the current policy "
+    + "until \\(\\Delta&lt;\\theta\\), and <strong>I</strong>, improving it by making it "
+    + "greedy with respect to the values just computed. It stops once phase <strong>I"
+    + "</strong> changes no action. Look closely at how the last line decides that: by "
+    + "comparing <strong>actions</strong>, not <strong>values</strong>.",
+  "t3.m3.desempateLabel": "argmax tie-breaking",
+  "t3.m3.desDet": "Deterministic (order N, S, W, E)",
+  "t3.m3.desAle": "Random (page seed)",
+  "t3.m3.correccionOn": "Keep the old action if it is still maximising",
+  "t3.m3.marchaLabel": "Run",
+  "t3.m3.evaluar": "Evaluate (E)",
+  "t3.m3.mejorar": "Improve (I)",
+  "t3.m3.iteracion": "One iteration",
+  "t3.m3.hastaParar": "Run until it stops",
+  "t3.m3.reiniciar": "Reset",
+  "t3.m3.fijosLabel": "Fixed parameters",
+  "t3.m3.fijos": "θ = 10⁻⁴ · γ = 1 · π₀ = equiprobable · synchronous updating",
+  "t3.m3.viz1": "V(s) and the stored policy π(s)",
+  "t3.m3.faseE": "Phase E — policy evaluation",
+  "t3.m3.faseI": "Phase I — policy improvement",
+  "t3.m3.faseInicio": "Before starting — V ≡ 0, π₀ equiprobable",
+  "t3.m3.mRondas": "Improvement rounds (I)",
+  "t3.m3.mBarridos": "Evaluation sweeps",
+  "t3.m3.mEstable": "policy-stable",
+  "t3.m3.mEmpates": "States with a tie in the argmax",
+  "t3.m3.mOptima": "Is the stored policy optimal?",
+  "t3.m3.si": "true",
+  "t3.m3.no": "false",
+  "t3.si": "yes",
+  "t3.no": "no",
+  "t3.estadoTerminal": "Terminal state (T)",
+  "t3.estadoN": "State {e}",
+  "t3.m3.viz2": "How many repetitions have managed to stop",
+  "t3.m3.vacio":
+    "With this tie-breaking rule the algorithm always stops in 2 or 3 rounds: there is no "
+    + "distribution to draw. Switch to random tie-breaking and turn the fix off.",
+  "t3.m3.serieEmp": "Empirical (200 repetitions)",
+  "t3.m3.serieTeo": "Theoretical \\(1-(255/256)^{n-2}\\)",
+  "t3.m3.ejeX": "Improvement rounds",
+  "t3.m3.ejeY": "Fraction that has already stopped",
+  "t3.m3.anot": "258 = theoretical mean",
+  "t3.m3.resumenDist":
+    "Mean {media} rounds · median {mediana}. The distribution is geometric: the mean sits "
+    + "well above what you see half of the time.",
+  "t3.m3.semilla": "Seed {n} · 200 repetitions behind the empirical curve.",
+  "t3.m3.notaInicio":
+    "\\(V\\equiv0\\) and \\(\\pi_0\\) equiprobable. Press “Evaluate (E)” to run the first "
+    + "full phase.",
+  "t3.m3.notaFin":
+    "Stopped at round {n} after {b} evaluation sweeps. The policy returned is optimal; it "
+    + "had been since round 1.",
+  "t3.m3.tope":
+    "5000 rounds and still no stop. This is not a bug of this page: it is the bug in the "
+    + "pseudocode. Turn on the Exercise 4.4 fix.",
+  "t3.m3.notaCorreccion":
+    "With the fix on, the last line compares <strong>optimality</strong> instead of "
+    + "identity: if the old action is still among the maximising ones, it is kept. The "
+    + "algorithm stops in 2 rounds, with any seed.",
+  "t3.m3.notaRonda1":
+    "Round 1: 173 sweeps to evaluate the equiprobable policy down to "
+    + "\\(\\Delta<10^{-4}\\). The improvement that comes out of it <strong>is already "
+    + "optimal</strong>: on this board a single iteration suffices to find \\(\\pi_*\\). "
+    + "What follows is just the algorithm trying to <strong>notice</strong> it.",
+  "t3.m3.notaBucle":
+    "Round {n}. \\(V\\) has not changed at all: it is still \\(v_*\\). Neither has the "
+    + "policy improved: it is still optimal. And yet <code>policy-stable</code> is false, "
+    + "because the <code>argmax</code> returned a different action <strong>among those that "
+    + "tie</strong>. There are {e} states with a tie here; the probability that one round "
+    + "returns exactly the stored actions is \\(1/256\\), so <strong>256 rounds on "
+    + "average</strong> are needed and there is no upper bound at all.",
+  "t3.m3.pi0":
+    "\\(\\pi_0\\) is the equiprobable policy, as in Figure 4.1. With \\(\\gamma=1\\), an "
+    + "arbitrary deterministic policy may fail to reach the terminal state and then its "
+    + "evaluation does not converge: try it in module 2 with the arrow that hits the wall.",
+  "t3.m3.cajaTitulo": "The algorithm, exactly as implemented here",
+  "t3.m3.caja": "1. Initialisation\n"
+    + "   V(s) ← 0 for all s ∈ S⁺          (including V(terminal) = 0)\n"
+    + "   π ← equiprobable                  (π(a|s) = 1/4)\n\n"
+    + "2. Evaluation (phase E)\n"
+    + "   Repeat:\n"
+    + "       Δ ← 0\n"
+    + "       For each s ∈ S:               (synchronous sweep: written into a new table)\n"
+    + "           v ← V(s)\n"
+    + "           V(s) ← Σ_a π(a|s) Σ_{s',r} p(s',r|s,a) [ r + γ V(s') ]\n"
+    + "           Δ ← max(Δ, |v − V(s)|)\n"
+    + "   until Δ &lt; θ\n\n"
+    + "3. Improvement (phase I)\n"
+    + "   policy-stable ← true\n"
+    + "   For each s ∈ S:\n"
+    + "       old-action ← π(s)\n"
+    + "       M(s) ← { a : Σ_{s',r} p(s',r|s,a)[r + γ V(s')] ≥ max − ε }      (ε = 1e-9)\n"
+    + "       π(s) ← tiebreak(M(s))\n"
+    + "       If old-action ∉ M(s)  →  policy-stable ← false                 [FIX ON]\n"
+    + "       If old-action ≠ π(s)  →  policy-stable ← false                 [FIX OFF]\n"
+    + "   If policy-stable, stop; else go to 2",
+  "t3.m3.defecto2":
+    "<strong>And while we are inside this box:</strong> its initialisation line reads "
+    + "<em>“\\(V(s)\\in\\mathbb{R}\\) and \\(\\pi(s)\\in A(s)\\) arbitrarily for all "
+    + "\\(s\\in\\mathcal{S}\\)”</em> and <strong>leaves out \\(V(\\text{terminal})=0\\)"
+    + "</strong>, which the other two boxes of the chapter do require. Since step 2 visits "
+    + "only \\(\\mathcal{S}\\) yet uses \\(V(s')\\) with \\(s'\\) possibly terminal, if that "
+    + "value is not 0 evaluation converges to something other than \\(v_\\pi\\), and with "
+    + "\\(\\gamma=1\\) the error is unbounded. The book does not point this out: it comes "
+    + "from comparing the three boxes of the chapter against each other.",
+  "t3.m3.garantia":
+    "The guarantee is real, but it comes with fine print: it holds for <strong>finite, "
+    + "tabular MDPs</strong>. As soon as the value function is approximated with parameters "
+    + "—Unit 5— it stops holding.",
+
+  "t3.m3.quiz.0.enunciado":
+    "With random tie-breaking, the round counter goes past 300 while \\(V\\) does not change "
+    + "by a single decimal. What is going on?",
+  "t3.m3.quiz.0.opciones": [
+    "The <code>argmax</code> returns a different action among the tied ones each time; the "
+      + "policy changes without improving, and the last line, which compares actions, sets "
+      + "<code>policy-stable ← false</code>.",
+    "Evaluation has not converged yet and \\(\\theta\\) needs to be lowered.",
+    "The policy is degrading and the algorithm has to rebuild it.",
+    "It is a floating-point precision bug of this page.",
+  ],
+  "t3.m3.quiz.0.explicacion":
+    "\\(V\\) is already \\(v_*\\) and every policy it passes through is optimal: there is "
+    + "nothing to improve and nothing to degrade. The bug is in the stopping rule, which "
+    + "asks “did the action change?” instead of “did anything improve?”. Lowering "
+    + "\\(\\theta\\) does not help: the problem is not numerical, and in fact evaluation "
+    + "ends with \\(\\Delta=0\\) exactly, in a single sweep.",
+
+  "t3.m3.quiz.1.enunciado":
+    "This gridworld has 6 states with several optimal actions: four of them with 2 and two "
+    + "of them with 4. If tie-breaking is uniform, what is the probability that one "
+    + "improvement round returns exactly the stored actions?",
+  "t3.m3.quiz.1.opciones": [
+    "\\(1/256\\), the product of \\(\\tfrac12\\) four times and \\(\\tfrac14\\) twice.",
+    "\\(1/64\\), since there are 6 states with ties and \\(2^6=64\\).",
+    "\\(1/12\\), since there are 12 optimal actions spread over the 6 states.",
+    "\\(1/6\\), one out of the 6 states with a tie.",
+  ],
+  "t3.m3.quiz.1.explicacion":
+    "Each tied state is drawn independently, so the probabilities multiply: "
+    + "\\((1/2)^4\\cdot(1/4)^2 = 1/16\\cdot1/16 = 1/256\\). That is also the number of "
+    + "distinct deterministic optimal policies this gridworld has. The value \\(2^6\\) would "
+    + "assume that all six states have exactly two options, and two of them have four.",
+
+  "t3.m3.quiz.2.enunciado":
+    "The accepted fix for Exercise 4.4 replaces “if old-action ≠ π(s)” with “if old-action "
+    + "is not among the maximising ones”. Why does that guarantee termination?",
+  "t3.m3.quiz.2.opciones": [
+    "Because <code>policy-stable</code> only turns false when the policy has genuinely "
+      + "improved, and since the number of policies is finite and the improvement is strict, "
+      + "that can only happen finitely often.",
+    "Because it removes the ties in the \\(\\arg\\max\\).",
+    "Because it makes evaluation converge exactly instead of down to \\(\\theta\\).",
+    "Because it forces the initial policy to be deterministic.",
+  ],
+  "t3.m3.quiz.2.explicacion":
+    "The book’s termination argument is: <strong>strict</strong> monotonicity plus finitely "
+    + "many deterministic policies. The original version breaks it by flagging instability "
+    + "on changes that improve nothing. The fix restores strict monotonicity by comparing "
+    + "optimality rather than identity. The ties are still there —the <code>argmax</code> "
+    + "still has several answers—; what changes is that they are no longer taken as progress.",
+
+  /* --- B7 · eficiencia --------------------------------------------------- */
+  "t3.b7.h2": "Efficiency: the optimal policy shows up earlier",
+  "t3.b7.fuente": "Sutton &amp; Barto §4.3 (end) and Figure 4.1",
+  "t3.b7.p1":
+    "Figure 4.1 of the book puts side by side the sequence \\(v_k\\) of the equiprobable "
+    + "policy and the greedy policy with respect to each \\(v_k\\). And it draws, without "
+    + "ever saying it in words, the most important fact of the unit: <strong>the “optimal "
+    + "policy” label points at \\(k=3\\), at \\(k=10\\) and at \\(k=\\infty\\)</strong>. That "
+    + "is, the greedy policy is already optimal at the third sweep, while the values are "
+    + "still 19 units away from their limit.",
+  "t3.b7.p2":
+    "The book confirms it twice: in the figure caption (“all policies from the third "
+    + "iteration onwards are optimal”) and in §4.4 (“evaluation iterations beyond the first "
+    + "three have no effect on the corresponding greedy policy”). It adds that in this "
+    + "example <strong>a single iteration</strong> of policy iteration finds the optimal "
+    + "policy.",
+  "t3.b7.p3":
+    "Beware of the easy reading: the theorem only <strong>guarantees</strong> that the "
+    + "greedy policy is an improvement. That on this gridworld it comes out optimal at the "
+    + "first attempt is a quirk of the example, not a general property.",
+  "t3.b7.continua": "Continues in module 4 →",
+
+  /* --- MÓDULO 4 ---------------------------------------------------------- */
+  "t3.m4.etiqueta": "MODULE 4",
+  "t3.m4.h2": "The optimal policy shows up earlier",
+  "t3.m4.fuente": "Sutton &amp; Barto, Figure 4.1 and §4.4 · synchronous updating",
+  "t3.m4.determinista": "Deterministic: the seed plays no part.",
+  "t3.m4.pregunta":
+    "<p>In the book’s figure, the <em>“optimal policy”</em> label points with three arrows "
+    + "at \\(k=3\\), \\(k=10\\) and \\(k=\\infty\\). No lecture slide comments on it. How "
+    + "many sweeps of head start does the policy have over the values?</p>"
+    + "<span class=\"de-donde\">Sutton &amp; Barto, Figure 4.1 caption and §4.4 do say "
+    + "it.</span>",
+  "t3.m4.explicacion":
+    "This is Figure 4.1 of the book, but without the five rows: you can stop at any sweep. "
+    + "On the left, \\(v_k\\) for the equiprobable policy. On the right, the greedy policy "
+    + "with respect to that \\(v_k\\), showing <strong>every</strong> tied action. Look for "
+    + "the sweep after which the arrows stop changing, and compare it with how far the "
+    + "numbers still are from their limit.",
+  "t3.m4.kLabel": "Sweep \\(k\\)",
+  "t3.m4.saltosLabel": "Jumps of Figure 4.1",
+  "t3.m4.inf": "∞",
+  "t3.m4.mostrarLabel": "Show",
+  "t3.m4.vistaAmbos": "Values and policy",
+  "t3.m4.vistaPolitica": "Policy only",
+  "t3.m4.vizV": "v<sub>k</sub> for the equiprobable policy",
+  "t3.m4.vizPi": "Greedy policy with respect to v<sub>k</sub>",
+  "t3.m4.aleatoria": "(random policy)",
+  "t3.m4.optima": "optimal policy",
+  "t3.m4.mSubopt": "States with a suboptimal greedy action",
+  "t3.m4.mDistancia": "Distance to \\(v_\\pi\\)",
+  "t3.m4.mVentaja": "Sweeps of head start of the policy",
+  "t3.m4.ventaja": "{a} − {b} = {c}",
+  "t3.m4.viz2": "How much is still ahead",
+  "t3.m4.serieMal": "States with some suboptimal greedy action",
+  "t3.m4.serieDist": "Distance to the limit \\(\\max_s|v_k(s)-v_\\pi(s)|\\)",
+  "t3.m4.anot3": "k = 3: zero suboptimal states",
+  "t3.m4.anot173": "k = 173: Δ < 10⁻⁴",
+  "t3.m4.ejeX": "Sweep k",
+  "t3.m4.ejeY": "States / value units",
+  "t3.m4.vacio": "Both curves are computed when the module loads.",
+  "t3.m4.compartenEje":
+    "Both series share an axis on purpose: what matters is not their scale but that one "
+    + "reaches zero right away and the other takes 173 sweeps.",
+  "t3.m4.notaInf":
+    "“∞” here is sweep 173, the first one meeting \\(\\Delta<10^{-4}\\). The values are "
+    + "\\(-13.9982\\ldots\\) where the book prints \\(-14\\).",
+  "t3.m4.notaAntes":
+    "There are still {n} state(s) whose greedy policy picks an action that is not optimal. "
+    + "They are highlighted on the grid to the right.",
+  "t3.m4.notaJusto":
+    "Here it is. Zero suboptimal states, and the values are still <strong>19 units</strong> "
+    + "away from their limit: \\(v_3(3)=-3\\) against \\(v_\\pi(3)=-22\\). From here on the "
+    + "arrows never change again, yet evaluation needs <strong>170 more sweeps</strong> to "
+    + "meet \\(\\Delta<10^{-4}\\).",
+  "t3.m4.notaDespues":
+    "The arrows are the same ones as at sweep 3. All that changes are the numbers, and they "
+    + "are only needed to know <strong>how many steps</strong> it costs to reach the "
+    + "terminal state, not to decide <strong>which way</strong> to go.",
+  "t3.m4.hueco":
+    "<strong>Practical note:</strong> these two figures are in the lecture <code>.pptx</code> "
+    + "but <strong>not in the distributed PDF</strong>, which has only 11 pages. If you study "
+    + "from the PDF, this module is the only version of Figure 4.1 you have.",
+  "t3.m4.cierre":
+    "If the policy is ready at sweep 3, what are the other 170 for? That is exactly the "
+    + "question the algorithm of the next module answers.",
+
+  "t3.m4.quiz.0.enunciado":
+    "At sweep 3 the greedy policy is already optimal, yet \\(v_3(3)=-3\\) and "
+    + "\\(v_\\pi(3)=-22\\). How can an optimal policy come out of values that wrong?",
+  "t3.m4.quiz.0.opciones": [
+    "Because the policy depends only on the <strong>ordering</strong> among the action "
+      + "values, and that ordering settles long before the magnitudes do.",
+    "Because \\(v_3\\) is already proportional to \\(v_\\pi\\), and \\(\\arg\\max\\) is "
+      + "scale invariant.",
+    "Because by sweep 3 evaluation has already converged in the states that matter.",
+    "It is a coincidence of this board; in general it does not happen.",
+  ],
+  "t3.m4.quiz.0.explicacion":
+    "\\(\\arg\\max\\) does not look at magnitudes, it looks at comparisons. \\(v_3\\) is not "
+    + "proportional to \\(v_\\pi\\) —just check that \\(-3\\) and \\(-22\\) are not in the "
+    + "same ratio as \\(-2.4375\\) and \\(-14\\)— but it does order the neighbours the same "
+    + "way. That it happens at sweep 3 here is indeed a quirk of this board; what is general "
+    + "is that the policy settles before the values, not that it settles this early.",
+
+  "t3.m4.quiz.1.enunciado":
+    "At \\(k=2\\) states 3, 6, 9 and 12 show all four arrows. Why are only two of them "
+    + "flagged as problematic?",
+  "t3.m4.quiz.1.opciones": [
+    "Because in states 6 and 9 all four actions <strong>are</strong> optimal, so picking any "
+      + "of them is no mistake; in 3 and 12 they are not.",
+    "Because states 6 and 9 are interior and the other two are on the border.",
+    "Because in 3 and 12 the tie is broken at the next sweep and in 6 and 9 it is not.",
+    "Because the book’s figure marks only two of the four.",
+  ],
+  "t3.m4.quiz.1.explicacion":
+    "From 6 and from 9 all four neighbouring cells are worth \\(-2\\) under \\(v_*\\), so "
+    + "all four actions lead to a value of \\(-3\\), which is \\(v_*\\) of the state itself: "
+    + "all four are optimal. From state 3, by contrast, only going down or going left are. "
+    + "The criterion is not “is there a tie?” but “are all the tied actions among the optimal "
+    + "ones?”.",
+
+  "t3.m4.quiz.2.enunciado":
+    "The book says that in this example policy iteration finds the optimal policy after a "
+    + "single iteration. How many evaluation sweeps does that single iteration cost?",
+  "t3.m4.quiz.2.opciones": [
+    "173, with \\(\\theta=10^{-4}\\): the iteration is one, but its evaluation phase is 173 "
+      + "sweeps.",
+    "One, since an iteration is a sweep.",
+    "Three, the ones the greedy policy needs to settle.",
+    "178, which is what the whole algorithm takes to stop.",
+  ],
+  "t3.m4.quiz.2.explicacion":
+    "Two counters are worth keeping apart: <strong>policy iterations</strong> (full "
+    + "evaluation + improvement) and <strong>evaluation sweeps</strong>. One iteration is "
+    + "enough here, but its evaluation consumes 173 sweeps to meet the threshold. The three "
+    + "sweeps are a different thing: when the greedy policy stops changing, which is "
+    + "precisely what makes the remaining 170 useless. And 178 is the total for the "
+    + "algorithm to <strong>detect</strong> that it is done, which includes later rounds.",
+
+  /* --- B8 · iteración de valor ------------------------------------------- */
+  "t3.b8.h2": "Value iteration",
+  "t3.b8.fuente":
+    "Sutton &amp; Barto §4.4, eq. (4.10) and the <em>Value Iteration</em> box",
+  "t3.b8.p1":
+    "The question this algorithm answers is the one from the previous block: <strong>do we "
+    + "have to wait for evaluation to converge before applying the improvement operator?"
+    + "</strong> No. Evaluation can be truncated in many ways without losing the convergence "
+    + "guarantees. The extreme case —and the most efficient per sweep— is truncating it to "
+    + "<strong>a single sweep</strong>: greedify right after one update of every state. That "
+    + "is value iteration.",
+  "t3.b8.p2":
+    "Compare it with the evaluation update: <strong>the only difference is that "
+    + "\\(\\sum_a \\pi(a\\mid s)\\) has become \\(\\max_a\\)</strong>. It is the Bellman "
+    + "optimality equation turned into an update rule, just as the evaluation update was the "
+    + "Bellman equation for \\(v_\\pi\\) turned into an update rule. And there is no explicit "
+    + "policy inside the loop: it is extracted <strong>once, at the end</strong>, with an "
+    + "<code>argmax</code>.",
+  "t3.b8.p3":
+    "Between the two extremes lies a continuum. Any number \\(m\\) of evaluation sweeps can "
+    + "be interleaved between two improvements: \\(m=1\\) gives value iteration, "
+    + "\\(m\\to\\infty\\) gives policy iteration, and convergence is often faster at some "
+    + "intermediate value. All those variants converge. \\(m\\) is notation of this page, not "
+    + "of the book.",
+  "t3.b8.p4":
+    "Keep this update: it is the <strong>basis of Q-learning</strong>. The action-value "
+    + "version, \\(q_{k+1}(s,a)=\\sum_{s',r}p(s',r\\mid s,a)[\\,r+\\gamma\\max_{a'}q_k(s',a')"
+    + "\\,]\\), is literally Q-learning with the expectation computed rather than sampled. In "
+    + "Unit 4 the expectation will be replaced by a sample and \\(\\alpha\\) will appear.",
+  "t3.b8.continua": "Continues in module 5 →",
+
+  /* --- MÓDULO 5 ---------------------------------------------------------- */
+  "t3.m5.etiqueta": "MODULE 5",
+  "t3.m5.h2": "Value iteration: truncated evaluation",
+  "t3.m5.fuente":
+    "Sutton &amp; Barto §4.4, eq. (4.10) and the <em>Value Iteration</em> box · synchronous "
+    + "updating",
+  "t3.m5.determinista":
+    "Deterministic: the greedy policy spreads probability over the ties, but nothing is "
+    + "sampled; the seed plays no part.",
+  "t3.m5.pregunta":
+    "<p><em>“Do we need to wait until the evaluation process has converged? What happens if "
+    + "we apply our improvement operator earlier?”</em></p>"
+    + "<span class=\"de-donde\">Both lecture collections answer by stating the algorithm, and "
+    + "jump from “until convergence” to “a single sweep” without ever showing the "
+    + "intermediate case.</span>",
+  "t3.m5.explicacion":
+    "Value iteration is not a separate algorithm: it is policy iteration with evaluation "
+    + "<strong>truncated to a single sweep</strong>. Move \\(m\\) and check it. With "
+    + "\\(m=1\\), every sweep performs an improvement and an evaluation at once, and the "
+    + "update can be written in one go with a \\(\\max_a\\) inside. With \\(m=\\infty\\), "
+    + "evaluation is completed before each improvement, and that is the policy iteration of "
+    + "the previous module.",
+  "t3.m5.equivalencia":
+    "<p class=\"viz-titulo\">The two updates, one on top of the other. The only difference is "
+    + "the operator in front:</p> "
+    + "\\[ v_{k+1}(s) = \\textcolor{gray}{\\sum_a \\pi(a\\mid s)} \\sum_{s',r} p(s',r\\mid "
+    + "s,a)[\\,r+\\gamma v_k(s')\\,] \\quad\\text{(evaluation)} \\] "
+    + "\\[ v_{k+1}(s) = \\textcolor{gray}{\\max_a\\ \\ \\ \\ } \\sum_{s',r} p(s',r\\mid "
+    + "s,a)[\\,r+\\gamma v_k(s')\\,] \\quad\\text{(value iteration)} \\] "
+    + "<p>That contrast is drawn on no slide of the unit, and it is the one thing worth "
+    + "remembering.</p>",
+  "t3.m5.mLabel": "Evaluation sweeps between improvements (\\(m\\))",
+  "t3.m5.mInf": "∞",
+  "t3.m5.marchaLabel": "Run",
+  "t3.m5.barrido": "One sweep",
+  "t3.m5.ronda": "One round (improvement + m sweeps)",
+  "t3.m5.hasta": "Run until it stops",
+  "t3.m5.reiniciar": "Reset",
+  "t3.m5.mostrarLabel": "Show",
+  "t3.m5.vistaV": "V and policy",
+  "t3.m5.vistaCmp": "Compare with evaluation",
+  "t3.m5.fijosLabel": "Fixed parameters",
+  "t3.m5.fijos": "θ = 10⁻⁴ · γ = 1 · V₀ ≡ 0 · synchronous updating",
+  "t3.m5.viz1": "V(s) and the argmax with respect to V",
+  "t3.m5.cmp":
+    "Second line of each cell, in grey: the \\(v_k\\) of the evaluation of the equiprobable "
+    + "policy at the same sweep count. This view draws no arrows: switch back to "
+    + "“\\(V\\) and policy” to see them.",
+  "t3.m5.mBarridos": "Sweeps done",
+  "t3.m5.mRondas": "Improvement rounds",
+  "t3.m5.mDelta": "Maximum change (\\(\\Delta\\))",
+  "t3.m5.mOptima": "Is the policy optimal?",
+  "t3.m5.viz2": "What each m costs",
+  "t3.m5.serieCoste": "Total sweeps until \\(\\Delta<\\theta\\)",
+  "t3.m5.anotInf": "m = ∞ (policy iteration): {n}",
+  "t3.m5.ejeX": "m (evaluation sweeps between improvements)",
+  "t3.m5.ejeY": "Total sweeps",
+  "t3.m5.vacio": "The cost curve is computed when the module loads.",
+  "t3.m5.notaM1":
+    "With \\(m=1\\) this is literally the <em>Value Iteration</em> box: improvement and "
+    + "evaluation in the same sweep. And here it converges in <strong>4 sweeps</strong>, with "
+    + "\\(\\Delta = 1, 1, 1, 0\\). The fourth sweep changes nothing: it only serves to check "
+    + "that we are done.",
+  "t3.m5.notaInf":
+    "With \\(m=\\infty\\) this is policy iteration: <strong>178 sweeps</strong>, of which 173 "
+    + "go into evaluating the first policy. Forty-four times more expensive than \\(m=1\\) to "
+    + "reach the very same policy.",
+  "t3.m5.notaMedio":
+    "With \\(m={m}\\): {b} sweeps. Neither the book nor the slides present this case, and it "
+    + "is perfectly legitimate: the book explicitly says that any number of evaluation sweeps "
+    + "may be interleaved between two improvements, and that convergence is often faster.",
+  "t3.m5.notaFin":
+    "Stopped after {b} sweeps and {r} rounds. \\(V=v_*\\): the values are minus the shortest "
+    + "distance to the terminal state.",
+  "t3.m5.cajaTitulo": "The general case, exactly as implemented here",
+  "t3.m5.caja": "V ← 0 on S⁺\n"
+    + "Repeat:\n"
+    + "    (I)  π ← greedy(V), keeping ALL maximising actions,\n"
+    + "         with uniform probability over them\n"
+    + "    (E)  m evaluation sweeps of π  (or fewer, if Δ &lt; θ sooner)\n"
+    + "until Δ &lt; θ and π stops changing",
+  "t3.m5.greedyEstocastica":
+    "The greedy policy of this module spreads probability <strong>evenly over every tied "
+    + "action</strong>, which is what the book allows. With deterministic tie-breaking and "
+    + "\\(\\gamma=1\\), evaluating the first greedy policy would not converge.",
+  "t3.m5.discrepancia1":
+    "One lecture slide says that value iteration converges “with probability 1”. The "
+    + "algorithm is deterministic: there is nothing to sample, and the book states plain "
+    + "convergence. The phrase “with probability 1” will show up in Unit 4, with Q-learning, "
+    + "where sampling does happen.",
+  "t3.m5.discrepancia2":
+    "One lecture slide claims that value iteration may converge worse than policy iteration. "
+    + "The book does not go that far: it says both are widely used and that it is not clear "
+    + "which, if either, is better in general. On this board value iteration wins 4 to 178, "
+    + "but that proves nothing in general either.",
+  "t3.m5.qlearning":
+    "<strong>Keep this update.</strong> Its action-value version, \\(q_{k+1}(s,a)="
+    + "\\sum_{s',r}p(s',r\\mid s,a)\\big[\\,r+\\gamma\\max_{a'}q_k(s',a')\\,\\big]\\), is "
+    + "<strong>Q-learning with the expectation computed rather than sampled</strong>. In Unit "
+    + "4 there will be no model: the sum over \\((s',r)\\) will be replaced by a single "
+    + "sample and \\(\\alpha\\) will appear. The skeleton —the \\(\\max\\) inside, the "
+    + "implicit policy— is this one.",
+  "t3.m5.qlearning.fuente":
+    "Sutton &amp; Barto, Exercise 4.10 asks for exactly that version, and Figure 8.6 puts "
+    + "“q-value iteration” and “Q-learning” in the same row.",
+
+  "t3.m5.quiz.0.enunciado":
+    "What is the difference between the policy evaluation update and the value iteration "
+    + "update?",
+  "t3.m5.quiz.0.opciones": [
+    "\\(\\sum_a\\pi(a\\mid s)\\) is replaced by \\(\\max_a\\); everything else is identical.",
+    "Value iteration uses \\(q\\) instead of \\(v\\).",
+    "Value iteration does not use the model \\(p(s',r\\mid s,a)\\).",
+    "Value iteration adds a learning rate.",
+  ],
+  "t3.m5.quiz.0.explicacion":
+    "Both are the same sum over \\((s',r)\\); all that changes is the operator in front. "
+    + "Both use the model —dynamic programming always needs it— and neither has a learning "
+    + "rate: the expected update <strong>replaces</strong> the value, it does not nudge it. "
+    + "The \\(q\\) version does exist, but it is a different equation and shows up in "
+    + "Exercise 4.10.",
+
+  "t3.m5.quiz.1.enunciado":
+    "With \\(m=1\\) the algorithm stops in 4 sweeps and with \\(m=\\infty\\) in 178. Does "
+    + "that mean value iteration is always better?",
+  "t3.m5.quiz.1.opciones": [
+    "No: on this board it is, but the book says it is not clear which of the two is better "
+      + "in general.",
+    "Yes: truncating evaluation always reduces the total work.",
+    "Yes, because value iteration never has to evaluate any policy.",
+    "No, because value iteration does not guarantee finding the optimal policy.",
+  ],
+  "t3.m5.quiz.1.explicacion":
+    "Both converge to the optimal policy, so the guarantee does not tell them apart. The 4 "
+    + "against 178 advantage belongs to this board, where evaluating the equiprobable policy "
+    + "is extremely slow and the \\(\\max\\) propagates instantly. The book is deliberately "
+    + "cautious: it says both are widely used and that it is not clear which is better in "
+    + "general. Note also that one lecture slide claims something stronger than the book on "
+    + "this point, and it is flagged on this page.",
+
+  "t3.m5.quiz.2.enunciado":
+    "In the <em>Value Iteration</em> box, where does the policy appear?",
+  "t3.m5.quiz.2.opciones": [
+    "Only at the end, in a single extraction \\(\\pi(s)=\\arg\\max_a\\ldots\\) after leaving "
+      + "the loop.",
+    "In every sweep, since the \\(\\max\\) amounts to making the policy greedy.",
+    "In the initialisation, as an arbitrary \\(\\pi_0\\).",
+    "It never appears: value iteration returns \\(V\\) only.",
+  ],
+  "t3.m5.quiz.2.explicacion":
+    "There is no stored policy inside the loop: the \\(\\max\\) sits <strong>inside</strong> "
+    + "the update of \\(V\\). The policy is built once, on exit. Reading the \\(\\max\\) as "
+    + "“being” a greedy improvement is a correct reading of the algorithm, but it does not "
+    + "mean there is a variable \\(\\pi\\) getting updated, and confusing the two is exactly "
+    + "what leads to thinking that value iteration is “evaluating the greedy policy”.",
+
+  /* --- B9 · GPI ---------------------------------------------------------- */
+  "t3.b9.h2": "Generalised policy iteration (GPI)",
+  "t3.b9.fuente":
+    "Sutton &amp; Barto §4.6, GPI and the two-lines diagram (unnumbered)",
+  "t3.b9.p1":
+    "<strong>Generalised policy iteration</strong> is the name given to letting the "
+    + "evaluation and improvement processes interact, <strong>regardless of their "
+    + "granularity or their details</strong>. Policy iteration and value iteration are two "
+    + "special cases. Almost every reinforcement learning method is well described as GPI.",
+  "t3.b9.p2":
+    "The two processes <strong>compete and cooperate</strong>. They compete because they "
+    + "pull in opposite directions: making the policy greedy with respect to the value "
+    + "function leaves the value function wrong for the new policy, and making the value "
+    + "function consistent with the policy stops the policy from being greedy. They cooperate "
+    + "because when <strong>both</strong> settle at the same time, the value function is "
+    + "consistent with the policy <strong>and</strong> the policy is greedy with respect to "
+    + "it: that is exactly the Bellman optimality equation, and so both are optimal.",
+  "t3.b9.p3":
+    "In the two-lines diagram each line is a goal. The upper one, \\(v=v_\\pi\\), is the set "
+    + "of points where the value function is consistent with the policy: reaching it is "
+    + "<strong>evaluating the policy</strong>. The lower one, \\(\\pi=\\text{greedy}(v)\\), "
+    + "is where the policy is greedy with respect to the value function: reaching it is "
+    + "<strong>improving the policy</strong>. They meet at \\(v_*,\\pi_*\\).",
+  "t3.b9.nota":
+    "The real geometry is far more complicated than two lines; the diagram merely suggests "
+    + "what happens. And the arrows the book draws are <strong>policy iteration</strong>, and "
+    + "policy iteration only: each one takes the system all the way to one of the two goals. "
+    + "About methods taking incomplete steps the book says a single sentence: that one may "
+    + "also take “smaller, incomplete steps toward each goal”.",
+  "t3.b9.continua": "Continues in module 6 →",
+
+  /* --- MÓDULO 6 ---------------------------------------------------------- */
+  "t3.m6.etiqueta": "MODULE 6",
+  "t3.m6.h2": "Generalised policy iteration: the two lines",
+  "t3.m6.fuente":
+    "Sutton &amp; Barto §4.6, GPI and the two-lines diagram (unnumbered) · synchronous "
+    + "updating",
+  "t3.m6.pregunta":
+    "<p>In the two-lines diagram, the course material <strong>glosses only the lower "
+    + "line</strong> (“improve the policy”). The upper one, \\(v=v_\\pi\\), is left without "
+    + "its symmetric label: it is never said that reaching it means evaluating the "
+    + "policy.</p>"
+    + "<span class=\"de-donde\">One collection glosses only the lower line; the other glosses "
+    + "neither. And the zigzag trajectory they draw is policy iteration, which neither of "
+    + "them says either.</span>",
+  "t3.m6.explicacion":
+    "Every point of this plane is a pair (value function, policy). The upper line, "
+    + "\\(v=v_\\pi\\), is where the value function is <strong>consistent with the policy"
+    + "</strong>: reaching it means <strong>evaluating</strong>. The lower one, "
+    + "\\(\\pi=\\text{greedy}(v)\\), is where the policy is <strong>greedy with respect to "
+    + "the value function</strong>: reaching it means <strong>improving</strong>. They meet "
+    + "at \\(v_*,\\pi_*\\). The real geometry is far more complicated than two lines; the "
+    + "drawing merely suggests what happens.",
+  "t3.m6.honestidad":
+    "<strong>What is Sutton &amp; Barto and what is not.</strong> The book draws <strong>one "
+    + "single</strong> trajectory and says it corresponds to <strong>policy iteration"
+    + "</strong>: each arrow takes the system all the way to one of the two goals. About "
+    + "other methods it says exactly one sentence, that one may also take “smaller, "
+    + "incomplete steps toward each goal”, <strong>without attributing it to any specific "
+    + "algorithm</strong>. The <strong>value iteration</strong> and <strong>chaotic</strong> "
+    + "trajectories drawn here are a <strong>teaching interpretation of this course</strong>, "
+    + "not of the book. They are defensible —and computed here from the real algorithms, not "
+    + "drawn by hand— but do not attribute them to Sutton &amp; Barto.",
+  "t3.m6.trayectoriaLabel": "Trajectory",
+  "t3.m6.trPolitica": "Policy iteration",
+  "t3.m6.trValor": "Value iteration",
+  "t3.m6.trCaotica": "Chaotic (asynchronous)",
+  "t3.m6.marchaLabel": "Run",
+  "t3.m6.paso": "One step",
+  "t3.m6.reproducir": "Play",
+  "t3.m6.reiniciar": "Reset",
+  "t3.m6.superponerLabel": "Overlay all three",
+  "t3.m6.viz1": "The two lines and the trajectory",
+  "t3.m6.vacio": "Pick a trajectory and press “One step” or “Play”.",
+  "t3.m6.viz2": "The two residuals",
+  "t3.m6.vacioResiduos":
+    "The two residuals appear as soon as the trajectory takes its first step.",
+  "t3.m6.rectaSup": "v = v<sub>π</sub>",
+  "t3.m6.rectaSupGlosa": "evaluate the policy",
+  "t3.m6.rectaInf": "π = greedy(v)",
+  "t3.m6.rectaInfGlosa": "improve the policy",
+  "t3.m6.vertice": "v<sub>*</sub>, π<sub>*</sub>",
+  "t3.m6.inicio": "v, π",
+  "t3.m6.residuoE": "Distance to “v = v<sub>π</sub>”: e = {valor}",
+  "t3.m6.residuoG": "Distance to “π = greedy(v)”: g = {valor}",
+  "t3.m6.mPaso": "Step",
+  "t3.m6.pasoDe": "{i} of {n}",
+  "t3.m6.mFase": "What just happened",
+  "t3.m6.faseInicio": "starting point",
+  "t3.m6.faseE": "evaluation",
+  "t3.m6.faseI": "improvement",
+  "t3.m6.faseA": "single-state update",
+  "t3.m6.topeCaos": "2000 updates without converging. Try another seed.",
+  "t3.m6.semilla":
+    "Seed {n} · only the chaotic trajectory is random; all three are single runs, not "
+    + "averages.",
+  "t3.m6.notaPolitica":
+    "Policy iteration: <strong>each step completes one of the two goals</strong>. Evaluation "
+    + "takes the point <strong>exactly</strong> onto the upper line (\\(e=0\\)) and "
+    + "improvement <strong>exactly</strong> onto the lower one (\\(g=0\\)). A zigzag of "
+    + "decreasing amplitude down to the vertex, in three legs. <strong>This is the only "
+    + "trajectory the book draws and describes.</strong>",
+  "t3.m6.notaValor":
+    "Value iteration: <strong>no step completes anything</strong>. Each sweep improves a "
+    + "little and evaluates a little, so the point advances towards the vertex without "
+    + "touching either line until the very end. It is this course’s reading of the book’s "
+    + "sentence about “smaller, incomplete steps”: <strong>interpretation, not "
+    + "quotation</strong>.",
+  "t3.m6.notaCaotica":
+    "Chaotic: there are no full sweeps here. At each step <strong>one single state</strong> "
+    + "is picked at random and gets, also at random, either an evaluation update or an "
+    + "improvement update. The path moves away as much as it moves closer —there are steps "
+    + "where <strong>both</strong> residuals grow— and it still ends at the vertex. That is "
+    + "<strong>asynchronous</strong> dynamic programming (§4.5 of the book), and it is the "
+    + "best available intuition for what the methods of Unit 4 will do, where the model will "
+    + "not even be known.",
+  "t3.m6.arranque":
+    "All three start from the same place: \\(V\\equiv0\\) and the policy of module 2. With "
+    + "\\(V\\equiv0\\) every action ties, so any policy is greedy: that is why the path "
+    + "starts <strong>on the lower line</strong>.",
+  "t3.m6.residuosDef":
+    "The two numbers placing the point are <strong>mean</strong> residuals over the fourteen "
+    + "states: \\(e\\) measures how much an evaluation sweep would change \\(V\\), and "
+    + "\\(g\\) measures how much is lost by not being greedy. Each of them is zero exactly on "
+    + "its own line. \\(e\\) and \\(g\\) are notation of this page, not of the book.",
+
+  "t3.m6.quiz.0.enunciado":
+    "In the diagram, what do the arrows drawn by Sutton &amp; Barto represent?",
+  "t3.m6.quiz.0.opciones": [
+    "Policy iteration: each arrow takes the system all the way to one of the two goals.",
+    "GPI in general, without referring to any specific algorithm.",
+    "Value iteration, which takes short steps.",
+    "The trajectory of a model-free reinforcement learning method.",
+  ],
+  "t3.m6.quiz.0.explicacion":
+    "The text accompanying the diagram says it in those words: the arrows correspond to the "
+    + "behaviour of policy iteration, because each one achieves one of the two goals "
+    + "completely. About methods taking incomplete steps the book only says that they "
+    + "<strong>can also be taken</strong>, without drawing them or attributing them to "
+    + "anyone. The other two trajectories in this module are this course’s interpretation, "
+    + "and they are labelled as such on screen.",
+
+  "t3.m6.quiz.1.enunciado":
+    "Why does the chaotic trajectory end at the vertex despite drifting away from it at "
+    + "times?",
+  "t3.m6.quiz.1.opciones": [
+    "Because it keeps updating every state: both processes make progress, however "
+      + "disorderly, and they can only settle together once the Bellman optimality equation "
+      + "holds.",
+    "Because randomness averages out in the long run and the mean error tends to zero.",
+    "Because every single-state update always reduces at least one of the two residuals.",
+    "Because the seed was chosen so that it converges.",
+  ],
+  "t3.m6.quiz.1.explicacion":
+    "The condition the book imposes on asynchronous dynamic programming is to abandon no "
+    + "state: all of them must keep being updated. Given that, both processes can only stand "
+    + "still once the value function is consistent with the policy <strong>and</strong> the "
+    + "policy is greedy with respect to it, which is the optimality equation. It is not a "
+    + "statistical cancellation, and it is certainly not down to the seed: try changing it. "
+    + "Nor is it true that every update reduces some residual: along this very trajectory "
+    + "there are steps where both grow.",
+
+  "t3.m6.quiz.2.enunciado":
+    "A point sits exactly on the line \\(v=v_\\pi\\) but not on the other one. What does "
+    + "that mean?",
+  "t3.m6.quiz.2.opciones": [
+    "That the value function is exact for the current policy, but that policy is not greedy "
+      + "with respect to it: there is improvement left to do.",
+    "That the policy is already optimal and only the values need refining.",
+    "That the algorithm has got stuck.",
+    "That the policy is greedy but the values are wrong.",
+  ],
+  "t3.m6.quiz.2.explicacion":
+    "Sitting on \\(v=v_\\pi\\) means an evaluation has been completed: \\(V\\) is exactly "
+    + "the value function of \\(\\pi\\). Not sitting on the other line means that in some "
+    + "state there is an action worth more than the one \\(\\pi\\) picks, that is, that the "
+    + "greedy operator still has work to do. It is precisely the starting situation of the "
+    + "improvement theorem, and also what gives the zigzag of policy iteration another leg "
+    + "ahead.",
+
+  /* --- A5 · ecuaciones clave --------------------------------------------- */
+  "t3.ecuaciones.h2": "Key equations of the unit",
+  "t3.ecuaciones.cab":
+    "<th>Equation</th><th>What it says</th><th>Where it is used here</th>",
+  "t3.ecuaciones.f1":
+    "<td>\\(v_{k+1}(s)=\\sum_a \\pi(a\\mid s)\\sum_{s',r}p(s',r\\mid s,a)[r+\\gamma "
+    + "v_k(s')]\\)</td>"
+    + "<td>One evaluation sweep: the new value of \\(s\\) comes from the old values of its "
+    + "successors</td><td>modules 1, 3, 4, 5 and 6</td>",
+  "t3.ecuaciones.f2":
+    "<td>\\(\\Delta \\leftarrow \\max(\\Delta,|v-V(s)|)\\), stop if \\(\\Delta&lt;\\theta\\)"
+    + "</td><td>The stopping rule: the largest change of a sweep</td>"
+    + "<td>modules 1, 3 and 5</td>",
+  "t3.ecuaciones.f3":
+    "<td>\\(q_\\pi(s,a)=\\sum_{s',r}p(s',r\\mid s,a)[r+\\gamma v_\\pi(s')]\\)</td>"
+    + "<td>With the model, \\(q\\) values are recovered from \\(v\\) values by a one-step "
+    + "sum</td><td>modules 2, 3, 4 and 5</td>",
+  "t3.ecuaciones.f4":
+    "<td>\\(q_\\pi(s,\\pi'(s))\\ge v_\\pi(s)\\;\\Rightarrow\\;v_{\\pi'}(s)\\ge v_\\pi(s)\\)"
+    + "</td><td>Improvement theorem: if the new action is worth no less, the new policy is "
+    + "no worse</td><td>module 2</td>",
+  "t3.ecuaciones.f5":
+    "<td>\\(\\pi'(s)\\doteq\\arg\\max_a q_\\pi(s,a)\\)</td>"
+    + "<td>The greedy operator, with ties broken arbitrarily</td>"
+    + "<td>modules 2, 3, 4, 5 and 6</td>",
+  "t3.ecuaciones.f6":
+    "<td>\\(v_{k+1}(s)=\\max_a\\sum_{s',r}p(s',r\\mid s,a)[r+\\gamma v_k(s')]\\)</td>"
+    + "<td>Value iteration: the evaluation update with \\(\\max_a\\) instead of "
+    + "\\(\\sum_a\\pi(a\\mid s)\\)</td><td>modules 5 and 6</td>",
+  "t3.ecuaciones.f7":
+    "<td>\\(q_{k+1}(s,a)=\\sum_{s',r}p(s',r\\mid s,a)[r+\\gamma\\max_{a'}q_k(s',a')]\\)</td>"
+    + "<td>The same, for action values: the direct ancestor of Q-learning</td>"
+    + "<td>module 5, as text only</td>",
+
+  /* --- A6 · errores frecuentes ------------------------------------------- */
+  "t3.errores.h2": "Six confusions that cost marks",
+  "t3.errores.cab": "<th>Confusion</th><th>Correction</th>",
+  "t3.err.1":
+    "<td>“The greedy policy with respect to \\(v_\\pi\\) is optimal.”</td>"
+    + "<td>It is only <strong>guaranteed</strong> to be an improvement. That on this "
+    + "gridworld it comes out optimal at the first attempt is a quirk of the example (Sutton "
+    + "&amp; Barto §4.3 and the caption of Figure 4.1). Module 4 checks it sweep by "
+    + "sweep.</td>",
+  "t3.err.2":
+    "<td>“Evaluation must converge before we can improve.”</td>"
+    + "<td>No. Evaluation converges only in the limit, and the greedy policy stops changing "
+    + "much earlier: on this gridworld, at sweep 3 out of 173 (Sutton &amp; Barto §4.4). That "
+    + "is the whole point of value iteration.</td>",
+  "t3.err.3":
+    "<td>“Value iteration is evaluating the greedy policy.”</td>"
+    + "<td>No: in value iteration the \\(\\max\\) sits <strong>inside</strong> the update, "
+    + "and there is no explicit policy until it is extracted at the end (Sutton &amp; Barto "
+    + "§4.4, equation 4.10 and its box).</td>",
+  "t3.err.4":
+    "<td>“Dynamic programming also has a learning rate.”</td>"
+    + "<td>No. The <strong>expected</strong> update replaces the value; there is no "
+    + "\\(\\alpha\\). The expected / sampled distinction is exactly what will separate DP "
+    + "from the methods of Unit 4 (Sutton &amp; Barto §8.5, Figure 8.6).</td>",
+  "t3.err.5":
+    "<td>“It makes no difference how \\(V\\) is initialised.”</td>"
+    + "<td>Arbitrary <strong>except at the terminal state</strong>, which must be 0 (Sutton "
+    + "&amp; Barto §4.1). With \\(\\gamma=1\\), if \\(V(\\text{terminal})\\ne 0\\) evaluation "
+    + "converges to something other than \\(v_\\pi\\) and the error is unbounded. The policy "
+    + "iteration box of the book omits precisely that condition.</td>",
+  "t3.err.6":
+    "<td>“If the policy does not change between two sweeps, the algorithm stops.”</td>"
+    + "<td>Only if you compare <strong>optimality</strong>, not action identity. With ties "
+    + "and arbitrary tie-breaking, the policy can change without improving anything, and the "
+    + "algorithm falls into a loop (Sutton &amp; Barto, Exercise 4.4). Module 3 makes it "
+    + "happen.</td>",
+
+  /* --- A7 · cierre ------------------------------------------------------- */
+  "t3.cierre.h2": "What to take away",
+  "t3.cierre.1":
+    "Prediction, control and planning are not synonyms: dynamic programming solves control "
+    + "<strong>using a model</strong>, and that is why it is planning.",
+  "t3.cierre.2":
+    "Lowering the threshold \\(\\theta\\) from \\(10^{-1}\\) to \\(10^{-4}\\) goes from 47 "
+    + "to 173 sweeps and <strong>does not move a single arrow</strong> of the greedy policy.",
+  "t3.cierre.3":
+    "\\(\\pi'\\) improves on \\(\\pi\\) exactly when \\(q_\\pi(s,\\pi'(s))\\ge v_\\pi(s)\\); "
+    + "on the starting policy of module 2, only <strong>2 out of 56</strong> possible changes "
+    + "genuinely improve it.",
+  "t3.cierre.4":
+    "The greedy operator does not promise strict improvement: on equality, both policies are "
+    + "optimal. That is the stopping rule of policy iteration.",
+  "t3.cierre.5":
+    "The last line of the pseudocode compares actions, not values: with random tie-breaking, "
+    + "the probability of stopping in one round is <strong>1/256</strong> on this gridworld.",
+  "t3.cierre.6":
+    "The optimal policy is ready at sweep <strong>3</strong>; evaluation needs "
+    + "<strong>173</strong> to reach \\(-14/-20/-22\\). That is the entire motivation for "
+    + "value iteration.",
+  "t3.cierre.7":
+    "Policy iteration and value iteration are the same scheme with a different split of "
+    + "effort: \\(m=\\infty\\) against \\(m=1\\). On this gridworld, 178 sweeps against 4.",
+
+  /* --- A8 · glosario ----------------------------------------------------- */
+  "t3.glosario.h2": "Notation glossary of the unit",
+  "t3.glosario.cab": "<th>Symbol</th><th>Meaning</th><th>Where it appears</th>",
+  "t3.glosario.f1":
+    "<td>\\(V(s)\\)</td><td>the running <strong>estimate</strong> of \\(v_\\pi\\) or "
+    + "\\(v_*\\); upper case = array of estimates, lower case = true value</td>"
+    + "<td>the three pseudocode boxes (the “Policy iteration” block and modules 3 and 5) and "
+    + "modules 1, 3, 5 and 6</td>",
+  "t3.glosario.f2":
+    "<td>\\(\\Delta\\)</td><td>largest absolute change of a sweep; stopping rule "
+    + "\\(\\Delta&lt;\\theta\\)</td><td>the “Prediction” block, the pseudocode boxes and the "
+    + "“Maximum change” metric of modules 1, 3 and 5</td>",
+  "t3.glosario.f3":
+    "<td>\\(\\mathcal{S}^+\\)</td><td>states <strong>including</strong> the terminal one; "
+    + "\\(\\mathcal{S}\\) are the non-terminal ones</td><td>the “Prediction” block and the "
+    + "pseudocode boxes of modules 3 and 5</td>",
+  "t3.glosario.f4":
+    "<td>\\(v_k\\)</td><td>the sequence of approximations of iterative evaluation</td>"
+    + "<td>the “Prediction” and “Efficiency” blocks, modules 4 and 5, and the key "
+    + "equations</td>",
+  "t3.glosario.f5":
+    "<td>\\(\\doteq\\)</td><td>equality by definition</td>"
+    + "<td>the equations of the prediction, improvement-operator and value-iteration blocks, "
+    + "and the key equations table</td>",
+  "t3.glosario.f6":
+    "<td>\\(\\pi'\\)</td><td>alternative / improved policy</td>"
+    + "<td>the “Improvement theorem” and “Improvement operators” blocks, module 2 and the key "
+    + "equations</td>",
+  "t3.glosario.f7":
+    "<td>\\(\\theta\\)</td><td>scalar stopping threshold. <strong>Never</strong> the policy "
+    + "parameter vector of Unit 6</td><td>the slider of module 1; a declared fixed parameter "
+    + "in modules 3 and 5</td>",
+  "t3.glosario.f8":
+    "<td>\\(T\\)</td><td>cell label of the terminal state. In Unit 3 it is used in no "
+    + "formula: the formulas say \\(V(\\text{terminal})=0\\), as in the book</td>"
+    + "<td>the two corners of the grids of modules 1 to 5</td>",
+  "t3.glosario.f9":
+    "<td>\\(m\\)</td><td><strong>notation of this resource</strong>: evaluation sweeps "
+    + "between two improvements. It is not from the book</td>"
+    + "<td>the slider and cost curve of module 5</td>",
+  "t3.glosario.f10":
+    "<td>\\(e\\), \\(g\\)</td><td><strong>notation of this resource</strong>: evaluation and "
+    + "improvement residuals. They are not from the book</td>"
+    + "<td>the two residual bars of module 6</td>",
+  "t3.glosario.f11":
+    "<td>\\(p(s',r\\mid s,a)\\)</td><td>dynamics of the MDP</td>"
+    + "<td>the equations of the blocks and the pseudocode boxes of modules 3 and 5</td>",
+  "t3.glosario.f12":
+    "<td>\\(\\pi(a\\mid s)\\), \\(\\pi(s)\\)</td><td>stochastic / deterministic policy</td>"
+    + "<td>every block and all six modules</td>",
+  "t3.glosario.f13":
+    "<td>\\(v_\\pi\\), \\(q_\\pi\\), \\(v_*\\), \\(q_*\\)</td><td>true value functions</td>"
+    + "<td>every block and all six modules</td>",
+  "t3.glosario.f14":
+    "<td>\\(\\gamma\\)</td><td>discount; always 1 here</td>"
+    + "<td>the equations of every block; a declared fixed parameter in modules 3 and 5</td>",
+  "t3.glosario.f15":
+    "<td>\\(k\\)</td><td>evaluation sweep number</td>"
+    + "<td>the “Sweep \\(k\\)” slider of module 4, the axis of the charts of modules 1 and 4, "
+    + "and the “Efficiency” block</td>",
+  "t3.glosario.aviso":
+    "Two notation warnings. \\(V(s)\\), \\(\\Delta\\) and \\(\\mathcal{S}^+\\) appear in "
+    + "every pseudocode box but are <strong>absent</strong> from the course notation file; "
+    + "here they are used exactly as the book uses them. And \\(\\theta\\) has two meanings "
+    + "in this course: in Unit 3 it is always a <strong>scalar threshold</strong>, never the "
+    + "policy parameter vector of Unit 6.",
+
+  /* --- pie --------------------------------------------------------------- */
+  "t3.pie.anterior": "← Unit 2 · Markov Decision Processes",
+  "t3.pie.1":
+    "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
+    + "Mathematical Engineering and Artificial Intelligence · Universidad Pontificia "
+    + "Comillas · ICAI. Based on Sutton &amp; Barto, <em>Reinforcement Learning: An "
+    + "Introduction</em>, 2nd ed., chapter 4.",
+  "t3.pie.2":
+    "Every simulation is reproducible: the same seed always yields the same result.",
 };

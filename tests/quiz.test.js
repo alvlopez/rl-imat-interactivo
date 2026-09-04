@@ -114,7 +114,7 @@ test("ninguna pregunta del sitio cita sus opciones por letra o por posición", (
   const prohibido =
     /\b(opci[óo]n(es)?\s+[a-d]\)?|la\s+[a-d]\)|primera\s+opci[óo]n|segunda\s+opci[óo]n|tercera\s+opci[óo]n|[úu]ltima\s+opci[óo]n|respuesta\s+[a-d]\))/i;
 
-  for (const fichero of ["assets/tema1.js", "assets/tema2.js"]) {
+  for (const fichero of ["assets/tema1.js", "assets/tema2.js", "assets/tema3.js"]) {
     const fuente = readFileSync(join(RAIZ, fichero), "utf8");
     fuente.split("\n").forEach((linea, i) => {
       if (!/enunciado:|explicacion:|^\s*["`']/.test(linea)) return;

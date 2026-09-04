@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="meta.titulo.tema3">Tema 3 · Programación dinámica — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 3 de Aprendizaje por Refuerzo (IMAT): evaluación iterativa de la política, teorema de mejora, iteración de política, iteración de valor e iteración generalizada de la política sobre el gridworld 4×4 del Example 4.1.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
+    <nav>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
+      <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ================================================================= -->
+  <!-- A1 · portada  ·  A2 · índice                                      -->
+  <!-- ================================================================= -->
+  <div class="portada-tema">
+    <p class="kicker" data-t="t3.kicker">Tema 3 · Sutton &amp; Barto, capítulo 4</p>
+    <h1 data-t="t3.h1">Programación dinámica</h1>
+    <p class="entradilla" data-t="t3.entradilla">
+      Un solo tablero para todo el tema: la rejilla 4×4 del <em>Example 4.1</em> del libro.
+      Aquí se responden las preguntas que las diapositivas dejan en el aire: qué cuesta
+      exactamente el umbral \(\theta\), cuándo una política mejora de verdad a otra, por qué
+      la última línea del algoritmo de iteración de política puede no terminar nunca, cuántos
+      barridos antes de que converja la evaluación ya está lista la política óptima, y qué
+      dibuja la iteración de valor sobre la figura de las dos rectas.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t3.semillaLabel">Semilla</label>
+        <input type="number" id="semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <span class="suave" data-t="t3.semilla">Semilla 2026 · todo lo aleatorio de esta página se reproduce con ella</span>
+      </div>
+    </div>
+
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t3.indice.m1">Evaluación iterativa y el umbral \(\theta\)</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t3.indice.m2">Teorema de mejora de la política</span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t3.indice.m3">Iteración de política y la última línea</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t3.indice.m4">La política óptima aparece antes</span></a></li>
+        <li><a href="#m5"><span class="num">5</span> <span data-t="t3.indice.m5">Iteración de valor</span></a></li>
+        <li><a href="#m6"><span class="num">6</span> <span data-t="t3.indice.m6">Iteración generalizada de la política</span></a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- A3 · mapa del tema                                                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="mapa">
+    <h2 data-t="t3.mapa.h2">Mapa del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t3.mapa.cab">
+            <th>Concepto</th><th>De dónde sale</th><th>A dónde lleva</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t3.mapa.f1">
+            <td>Los tres problemas</td>
+            <td>Las funciones de valor del T2 y el objetivo de encontrar \(\pi_*\)</td>
+            <td>Sitúa la DP: es planificación, y por eso exige el modelo \(p(s',r\mid s,a)\)</td>
+          </tr>
+          <tr data-t="t3.mapa.f2">
+            <td>Predicción</td>
+            <td>La ecuación de Bellman para \(v_\pi\) del T2, convertida en asignación</td>
+            <td>Evaluación iterativa de la política → módulo 1</td>
+          </tr>
+          <tr data-t="t3.mapa.f3">
+            <td>Estrategia de búsqueda</td>
+            <td>No se puede buscar entre todas las políticas: son \(4^{14}\)</td>
+            <td>El bucle evaluar → mejorar → ¿ha cambiado?</td>
+          </tr>
+          <tr data-t="t3.mapa.f4">
+            <td>Teorema de mejora</td>
+            <td>Comparar \(q_\pi(s,a)\) con \(v_\pi(s)\)</td>
+            <td>Da permiso para cambiar la política sin empeorarla → módulo 2</td>
+          </tr>
+          <tr data-t="t3.mapa.f5">
+            <td>Operador greedy</td>
+            <td>El teorema aplicado a todos los estados a la vez</td>
+            <td>Convierte una \(v\) en una política</td>
+          </tr>
+          <tr data-t="t3.mapa.f6">
+            <td>Iteración de política</td>
+            <td>Predicción + operador greedy, alternados</td>
+            <td>Converge en un número finito de iteraciones → módulo 3</td>
+          </tr>
+          <tr data-t="t3.mapa.f7">
+            <td>Eficiencia</td>
+            <td>La figura 4.1: la política ya no cambia mucho antes de que \(v_k\) converja</td>
+            <td>Justifica truncar la evaluación → módulo 4</td>
+          </tr>
+          <tr data-t="t3.mapa.f8">
+            <td>Iteración de valor</td>
+            <td>Truncar la evaluación a un solo barrido</td>
+            <td>La actualización que reaparecerá como Q-learning en el T4 → módulo 5</td>
+          </tr>
+          <tr data-t="t3.mapa.f9">
+            <td>GPI</td>
+            <td>Olvidar la granularidad: evaluar y mejorar, en cualquier proporción</td>
+            <td>El esqueleto de casi todo el RL → módulo 6</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1 · intro al tema                                                -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1">
+    <header>
+      <h2 data-t="t3.b1.h2">De las funciones de valor a la política óptima</h2>
+      <p class="fuente" data-t="t3.b1.fuente">3_Tema3#slide-2 · material de Lucía: Tema3_DP#slide-3 · Sutton &amp; Barto, cap. 4 (apertura) y §8.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b1.p1">
+      Del Tema 2 traemos dos cosas: las funciones de valor \(v_\pi\) y \(q_\pi\), que están
+      siempre definidas <strong>respecto a una política</strong>, y la idea de que existe al
+      menos una política óptima \(\pi_*\), que alcanza el máximo \(v_*(s)\) <strong>en todos
+      los estados a la vez</strong>. Encontrar una de ellas es el objetivo central de la
+      disciplina.
+    </p>
+
+    <p class="explicacion" data-t="t3.b1.p2">
+      Casi siempre se empieza desde una política subóptima, a veces completamente arbitraria,
+      y se usa esa política como punto de apoyo para buscar las óptimas. La programación
+      dinámica es el conjunto de algoritmos que hacen eso <strong>cuando se dispone de un
+      modelo perfecto del entorno en forma de MDP</strong>. Su receta cabe en una frase:
+      <em>convertir las ecuaciones de Bellman en reglas de actualización</em>.
+    </p>
+
+    <p class="ecuacion">
+      \[ v_\pi(s) = \sum_a \pi(a\mid s)\sum_{s',r} p(s',r\mid s,a)\,\big[\,r+\gamma v_\pi(s')\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b1.p3">
+      Ojo con una diferencia que el Tema 4 hará explícita: la programación dinámica
+      <strong>sustituye</strong> el valor antiguo por el nuevo. No hay tasa de aprendizaje
+      \(\alpha\), no hay ninguna \(\alpha(\text{objetivo}-\text{estimación})\). Eso llegará
+      cuando haya que aprender de muestras en vez de calcular esperanzas.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1b · los tres problemas                                          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1b">
+    <header>
+      <h2 data-t="t3.b1b.h2">Los tres problemas</h2>
+      <p class="fuente" data-t="t3.b1b.fuente">3_Tema3#slide-2 (los tres, literales) · material de Lucía: Tema3_DP#slide-3 (habla de <strong>dos</strong> sub-problemas) · Sutton &amp; Barto §4.1 (predicción), §6.1 (control) y §8.1 (planificación)</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b1b.p1">Las tres definiciones, tal como se enuncian en clase:</p>
+
+    <ul class="explicacion">
+      <li data-t="t3.b1b.li1"><strong>Predicción</strong>: encontrar los valores de \(v\) y \(q\) bajo una cierta política. Es lo que el libro llama <em>policy evaluation</em>.</li>
+      <li data-t="t3.b1b.li2"><strong>Control</strong>: encontrar una política que maximice la función de valor, es decir, una política óptima.</li>
+      <li data-t="t3.b1b.li3"><strong>Planificación</strong>: lo mismo que el control, pero <strong>haciendo uso de un modelo del entorno</strong>. Es cualquier proceso de cómputo que toma un modelo como entrada y produce o mejora una política.</li>
+    </ul>
+
+    <p class="explicacion" data-t="t3.b1b.p2">
+      Los métodos de planificación suelen aprender más rápido, pero rara vez se dispone de un
+      modelo que sea a la vez fiable y lo bastante barato como para ejecutarlo millones de
+      veces. Por eso en la práctica lo habitual es enfrentarse al problema de control. Aun
+      así, muchísimos métodos de control se construyen sobre algoritmos de programación
+      dinámica: ése es el motivo de dedicarle un tema entero a un método de planificación que
+      exige un modelo que a menudo no existe.
+    </p>
+
+    <p class="explicacion nota" data-t="t3.b1b.nota">
+      Dos avisos honestos. Primero: en el material de la asignatura conviven dos versiones.
+      Una habla de <strong>tres</strong> problemas (3_Tema3#slide-2) y la otra de <strong>dos
+      sub-problemas</strong>, predicción y control, con la planificación «implícita en el
+      hecho de que nos apoyamos en el modelo» (Tema3_DP#slide-3, material de Lucía). Esta
+      página sigue la de los tres. Segundo: el capítulo 4 del libro <strong>solo define ahí la
+      predicción</strong>; «control» aparece por primera vez en el capítulo 5 y
+      «planificación» se define en la §8.1. Que la programación dinámica sea planificación es
+      una afirmación del capítulo 8, no del 4.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B2 · predicción → módulo 1                                        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b2">
+    <header>
+      <h2 data-t="t3.b2.h2">Predicción: evaluación iterativa de la política</h2>
+      <p class="fuente" data-t="t3.b2.fuente">3_Tema3#slide-3 · material de Lucía: Tema3_DP#slide-4 y #slide-5 · Sutton &amp; Barto §4.1, ecuaciones (4.4) y (4.5), y la caja <em>Iterative Policy Evaluation</em></p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b2.p1">
+      Dada una política, hay que obtener el valor de todos los estados. La ecuación de Bellman
+      es un <strong>sistema de \(|\mathcal{S}|\) ecuaciones lineales con \(|\mathcal{S}|\)
+      incógnitas</strong>: se puede resolver de golpe, y eso ya se hizo en el Tema 2. Aquí se
+      resuelve <strong>iterando</strong>, que es lo que se hace en la práctica.
+    </p>
+
+    <p class="ecuacion">
+      \[ v_{k+1}(s) \;\doteq\; \sum_a \pi(a\mid s)\sum_{s',r} p(s',r\mid s,a)\,\big[\,r+\gamma v_k(s')\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b2.p2">
+      Cada iteración actualiza el valor de <strong>todos</strong> los estados una vez: a eso se
+      le llama un <strong>barrido</strong>. La actualización se llama <strong>esperada</strong>
+      porque promedia sobre todos los estados siguientes posibles, no sobre uno muestreado;
+      ésa es justamente la diferencia que separará la programación dinámica de los métodos del
+      Tema 4.
+    </p>
+
+    <p class="explicacion" data-t="t3.b2.p3">
+      \(\mathcal{S}^+\) es el conjunto de estados <strong>incluyendo el terminal</strong>;
+      \(\mathcal{S}\) son los no terminales. La inicialización de \(V\) es arbitraria
+      <strong>salvo que \(V(\text{terminal})=0\)</strong>, y el barrido recorre solo
+      \(\mathcal{S}\). Si se olvida esa excepción, con \(\gamma=1\) la evaluación converge a
+      algo que no es \(v_\pi\) y el error no está acotado.
+    </p>
+
+    <p class="explicacion nota" data-t="t3.entorno.terminal">
+      El terminal está sombreado en dos esquinas de la figura, pero <strong>formalmente es un
+      solo estado</strong>. En el motor de esta página hay dos casillas absorbentes de valor 0,
+      lo cual es equivalente: ningún estado no terminal distingue a cuál de las dos llega.
+    </p>
+
+    <p class="explicacion" data-t="t3.b2.p4">
+      El módulo 3 del Tema 2 ya iteraba la ecuación de Bellman sobre la rejilla 3×3 y
+      anunciaba «…que es lo que hará la programación dinámica del Tema 3». Esto es la
+      continuación: el mismo bucle, ahora sobre el tablero del libro, con el criterio de parada
+      \(\Delta&lt;\theta\) explícito y manipulable, y conectado con la mejora de la política.
+    </p>
+
+    <p><a class="siguiente" href="#m1" data-t="t3.b2.continua">Continúa en el módulo 1 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · evaluación iterativa y el umbral θ                     -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta" data-t="t3.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t3.m1.h2">Evaluación iterativa y el umbral \(\theta\)</h2>
+      <p class="fuente" data-t="t3.m1.fuente">3_Tema3#slide-9 y #slide-10 · material de Lucía: Tema3_DP#slide-5 · Sutton &amp; Barto §4.1, caja <em>Iterative Policy Evaluation</em> y figura 4.1</p>
+      <p class="fuente" data-t="t3.m1.determinista">Determinista: no interviene la semilla.</p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m1.pregunta">
+      <p>Dos diapositivas consecutivas tituladas <em>«Iteración de política: Algunas
+        consideraciones»</em> no contienen ni una sola consideración escrita: son únicamente las
+        figuras del Example 4.1. Y la única que sí se llega a escribir en todo el tema —«la
+        convergencia se da de forma asintótica, por eso debemos usar \(\theta\)»— no dice
+        <strong>qué cuesta cada \(\theta\)</strong>.</p>
+      <span class="de-donde">3_Tema3#slide-9, #slide-10 y Tema3_DP#slide-5 — el precio en
+        barridos de cada umbral se mide aquí.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m1.explicacion">
+      La política es fija: la equiprobable, \(\pi(a\mid s)=0{,}25\), la misma de la figura 4.1.
+      Mueve el umbral \(\theta\) y mira dos cosas a la vez: cuántos barridos cuesta cumplir
+      \(\Delta&lt;\theta\) y qué le pasa a la política greedy dibujada sobre la rejilla.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label class="literal"><span data-t="t3.m1.thetaLabel">Umbral (\(\theta\))</span> <span class="valor" id="m1-theta-v">10⁻⁴</span></label>
+        <input type="range" id="m1-theta" min="-4" max="0" step="1" value="-4">
+      </div>
+      <div class="control">
+        <label data-t="t3.m1.marchaLabel">Marcha</label>
+        <div class="grupo-botones">
+          <button type="button" id="m1-barrido" data-t="t3.m1.barrido">Un barrido</button>
+          <button type="button" class="primario" id="m1-auto" data-t="t3.m1.auto">Iterar hasta Δ &lt; θ</button>
+          <button type="button" id="m1-reiniciar" data-t="t3.m1.reiniciar">Reiniciar a 0</button>
+        </div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m1.modoLabel">Actualización</label>
+        <div class="grupo-botones" id="m1-modo"></div>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m1.viz1">V(s) y la política greedy respecto a V</p>
+          <div id="m1-rejilla"></div>
+        </div>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq" data-t="t3.m1.mBarridos">Barridos hechos</div><div class="cifra" id="m1-barridos">0</div></div>
+          <!-- .metrica .etiq va en mayúsculas por CSS: los rótulos con
+               notación (Δ, θ, v_π) llevan .literal para no romperla. -->
+          <div class="metrica"><div class="etiq literal" data-t="t3.m1.mDelta">Cambio máximo (\(\Delta\))</div><div class="cifra" id="m1-delta">—</div></div>
+          <div class="metrica"><div class="etiq literal" data-t="t3.m1.mDistancia">Distancia a \(v_\pi\)</div><div class="cifra" id="m1-distancia">—</div></div>
+          <div class="metrica"><div class="etiq literal" data-t="t3.m1.mPrevistos">Barridos que exige este \(\theta\)</div><div class="cifra" id="m1-previstos">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m1-nota"></p>
+      </div>
+    </div>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.m1.viz2">Cómo converge cada estado</p>
+      <div id="m1-grafica"><p class="suave" data-t="t3.m1.vacio">Todavía no hay barridos: la curva aparece en cuanto des el primero.</p></div>
+    </div>
+
+    <!-- Ambigüedad real del libro que aparece al programarlo; se declara aquí
+         porque el alumno se la va a encontrar en cuanto escriba el bucle. -->
+    <div class="aviso" data-t="t3.m1.avisoParada">
+      <strong>Un detalle del bucle que el pseudocódigo no cierra.</strong> La caja del libro
+      dice <em>«repetir … hasta que \(\Delta&lt;\theta\)»</em>. Con la comparación estricta y
+      \(\theta=1\), en este tablero <strong>no pararía nunca</strong>: los primeros barridos
+      dan \(\Delta\) exactamente igual a 1, y «1 &lt; 1» es falso. Este módulo itera
+      <strong>mientras \(\Delta&gt;\theta\)</strong> —es decir, para en cuanto
+      \(\Delta\le\theta\)— y por eso \(\theta=1\) para en un solo barrido. Es una elección,
+      no un descuido: el libro no dice qué hacer con la igualdad.
+    </div>
+
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B3 · la estrategia de búsqueda                                    -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b3">
+    <header>
+      <h2 data-t="t3.b3.h2">La estrategia de búsqueda de una política óptima</h2>
+      <p class="fuente" data-t="t3.b3.fuente">3_Tema3#slide-4 (diagrama de flujo, manuscrito) · material de Lucía: Tema3_DP#slide-9 (el mismo diagrama, redibujado) · Sutton &amp; Barto §4.3 y §4.7</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b3.p1">
+      Buscar directamente entre todas las políticas no es una opción: en esta rejilla de 14
+      estados no terminales y 4 acciones hay \(4^{14}\), más de 268 millones de políticas
+      deterministas. La programación dinámica encuentra una óptima en tiempo
+      <strong>polinómico</strong> en el número de estados y de acciones, y en ese sentido es
+      exponencialmente más rápida que cualquier búsqueda directa.
+    </p>
+
+    <p class="explicacion" data-t="t3.b3.p2">
+      La estrategia es un bucle de cuatro cajas: definir una primera política,
+      <strong>predecir</strong> sus valores, preguntarse si se puede mejorar y, si se puede,
+      mejorarla y volver a predecir. Fíjate en dónde se reengancha el bucle: <strong>entra otra
+      vez en “predicción”, no en “definir la primera política”</strong>. La inicialización queda
+      fuera del ciclo, y por eso cada evaluación arranca desde los valores de la política
+      anterior en vez de desde cero.
+    </p>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.b3.vizTitulo">La estrategia, con la misma topología que el diagrama de clase</p>
+      <!-- Diagrama de flujo estático: topología idéntica a 3_Tema3#slide-4.
+           Colores por currentColor para que siga al tema claro/oscuro sin JS. -->
+      <svg viewBox="0 0 600 560" width="600" role="img" aria-labelledby="b3-svg-titulo">
+        <title id="b3-svg-titulo" data-t="t3.b3.d.titulo">Diagrama de flujo de la búsqueda de una política óptima</title>
+        <defs>
+          <marker id="punta-b3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+        </defs>
+        <g fill="none" stroke="currentColor" stroke-width="1.4">
+          <ellipse cx="200" cy="40" rx="70" ry="26"></ellipse>
+          <rect x="60" y="100" width="280" height="54" rx="6"></rect>
+          <rect x="60" y="215" width="280" height="54" rx="6"></rect>
+          <polygon points="200,300 360,362 200,424 40,362"></polygon>
+          <ellipse cx="520" cy="362" rx="52" ry="26"></ellipse>
+          <rect x="60" y="466" width="280" height="54" rx="6"></rect>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#punta-b3)">
+          <path d="M 200 66 V 96"></path>
+          <path d="M 200 154 V 211"></path>
+          <path d="M 200 269 V 296"></path>
+          <path d="M 360 362 H 464"></path>
+          <path d="M 200 424 V 462"></path>
+          <path d="M 60 493 H 22 V 182 H 196"></path>
+        </g>
+        <g fill="currentColor" font-size="14" text-anchor="middle" font-family="system-ui, sans-serif">
+          <text x="200" y="45" data-t="t3.b3.d.inicio">INICIO</text>
+          <text x="200" y="132" data-t="t3.b3.d.definir">DEFINIR PRIMERA POLÍTICA (π)</text>
+          <text x="200" y="247" data-t="t3.b3.d.prediccion">PREDICCIÓN</text>
+          <text x="200" y="367" data-t="t3.b3.d.rombo">¿SE PUEDE MEJORAR π?</text>
+          <text x="520" y="367" data-t="t3.b3.d.fin">FIN</text>
+          <text x="200" y="498" data-t="t3.b3.d.mejorar">MEJORAR POLÍTICA</text>
+        </g>
+        <g fill="currentColor" font-size="12" text-anchor="start" font-family="system-ui, sans-serif">
+          <text x="410" y="354" data-t="t3.b3.d.no">No</text>
+          <text x="210" y="448" data-t="t3.b3.d.si">Sí</text>
+          <text x="212" y="178" opacity="0.65" data-t="t3.b3.d.evaluacion">(evaluación de la política)</text>
+        </g>
+      </svg>
+    </div>
+
+    <p class="explicacion" data-t="t3.b3.p3">
+      Las dos piezas que faltan para cerrar ese bucle son las de los dos bloques siguientes: un
+      <strong>criterio</strong> para saber si una política es mejor que otra (el teorema de
+      mejora) y un <strong>procedimiento</strong> que produzca la política mejorada (el operador
+      greedy).
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B4 · teorema de mejora → módulo 2                                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b4">
+    <header>
+      <h2 data-t="t3.b4.h2">Teorema de mejora de la política</h2>
+      <p class="fuente" data-t="t3.b4.fuente">3_Tema3#slide-5 · material de Lucía: Tema3_DP#slide-6 y #slide-8 · Sutton &amp; Barto §4.2, ecuaciones (4.6), (4.7) y (4.8)</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b4.p1">
+      Trabajamos con políticas <strong>deterministas</strong>. Sean \(\pi\) y \(\pi'\) dos de
+      ellas. Si en <strong>todos</strong> los estados se cumple que la acción que elige \(\pi'\)
+      vale, según \(\pi\), al menos tanto como lo que \(\pi\) obtiene ahí:
+    </p>
+
+    <!-- Marcadas porque llevan texto («para todo») dentro de la fórmula. -->
+    <p class="ecuacion" data-t="t3.b4.eq1">
+      \[ q_\pi\big(s,\pi'(s)\big) \;\ge\; v_\pi(s) \qquad \text{para todo } s\in\mathcal{S} \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b4.p2">
+      entonces \(\pi'\) es <strong>igual de buena o mejor</strong> que \(\pi\) en todos los
+      estados:
+    </p>
+
+    <p class="ecuacion" data-t="t3.b4.eq2">
+      \[ v_{\pi'}(s) \;\ge\; v_\pi(s) \qquad \text{para todo } s\in\mathcal{S} \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b4.p3">
+      Y si la primera desigualdad es <strong>estricta</strong> en algún estado, la segunda
+      también lo es en ese estado. El caso particular que se usa todo el rato es el más simple:
+      \(\pi'\) idéntica a \(\pi\) salvo en un estado. Ahí la condición se cumple sola en los
+      demás estados y basta con comparar \(q_\pi(s,a)\) con \(v_\pi(s)\) en el estado que se
+      cambia.
+    </p>
+
+    <p class="explicacion" data-t="t3.b4.p4">
+      ¿Y si la nueva política greedy resulta ser <strong>igual de buena, pero no mejor</strong>?
+      Entonces \(v_\pi = v_{\pi'}\) y esa función de valor cumple
+      \(v_{\pi'}(s)=\max_a\sum_{s',r}p(s',r\mid s,a)[r+\gamma v_{\pi'}(s')]\), que es exactamente
+      la <strong>ecuación de optimalidad de Bellman</strong>. Luego \(v_{\pi'}=v_*\) y <strong>las
+      dos políticas son óptimas</strong>. Dicho al revés: la mejora de política da siempre una
+      política estrictamente mejor, <strong>salvo cuando la de partida ya era óptima</strong>.
+      Ésa es la razón por la que “la política no ha cambiado” es un criterio de parada legítimo.
+    </p>
+
+    <div class="aviso" data-t="t3.b4.erratum">
+      <strong>Aviso sobre el material:</strong> la diapositiva <code>3_Tema3#slide-5</code>
+      concluye «es evidente que <strong>π</strong> es igual o mejor que <strong>π′</strong>», con
+      las dos políticas <strong>intercambiadas</strong>. Del supuesto \(q_\pi(s,\pi'(s))\ge
+      v_\pi(s)\) se sigue que <strong>π′</strong> es igual o mejor que <strong>π</strong>, que es
+      como está enunciado aquí y como aparece en <code>Tema3_DP#slide-6</code> (material de Lucía).
+    </div>
+
+    <p class="explicacion" data-t="t3.b4.p5">
+      Todo esto se extiende a políticas estocásticas sin cambios en el enunciado. Cuando varias
+      acciones alcanzan el máximo no hace falta quedarse con una: se puede repartir la
+      probabilidad entre ellas de cualquier manera, con la única condición de que las acciones
+      <strong>no</strong> maximizadoras reciban probabilidad cero.
+    </p>
+
+    <p><a class="siguiente" href="#m2" data-t="t3.b4.continua">Continúa en el módulo 2 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · teorema de mejora                                      -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta" data-t="t3.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t3.m2.h2">Teorema de mejora: ¿cuándo \(\pi'\) es mejor que \(\pi\)?</h2>
+      <p class="fuente" data-t="t3.m2.fuente">Tema3_DP#slide-6 (solo material de Lucía) · 3_Tema3#slide-5 · Sutton &amp; Barto §4.2, ecuaciones (4.6), (4.7) y (4.8) · valores exactos, resueltos como sistema lineal</p>
+      <p class="fuente" data-t="t3.m2.determinista">Determinista: no interviene la semilla.</p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m2.pregunta">
+      <p><em>«¿Qué podemos afirmar sobre las políticas negra, roja, verde y azul?»</em></p>
+      <span class="de-donde">Tema3_DP#slide-6 (material de Lucía) — la diapositiva lanza la
+        pregunta con insignia de Wooclap y no da la respuesta ni ahí ni en ninguna posterior.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m2.explicacion">
+      La política <strong>negra</strong> es \(\pi\): bajar hasta la última fila y luego ir a la
+      derecha. Elige un estado, cámbiale <strong>una sola</strong> acción —la flecha
+      <strong>roja</strong>— y mira qué pasa. El teorema solo pide comparar dos números:
+      \(q_\pi(s,a)\), lo que vale la acción nueva medida con los valores de \(\pi\), y
+      \(v_\pi(s)\), lo que \(\pi\) obtiene ahí.
+    </p>
+
+    <p class="explicacion nota" data-t="t3.m2.adaptacion">
+      Esta demo traslada al tablero 4×4 la figura de <code>Tema3_DP#slide-6</code> (material de
+      Lucía), que plantea la misma pregunta sobre una rejilla 3×3 con cuatro políticas de
+      colores y la deja sin responder. Se conservan los colores: negra para \(\pi\), roja para la
+      alternativa.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label class="literal" data-t="t3.m2.accionLabel">Acción alternativa en el estado elegido</label>
+        <div class="grupo-botones" id="m2-acciones"></div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m2.estadoLabel">Estado</label>
+        <div class="fila"><span class="mono" id="m2-estado">1</span>
+          <span class="suave" data-t="t3.m2.oPulsa">— o pulsa una celda</span></div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m2.mostrarLabel">Mostrar</label>
+        <div class="grupo-botones" id="m2-vista"></div>
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" id="m2-reiniciar" data-t="t3.m2.reiniciar">Volver a π</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m2.viz1">Las dos políticas sobre la rejilla</p>
+          <div id="m2-rejilla"></div>
+        </div>
+        <p class="explicacion siempre" id="m2-veredicto"></p>
+      </div>
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m2.viz2">Los cuatro valores de acción del estado elegido</p>
+          <div class="tabla-scroll"><table class="datos" id="m2-tabla"></table></div>
+        </div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq" data-t="t3.m2.mMejoran">Cambios que mejoran</div><div class="cifra" id="m2-mejoran">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m2.mIgualan">Cambios que empatan</div><div class="cifra" id="m2-igualan">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m2.mEmpeoran">Cambios que empeoran</div><div class="cifra" id="m2-empeoran">—</div></div>
+        </div>
+        <p class="explicacion nota" data-t="t3.m2.notaConteo">
+          De los \(14\times4=56\) cambios de una sola acción que se pueden hacer sobre \(\pi\),
+          <strong>solo 2 mejoran de verdad</strong>. Encuéntralos. Los otros 54 o dan exactamente
+          lo mismo o empeoran, y 24 de ellos rompen la política hasta el punto de que deja de
+          terminar.
+        </p>
+      </div>
+    </div>
+
+    <div class="aviso" data-t="t3.m2.respuestaWooclap">
+      <strong>Respuesta a la pregunta de la diapositiva:</strong> de la figura solo se puede
+      afirmar que la política que difiere de la negra <strong>en un solo estado</strong> es igual
+      o mejor que la negra <strong>si en ese estado \(q\) no baja</strong>; y nada más. En
+      particular <strong>no se pueden comparar entre sí</strong> dos alternativas que cambian
+      estados distintos, ni la verde con la azul: el teorema compara siempre una política con
+      <strong>la</strong> política cuya \(v\) se ha calculado, nunca dos alternativas entre ellas.
+    </div>
+
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B5 · operadores de mejora                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b5">
+    <header>
+      <h2 data-t="t3.b5.h2">Operadores de mejora: el operador greedy</h2>
+      <p class="fuente" data-t="t3.b5.fuente">3_Tema3#slide-6 (diapositiva monográfica, solo en el material de Álvaro) · material de Lucía: Tema3_DP#slide-7 (la cadena completa) · Sutton &amp; Barto §4.2, ecuación (4.9)</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b5.p1">
+      Para explotar el teorema y sacar algo práctico solo hace falta un <strong>operador de
+      mejora</strong>: algo que, dada una función de valor, devuelva una política. El más común
+      es el operador <strong>greedy</strong>: en cada estado, calcular el valor de acción de las
+      cuatro acciones y quedarse con la que dé el máximo, <strong>rompiendo los empates de forma
+      arbitraria</strong>.
+    </p>
+
+    <p class="ecuacion">
+      \[ \pi'(s) \;\doteq\; \arg\max_a q_\pi(s,a)
+         \;=\; \arg\max_a \sum_{s',r} p(s',r\mid s,a)\,\big[\,r+\gamma v_\pi(s')\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b5.p2">
+      Esa segunda igualdad es la que permite trabajar solo con \(v\) en todo el tema: <strong>con
+      el modelo \(p(s',r\mid s,a)\) en la mano, las \(q\) se recuperan de las \(v\)</strong> con
+      una suma de un paso. Por eso los algoritmos se presentan sobre la función de valor de
+      estado, y las \(q\) aparecen únicamente donde hacen falta, dentro del <code>argmax</code>.
+      El material usa esta identidad sin nombrarla; aquí queda dicha.
+    </p>
+
+    <p class="explicacion" data-t="t3.b5.p3">
+      Por construcción el operador greedy cumple la hipótesis del teorema en todos los estados,
+      así que la política que devuelve es siempre igual o mejor que la de partida. Ese “romper
+      empates de forma arbitraria” parece un detalle inofensivo, y no lo es: es exactamente lo
+      que hace que el algoritmo del bloque siguiente pueda no terminar nunca.
+    </p>
+
+    <p class="explicacion nota" data-t="t3.b5.nota">
+      La palabra “operador” no es del capítulo 4. El libro escribe (4.9) y nada más; los
+      operadores de Bellman con su punto fijo aparecen mucho más tarde, en la §11.5. Es
+      vocabulario estándar y útil, pero no se lo atribuyas al capítulo 4.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B6 · iteración de política → módulo 3                             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b6">
+    <header>
+      <h2 data-t="t3.b6.h2">Iteración de política</h2>
+      <p class="fuente" data-t="t3.b6.fuente">3_Tema3#slide-7 y #slide-8 · material de Lucía: Tema3_DP#slide-10 a #slide-12 · Sutton &amp; Barto §4.3 y la caja <em>Policy Iteration</em></p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b6.p1">
+      Ya tenemos las dos piezas: un algoritmo para <strong>predecir</strong> la función de valor
+      de una política y un <strong>operador</strong> para mejorar una política dada.
+      Alternándolas sale la iteración de política:
+    </p>
+
+    <p class="ecuacion">
+      \[ \pi_0 \xrightarrow{\;E\;} v_{\pi_0} \xrightarrow{\;I\;} \pi_1 \xrightarrow{\;E\;}
+         v_{\pi_1} \xrightarrow{\;I\;} \pi_2 \xrightarrow{\;E\;} \cdots
+         \xrightarrow{\;I\;} \pi_* \xrightarrow{\;E\;} v_* \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b6.p2">
+      \(E\) es una <strong>evaluación</strong> (<em>evaluation</em>) completa de la política, y
+      \(I\) es una <strong>mejora</strong> (<em>improvement</em>). Cada política es una mejora
+      estricta de la anterior salvo que ya sea óptima, y como un MDP finito tiene un número
+      finito de políticas deterministas, el proceso <strong>termina en un número finito de
+      iteraciones</strong>. Además cada evaluación arranca con la función de valor de la política
+      anterior, lo que la acelera mucho: la función de valor cambia poco de una política a la
+      siguiente.
+    </p>
+
+    <p class="explicacion" data-t="t3.b6.p3">El algoritmo, tal como se proyecta en clase:</p>
+
+    <pre class="codigo" data-t="t3.b6.caja">Iteración de política, para estimar π ≈ π_*
+
+1. Inicialización
+   V(s) ∈ ℝ  y  π(s) ∈ A(s)  arbitrarios para todo s ∈ S
+
+2. Evaluación de la política
+   Repetir:
+       Δ ← 0
+       Para cada s ∈ S:
+           v ← V(s)
+           V(s) ← Σ_{s',r} p(s',r | s, π(s)) [ r + γ V(s') ]
+           Δ ← max(Δ, |v − V(s)|)
+   hasta que Δ &lt; θ
+
+3. Mejora de la política
+   política-estable ← verdadero
+   Para cada s ∈ S:
+       acción-antigua ← π(s)
+       π(s) ← argmax_a Σ_{s',r} p(s',r | s, a) [ r + γ V(s') ]
+       Si acción-antigua ≠ π(s), entonces política-estable ← falso
+   Si política-estable, parar y devolver V ≈ v_*  y  π ≈ π_*;  si no, ir a 2</pre>
+
+    <p class="explicacion" data-t="t3.b6.p4">
+      Dos cosas que mirar en esa caja antes de pasar de página. La primera: la inicialización
+      <strong>no dice \(V(\text{terminal})=0\)</strong>, aunque las otras dos cajas del capítulo
+      sí lo dicen. La segunda, más grave: <strong>la última línea no siempre para</strong>. Las
+      dos se trabajan en el módulo 3.
+    </p>
+
+    <p><a class="siguiente" href="#m3" data-t="t3.b6.continua">Continúa en el módulo 3 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 3 · iteración de política y la última línea                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta" data-t="t3.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t3.m3.h2">Iteración de política, y la última línea que no siempre para</h2>
+      <p class="fuente" data-t="t3.m3.fuente">3_Tema3#slide-8 · material de Lucía: Tema3_DP#slide-11 · Sutton &amp; Barto §4.3, caja <em>Policy Iteration</em>, y ejercicio 4.4 · actualización síncrona</p>
+      <p class="fuente" id="m3-semilla"></p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m3.pregunta">
+      <p><em>“Si acción-antigua ≠ π(s), entonces política-estable ← falso.”</em> Ninguna de las
+        dos colecciones dice nada sobre esta línea. Cambia el desempate a aleatorio y mira el
+        contador de rondas.</p>
+      <span class="de-donde">3_Tema3#slide-8 y Tema3_DP#slide-11 reproducen la caja tal cual, sin
+        comentario. El libro lo deja como ejercicio 4.4.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m3.explicacion">
+      El algoritmo alterna dos fases: <strong>E</strong>, evaluar la política actual hasta que
+      \(\Delta&lt;\theta\), e <strong>I</strong>, mejorarla haciéndola greedy respecto a los
+      valores recién calculados. Para cuando la fase <strong>I</strong> no cambia ninguna acción.
+      Fíjate en cómo la última línea decide esa parada: comparando <strong>acciones</strong>, no
+      <strong>valores</strong>.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label class="literal" data-t="t3.m3.desempateLabel">Desempate del argmax</label>
+        <div class="grupo-botones" id="m3-desempate"></div>
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m3-correccion">
+          <span data-t="t3.m3.correccionOn">Conservar la acción antigua si sigue siendo maximizadora</span>
+        </label>
+      </div>
+      <div class="control">
+        <label data-t="t3.m3.marchaLabel">Marcha</label>
+        <div class="grupo-botones">
+          <button type="button" id="m3-evaluar" data-t="t3.m3.evaluar">Evaluar (E)</button>
+          <button type="button" id="m3-mejorar" data-t="t3.m3.mejorar">Mejorar (I)</button>
+          <button type="button" id="m3-iteracion" data-t="t3.m3.iteracion">Una iteración</button>
+          <button type="button" class="primario" id="m3-hasta" data-t="t3.m3.hastaParar">Ejecutar hasta parar</button>
+          <button type="button" id="m3-reiniciar" data-t="t3.m3.reiniciar">Reiniciar</button>
+        </div>
+      </div>
+      <div class="control">
+        <label class="literal" data-t="t3.m3.fijosLabel">Parámetros fijos</label>
+        <span class="mono suave" data-t="t3.m3.fijos">θ = 10⁻⁴ · γ = 1 · π₀ = equiprobable · actualización síncrona</span>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m3.viz1">V(s) y la política almacenada π(s)</p>
+          <p class="viz-titulo" id="m3-fase"></p>
+          <div id="m3-rejilla"></div>
+        </div>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq literal" data-t="t3.m3.mRondas">Rondas de mejora (I)</div><div class="cifra" id="m3-rondas">0</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m3.mBarridos">Barridos de evaluación</div><div class="cifra" id="m3-barridos">0</div></div>
+          <div class="metrica"><div class="etiq literal" data-t="t3.m3.mEstable">política-estable</div><div class="cifra" id="m3-estable">—</div></div>
+          <div class="metrica"><div class="etiq literal" data-t="t3.m3.mEmpates">Estados con empate en el argmax</div><div class="cifra" id="m3-empates">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m3.mOptima">¿La política almacenada es óptima?</div><div class="cifra" id="m3-optima">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m3-nota"></p>
+      </div>
+    </div>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.m3.viz2">Cuántas repeticiones han conseguido parar</p>
+      <div id="m3-grafica"><p class="suave" data-t="t3.m3.vacio">Con este desempate el algoritmo para siempre en 2 o 3 rondas: no hay distribución que dibujar. Cambia a desempate aleatorio y desactiva la corrección.</p></div>
+    </div>
+
+    <p class="explicacion nota" data-t="t3.m3.pi0">
+      \(\pi_0\) es la política equiprobable, como en la figura 4.1. Con \(\gamma=1\), una política
+      determinista arbitraria puede no alcanzar el terminal y entonces su evaluación no converge:
+      pruébalo en el módulo 2 con la flecha que choca contra la pared.
+    </p>
+
+    <p class="viz-titulo" data-t="t3.m3.cajaTitulo">El algoritmo, tal como se implementa aquí</p>
+    <pre class="codigo" data-t="t3.m3.caja">1. Inicialización
+   V(s) ← 0 para todo s ∈ S⁺        (incluido V(terminal) = 0)
+   π ← equiprobable                  (π(a|s) = 1/4)
+
+2. Evaluación (fase E)
+   Repetir:
+       Δ ← 0
+       Para cada s ∈ S:              (barrido síncrono: se escribe en una tabla nueva)
+           v ← V(s)
+           V(s) ← Σ_a π(a|s) Σ_{s',r} p(s',r|s,a) [ r + γ V(s') ]
+           Δ ← max(Δ, |v − V(s)|)
+   hasta que Δ &lt; θ
+
+3. Mejora (fase I)
+   política-estable ← verdadero
+   Para cada s ∈ S:
+       acción-antigua ← π(s)
+       M(s) ← { a : Σ_{s',r} p(s',r|s,a)[r + γ V(s')] ≥ max − ε }      (ε = 1e-9)
+       π(s) ← desempate(M(s))
+       Si acción-antigua ∉ M(s)  →  política-estable ← falso           [CORRECCIÓN ON]
+       Si acción-antigua ≠ π(s)  →  política-estable ← falso           [CORRECCIÓN OFF]
+   Si política-estable, parar; si no, ir a 2</pre>
+
+    <div class="aviso" data-t="t3.m3.defecto2">
+      <strong>Y ya que estamos en esta caja:</strong> su línea de inicialización dice
+      <em>“\(V(s)\in\mathbb{R}\) y \(\pi(s)\in A(s)\) arbitrarios para todo \(s\in\mathcal{S}\)”</em>
+      y <strong>se deja fuera \(V(\text{terminal})=0\)</strong>, que las otras dos cajas del
+      capítulo sí exigen. Como el paso 2 recorre solo \(\mathcal{S}\) pero usa \(V(s')\) con
+      \(s'\) posiblemente terminal, si ese valor no es 0 la evaluación converge a algo que no es
+      \(v_\pi\), y con \(\gamma=1\) el error no está acotado. Esto no lo señala el libro: sale de
+      comparar las tres cajas del capítulo entre sí.
+    </div>
+
+    <div class="aviso" data-t="t3.m3.garantia">
+      La garantía es real, pero tiene letra pequeña: vale para <strong>MDP finitos y
+      tabulares</strong>. En cuanto la función de valor se aproxime con parámetros —Tema 5— deja
+      de valer.
+    </div>
+
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B7 · eficiencia → módulo 4                                        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b7">
+    <header>
+      <h2 data-t="t3.b7.h2">Eficiencia: la política óptima aparece antes</h2>
+      <p class="fuente" data-t="t3.b7.fuente">3_Tema3#slide-9 y #slide-10 (Example 4.1 y figura 4.1) · material de Lucía: Tema3_DP#slide-10 y #slide-12 · Sutton &amp; Barto §4.3 (final) y figura 4.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b7.p1">
+      La figura 4.1 del libro pone en dos columnas la sucesión \(v_k\) de la política
+      equiprobable y la política greedy respecto a cada \(v_k\). Y dibuja, sin decirlo con
+      palabras, el hecho más importante del tema: <strong>la etiqueta “optimal policy” apunta a
+      \(k=3\), a \(k=10\) y a \(k=\infty\)</strong>. Es decir, la política greedy ya es óptima en
+      el tercer barrido, cuando los valores todavía están a 19 unidades de su límite.
+    </p>
+
+    <p class="explicacion" data-t="t3.b7.p2">
+      El libro lo confirma dos veces: en el pie de la figura («todas las políticas a partir de la
+      tercera iteración son óptimas») y en la §4.4 («las iteraciones de evaluación más allá de
+      las tres primeras no tienen ningún efecto sobre la política greedy correspondiente»). Y
+      añade que en este ejemplo <strong>una sola iteración</strong> de iteración de política
+      encuentra la política óptima.
+    </p>
+
+    <p class="explicacion" data-t="t3.b7.p3">
+      Cuidado con la lectura fácil: el teorema solo <strong>garantiza</strong> que la política
+      greedy es una mejora. Que en esta rejilla salga óptima a la primera es una peculiaridad del
+      ejemplo, no una propiedad general.
+    </p>
+
+    <p><a class="siguiente" href="#m4" data-t="t3.b7.continua">Continúa en el módulo 4 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 4 · la política óptima aparece antes                       -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta" data-t="t3.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t3.m4.h2">La política óptima aparece antes</h2>
+      <p class="fuente" data-t="t3.m4.fuente">3_Tema3#slide-10 · material de Lucía: Tema3_DP#slide-12 · Sutton &amp; Barto, figura 4.1 y §4.4 · actualización síncrona</p>
+      <p class="fuente" data-t="t3.m4.determinista">Determinista: no interviene la semilla.</p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m4.pregunta">
+      <p>En la figura del libro, la etiqueta <em>“optimal policy”</em> apunta con tres flechas a
+        \(k=3\), \(k=10\) y \(k=\infty\). Ninguna diapositiva lo comenta. ¿Cuántos barridos de
+        ventaja lleva la política sobre los valores?</p>
+      <span class="de-donde">3_Tema3#slide-10 y Tema3_DP#slide-12 · el pie de la figura 4.1 y la
+        §4.4 del libro sí lo dicen.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m4.explicacion">
+      Esto es la figura 4.1 del libro, pero sin las cinco filas: puedes pararte en cualquier
+      barrido. A la izquierda, \(v_k\) para la política equiprobable. A la derecha, la política
+      greedy respecto a ese \(v_k\), con <strong>todas</strong> las acciones que empatan. Busca el
+      barrido a partir del cual las flechas dejan de cambiar, y compáralo con lo que les falta a
+      los números para llegar a su límite.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label class="literal"><span data-t="t3.m4.kLabel">Barrido \(k\)</span> <span class="valor" id="m4-k-v">0</span></label>
+        <input type="range" id="m4-k" min="0" max="40" step="1" value="0">
+      </div>
+      <div class="control">
+        <label class="literal" data-t="t3.m4.saltosLabel">Saltos de la figura 4.1</label>
+        <div class="grupo-botones" id="m4-saltos"></div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m4.mostrarLabel">Mostrar</label>
+        <div class="grupo-botones" id="m4-vista"></div>
+      </div>
+    </div>
+
+    <div class="dos-columnas">
+      <div class="viz">
+        <p class="viz-titulo" data-t="t3.m4.vizV">v<sub>k</sub> para la política equiprobable</p>
+        <div id="m4-rejillaV"></div>
+      </div>
+      <div class="viz">
+        <p class="viz-titulo" data-t="t3.m4.vizPi">Política greedy respecto a v<sub>k</sub></p>
+        <div id="m4-rejillaPi"></div>
+      </div>
+    </div>
+
+    <div class="metricas">
+      <div class="metrica"><div class="etiq" data-t="t3.m4.mSubopt">Estados con acción greedy subóptima</div><div class="cifra" id="m4-subopt">—</div></div>
+      <div class="metrica"><div class="etiq literal" data-t="t3.m4.mDistancia">Distancia a \(v_\pi\)</div><div class="cifra" id="m4-distancia">—</div></div>
+      <div class="metrica"><div class="etiq" data-t="t3.m4.mVentaja">Barridos de ventaja de la política</div><div class="cifra" id="m4-ventaja">—</div></div>
+    </div>
+
+    <p class="explicacion nota" id="m4-nota"></p>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.m4.viz2">Cuánto queda por delante</p>
+      <div id="m4-grafica"></div>
+    </div>
+
+    <div class="aviso" data-t="t3.m4.hueco">
+      <strong>Aviso práctico:</strong> estas dos figuras están en el <code>.pptx</code> de clase
+      pero <strong>no en el PDF que se distribuye</strong>, que solo tiene 11 páginas. Si estudias
+      por el PDF, este módulo es la única versión que tienes de la figura 4.1.
+    </div>
+
+    <p class="explicacion" data-t="t3.m4.cierre">
+      Si la política ya está lista en el barrido 3, ¿para qué dar los otros 170? Ésa es
+      exactamente la pregunta que responde el algoritmo del módulo siguiente.
+    </p>
+
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B8 · iteración de valor → módulo 5                                -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b8">
+    <header>
+      <h2 data-t="t3.b8.h2">Iteración de valor</h2>
+      <p class="fuente" data-t="t3.b8.fuente">3_Tema3#slide-11 y #slide-12 · material de Lucía: Tema3_DP#slide-13 a #slide-15 · Sutton &amp; Barto §4.4, ecuación (4.10) y la caja <em>Value Iteration</em></p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b8.p1">
+      La pregunta que responde este algoritmo es la del bloque anterior: <strong>¿hace falta
+      esperar a que la evaluación converja para aplicar el operador de mejora?</strong> No. La
+      evaluación se puede truncar de muchas formas sin perder las garantías de convergencia. El
+      caso extremo —y el más eficiente por barrido— es truncarla a <strong>un solo
+      barrido</strong>: greedificar después de cada actualización de todos los estados. Eso es la
+      iteración de valor.
+    </p>
+
+    <p class="ecuacion">
+      \[ v_{k+1}(s) \;\doteq\; \max_a \sum_{s',r} p(s',r\mid s,a)\,\big[\,r+\gamma v_k(s')\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t3.b8.p2">
+      Compárala con la de la evaluación: <strong>la única diferencia es que \(\sum_a \pi(a\mid
+      s)\) se ha convertido en \(\max_a\)</strong>. Es la ecuación de optimalidad de Bellman
+      convertida en regla de actualización, igual que la de evaluación era la ecuación de Bellman
+      para \(v_\pi\) convertida en regla de actualización. Y no hay política explícita dentro del
+      bucle: se extrae <strong>una sola vez, al final</strong>, con un <code>argmax</code>.
+    </p>
+
+    <p class="explicacion" data-t="t3.b8.p3">
+      Entre los dos extremos hay un continuo. Se puede intercalar cualquier número \(m\) de
+      barridos de evaluación entre dos mejoras: con \(m=1\) sale la iteración de valor, con
+      \(m\to\infty\) sale la iteración de política, y a menudo se converge antes con algún valor
+      intermedio. Todas esas variantes convergen. \(m\) es notación de esta página, no del libro.
+    </p>
+
+    <p class="explicacion" data-t="t3.b8.p4">
+      Guarda esta actualización: es la <strong>base de Q-learning</strong>. La versión para
+      valores de acción, \(q_{k+1}(s,a)=\sum_{s',r}p(s',r\mid s,a)[\,r+\gamma\max_{a'}q_k(s',a')\,]\),
+      es literalmente Q-learning con la esperanza calculada en vez de muestreada. En el Tema 4 la
+      esperanza se sustituirá por una muestra y aparecerá la \(\alpha\).
+    </p>
+
+    <p><a class="siguiente" href="#m5" data-t="t3.b8.continua">Continúa en el módulo 5 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 5 · iteración de valor                                     -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m5">
+    <header>
+      <p class="etiqueta" data-t="t3.m5.etiqueta">MÓDULO 5</p>
+      <h2 data-t="t3.m5.h2">Iteración de valor: la evaluación truncada</h2>
+      <p class="fuente" data-t="t3.m5.fuente">3_Tema3#slide-11 · material de Lucía: Tema3_DP#slide-13 · Sutton &amp; Barto §4.4, ecuación (4.10) y la caja <em>Value Iteration</em> · actualización síncrona</p>
+      <p class="fuente" data-t="t3.m5.determinista">Determinista: la política greedy reparte probabilidad entre los empates, pero no se sortea nada; no interviene la semilla.</p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m5.pregunta">
+      <p><em>«¿Necesitamos esperar hasta que el proceso de evaluación haya convergido? ¿Qué pasa
+        si aplicamos nuestro operador de mejora antes?»</em></p>
+      <span class="de-donde">3_Tema3#slide-11 (literal) y Tema3_DP#slide-13 — las dos colecciones
+        responden enunciando el algoritmo, y saltan de «hasta convergencia» a «un solo barrido»
+        sin mostrar nunca el caso intermedio.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m5.explicacion">
+      La iteración de valor no es un algoritmo aparte: es la iteración de política con la
+      evaluación <strong>truncada a un solo barrido</strong>. Mueve \(m\) y compruébalo. Con
+      \(m=1\), cada barrido hace a la vez una mejora y una evaluación, y la actualización se puede
+      escribir de un tirón con un \(\max_a\) dentro. Con \(m=\infty\), la evaluación se completa
+      antes de cada mejora, y eso es la iteración de política del módulo anterior.
+    </p>
+
+    <div class="viz" data-t="t3.m5.equivalencia">
+      <p class="viz-titulo">Las dos actualizaciones, una encima de la otra. La única diferencia es el operador de delante:</p>
+      \[ v_{k+1}(s) = \textcolor{gray}{\sum_a \pi(a\mid s)} \sum_{s',r} p(s',r\mid s,a)[\,r+\gamma v_k(s')\,] \quad\text{(evaluación)} \]
+      \[ v_{k+1}(s) = \textcolor{gray}{\max_a\ \ \ \ } \sum_{s',r} p(s',r\mid s,a)[\,r+\gamma v_k(s')\,] \quad\text{(iteración de valor)} \]
+      <p>Ese contraste no está dibujado en ninguna diapositiva del tema, y es lo único que hay que retener.</p>
+    </div>
+
+    <div class="controles">
+      <div class="control">
+        <label class="literal"><span data-t="t3.m5.mLabel">Barridos de evaluación entre mejoras (\(m\))</span> <span class="valor" id="m5-m-v">1</span></label>
+        <input type="range" id="m5-m" min="1" max="20" step="1" value="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <div class="grupo-botones">
+          <button type="button" id="m5-minf" data-t="t3.m5.mInf">∞</button>
+        </div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m5.marchaLabel">Marcha</label>
+        <div class="grupo-botones">
+          <button type="button" id="m5-barrido" data-t="t3.m5.barrido">Un barrido</button>
+          <button type="button" id="m5-ronda" data-t="t3.m5.ronda">Una ronda (mejora + m barridos)</button>
+          <button type="button" class="primario" id="m5-hasta" data-t="t3.m5.hasta">Ejecutar hasta parar</button>
+          <button type="button" id="m5-reiniciar" data-t="t3.m5.reiniciar">Reiniciar</button>
+        </div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m5.mostrarLabel">Mostrar</label>
+        <div class="grupo-botones" id="m5-vista"></div>
+      </div>
+      <div class="control">
+        <label class="literal" data-t="t3.m5.fijosLabel">Parámetros fijos</label>
+        <span class="mono suave" data-t="t3.m5.fijos">θ = 10⁻⁴ · γ = 1 · V₀ ≡ 0 · actualización síncrona</span>
+      </div>
+    </div>
+
+    <div class="dos-columnas tres-dos">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m5.viz1">V(s) y el argmax respecto a V</p>
+          <div id="m5-rejilla"></div>
+        </div>
+        <p class="explicacion nota" id="m5-cmp"></p>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq" data-t="t3.m5.mBarridos">Barridos hechos</div><div class="cifra" id="m5-barridos">0</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m5.mRondas">Rondas de mejora</div><div class="cifra" id="m5-rondas">0</div></div>
+          <div class="metrica"><div class="etiq literal" data-t="t3.m5.mDelta">Cambio máximo (\(\Delta\))</div><div class="cifra" id="m5-delta">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m5.mOptima">¿La política es óptima?</div><div class="cifra" id="m5-optima">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m5-nota"></p>
+      </div>
+    </div>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.m5.viz2">Cuánto cuesta cada m</p>
+      <div id="m5-grafica"></div>
+    </div>
+
+    <p class="viz-titulo" data-t="t3.m5.cajaTitulo">El caso general, tal como se implementa aquí</p>
+    <pre class="codigo" data-t="t3.m5.caja">V ← 0 en S⁺
+Repetir:
+    (I)  π ← greedy(V), quedándose con TODAS las acciones maximizadoras,
+         repartidas con probabilidad uniforme entre ellas
+    (E)  m barridos de evaluación de π  (o menos, si Δ &lt; θ antes)
+hasta que Δ &lt; θ y π no cambie</pre>
+
+    <p class="explicacion nota" data-t="t3.m5.greedyEstocastica">
+      La política greedy de este módulo reparte la probabilidad <strong>a partes iguales entre
+      todas las acciones que empatan</strong>, que es lo que el libro permite. Con un desempate
+      determinista y \(\gamma=1\), la evaluación de la primera política greedy no convergería.
+    </p>
+
+    <div class="aviso" data-t="t3.m5.discrepancia1">
+      La diapositiva de clase dice que la iteración de valor converge “con probabilidad 1”. El
+      algoritmo es determinista: no hay nada que sortear, y el libro afirma convergencia a secas.
+      La expresión “con probabilidad 1” aparecerá en el Tema 4, con Q-learning, donde sí hay
+      muestreo.
+    </div>
+
+    <div class="aviso" data-t="t3.m5.discrepancia2">
+      La diapositiva afirma que la iteración de valor puede converger peor que la iteración de
+      política. El libro no llega tan lejos: dice que las dos se usan mucho y que no está claro
+      cuál es mejor en general. En este tablero la iteración de valor gana por 4 a 178, pero eso
+      tampoco demuestra nada en general.
+    </div>
+
+    <div class="aviso" data-t="t3.m5.qlearning">
+      <strong>Guarda esta actualización.</strong> Su versión para valores de acción,
+      \(q_{k+1}(s,a)=\sum_{s',r}p(s',r\mid s,a)\big[\,r+\gamma\max_{a'}q_k(s',a')\,\big]\), es
+      <strong>Q-learning con la esperanza calculada en vez de muestreada</strong>. En el Tema 4 no
+      habrá modelo: la suma sobre \((s',r)\) se sustituirá por una única muestra y aparecerá la
+      \(\alpha\). El esqueleto —el \(\max\) por dentro, la política implícita— es éste.
+    </div>
+    <p class="fuente" data-t="t3.m5.qlearning.fuente">Este puente solo aparece en el material de Lucía (Tema3_DP#slide-15). En el libro, el ejercicio 4.10 pide justamente esa versión, y la figura 8.6 pone “q-value iteration” y “Q-learning” en la misma fila.</p>
+
+    <div id="m5-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B9 · GPI → módulo 6                                               -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b9">
+    <header>
+      <h2 data-t="t3.b9.h2">Iteración generalizada de la política (GPI)</h2>
+      <p class="fuente" data-t="t3.b9.fuente">3_Tema3#slide-13 · material de Lucía: Tema3_DP#slide-16 · Sutton &amp; Barto §4.6 y el diagrama de las dos rectas (sin numerar)</p>
+    </header>
+
+    <p class="explicacion" data-t="t3.b9.p1">
+      <strong>Iteración generalizada de la política</strong> es el nombre que se le da a la idea
+      de dejar que los procesos de evaluación y de mejora interactúen, <strong>sin importar su
+      granularidad ni sus detalles</strong>. Iteración de política y iteración de valor son dos
+      casos particulares. Casi todos los métodos de aprendizaje por refuerzo se describen bien
+      como GPI.
+    </p>
+
+    <p class="explicacion" data-t="t3.b9.p2">
+      Los dos procesos <strong>compiten y colaboran</strong>. Compiten porque tiran en direcciones
+      opuestas: hacer la política greedy respecto a la función de valor deja la función de valor
+      incorrecta para la nueva política, y hacer la función de valor consistente con la política
+      deja de ser greedy a la política. Colaboran porque cuando <strong>los dos</strong> se
+      estabilizan a la vez, la función de valor es consistente con la política <strong>y</strong>
+      la política es greedy respecto a ella: eso es exactamente la ecuación de optimalidad de
+      Bellman, y por tanto las dos son óptimas.
+    </p>
+
+    <p class="explicacion" data-t="t3.b9.p3">
+      En la figura de las dos rectas, cada recta es un objetivo. La de arriba, \(v=v_\pi\), es el
+      conjunto de puntos donde la función de valor es consistente con la política: llegar a ella
+      es <strong>evaluar la política</strong>. La de abajo, \(\pi=\text{greedy}(v)\), es donde la
+      política es greedy respecto a la función de valor: llegar a ella es <strong>mejorar la
+      política</strong>. Se cortan en \(v_*,\pi_*\).
+    </p>
+
+    <p class="explicacion nota" data-t="t3.b9.nota">
+      La geometría real es mucho más complicada que dos rectas; el diagrama solo sugiere lo que
+      pasa. Y las flechas que dibuja el libro son <strong>iteración de política</strong>, y solo
+      iteración de política: cada una lleva el sistema hasta alcanzar por completo uno de los dos
+      objetivos. Sobre los métodos que dan pasos incompletos el libro dice una sola frase: que
+      también se pueden dar “pasos más pequeños e incompletos hacia cada objetivo”.
+    </p>
+
+    <p><a class="siguiente" href="#m6" data-t="t3.b9.continua">Continúa en el módulo 6 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 6 · GPI, las dos rectas                                    -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m6">
+    <header>
+      <p class="etiqueta" data-t="t3.m6.etiqueta">MÓDULO 6</p>
+      <h2 data-t="t3.m6.h2">Iteración generalizada de la política: las dos rectas</h2>
+      <p class="fuente" data-t="t3.m6.fuente">3_Tema3#slide-13 · material de Lucía: Tema3_DP#slide-16 · Sutton &amp; Barto §4.6, diagrama de las dos rectas (sin numerar) · actualización síncrona</p>
+      <p class="fuente" id="m6-semilla"></p>
+    </header>
+
+    <div class="pregunta-diapo" data-t="t3.m6.pregunta">
+      <p>En la figura de las dos rectas, el material <strong>solo glosa la recta inferior</strong>
+        («mejora la política»). La superior, \(v=v_\pi\), se queda sin el rótulo simétrico: nunca
+        se dice que llegar a ella es evaluar la política.</p>
+      <span class="de-donde">Tema3_DP#slide-16 (material de Lucía); 3_Tema3#slide-13 no glosa
+        ninguna de las dos. Y la trayectoria en zigzag que dibujan es iteración de política, cosa
+        que tampoco dice ninguna.</span>
+    </div>
+
+    <p class="explicacion" data-t="t3.m6.explicacion">
+      Cada punto de este plano es un par (función de valor, política). La recta de arriba,
+      \(v=v_\pi\), es donde la función de valor es <strong>consistente con la política</strong>:
+      llegar hasta ella es <strong>evaluar</strong>. La de abajo, \(\pi=\text{greedy}(v)\), es
+      donde la política es <strong>greedy respecto a la función de valor</strong>: llegar hasta
+      ella es <strong>mejorar</strong>. Se cortan en \(v_*,\pi_*\). La geometría real es mucho más
+      complicada que dos rectas; el dibujo solo sugiere lo que pasa.
+    </p>
+
+    <div class="aviso" data-t="t3.m6.honestidad">
+      <strong>Qué es de Sutton &amp; Barto y qué no.</strong> El libro dibuja <strong>una
+      sola</strong> trayectoria y dice que corresponde a la <strong>iteración de política</strong>:
+      cada flecha lleva el sistema hasta alcanzar por completo uno de los dos objetivos. Sobre los
+      demás métodos dice exactamente una frase, que también se pueden dar “pasos más pequeños e
+      incompletos hacia cada objetivo”, <strong>sin atribuirla a ningún algoritmo concreto</strong>.
+      Las trayectorias de <strong>iteración de valor</strong> y <strong>caótica</strong> que se
+      dibujan aquí son una <strong>interpretación didáctica de la asignatura</strong>, no del
+      libro. Son defendibles —y aquí están calculadas a partir de los algoritmos reales, no
+      dibujadas a mano— pero no se las atribuyas a Sutton &amp; Barto.
+    </div>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t3.m6.trayectoriaLabel">Trayectoria</label>
+        <div class="grupo-botones" id="m6-trayectoria"></div>
+      </div>
+      <div class="control">
+        <label data-t="t3.m6.marchaLabel">Marcha</label>
+        <div class="grupo-botones">
+          <button type="button" id="m6-paso" data-t="t3.m6.paso">Un paso</button>
+          <button type="button" class="primario" id="m6-reproducir" data-t="t3.m6.reproducir">Reproducir</button>
+          <button type="button" id="m6-reiniciar" data-t="t3.m6.reiniciar">Reiniciar</button>
+        </div>
+      </div>
+      <div class="control control-linea">
+        <label class="interruptor">
+          <input type="checkbox" id="m6-superponer">
+          <span data-t="t3.m6.superponerLabel">Superponer las tres</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="viz">
+      <p class="viz-titulo" data-t="t3.m6.viz1">Las dos rectas y la trayectoria</p>
+      <div id="m6-diagrama"><p class="suave" data-t="t3.m6.vacio">Elige una trayectoria y pulsa “Un paso” o “Reproducir”.</p></div>
+    </div>
+
+    <div class="dos-columnas">
+      <div>
+        <div class="viz">
+          <p class="viz-titulo" data-t="t3.m6.viz2">Los dos residuos</p>
+          <div id="m6-residuos"><p class="suave" data-t="t3.m6.vacioResiduos">Los dos residuos aparecen en cuanto la trayectoria dé su primer paso.</p></div>
+        </div>
+      </div>
+      <div>
+        <div class="metricas">
+          <div class="metrica"><div class="etiq" data-t="t3.m6.mPaso">Paso</div><div class="cifra" id="m6-paso-n">—</div></div>
+          <div class="metrica"><div class="etiq" data-t="t3.m6.mFase">Qué acaba de pasar</div><div class="cifra" id="m6-fase">—</div></div>
+        </div>
+        <p class="explicacion nota" id="m6-nota"></p>
+      </div>
+    </div>
+
+    <p class="explicacion nota" data-t="t3.m6.arranque">
+      Las tres arrancan en el mismo sitio: \(V\equiv0\) y la política del módulo 2. Con
+      \(V\equiv0\) todas las acciones empatan, así que cualquier política es greedy: por eso el
+      recorrido empieza <strong>sobre la recta de abajo</strong>.
+    </p>
+
+    <p class="explicacion nota" data-t="t3.m6.residuosDef">
+      Los dos números que sitúan el punto son residuos <strong>medios</strong> sobre los catorce
+      estados: \(e\) mide cuánto cambiaría \(V\) un barrido de evaluación, y \(g\) mide cuánto se
+      pierde por no ser greedy. Cada uno vale cero exactamente sobre su recta. \(e\) y \(g\) son
+      notación de esta página, no del libro.
+    </p>
+
+    <div id="m6-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A5 · ecuaciones clave                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="ecuaciones">
+    <h2 data-t="t3.ecuaciones.h2">Ecuaciones clave del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t3.ecuaciones.cab">
+            <th>Ecuación</th><th>Qué dice</th><th>Dónde se usa aquí</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t3.ecuaciones.f1">
+            <td>\(v_{k+1}(s)=\sum_a \pi(a\mid s)\sum_{s',r}p(s',r\mid s,a)[r+\gamma v_k(s')]\)</td>
+            <td>Un barrido de evaluación: el valor nuevo de \(s\) sale de los valores viejos de sus sucesores</td>
+            <td>módulos 1, 3, 4, 5 y 6</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f2">
+            <td>\(\Delta \leftarrow \max(\Delta,|v-V(s)|)\), parar si \(\Delta&lt;\theta\)</td>
+            <td>El criterio de parada: el mayor cambio de un barrido</td>
+            <td>módulos 1, 3 y 5</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f3">
+            <td>\(q_\pi(s,a)=\sum_{s',r}p(s',r\mid s,a)[r+\gamma v_\pi(s')]\)</td>
+            <td>Con el modelo, las \(q\) se recuperan de las \(v\) con una suma de un paso</td>
+            <td>módulos 2, 3, 4 y 5</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f4">
+            <td>\(q_\pi(s,\pi'(s))\ge v_\pi(s)\;\Rightarrow\;v_{\pi'}(s)\ge v_\pi(s)\)</td>
+            <td>Teorema de mejora: si la acción nueva no vale menos, la política nueva no es peor</td>
+            <td>módulo 2</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f5">
+            <td>\(\pi'(s)\doteq\arg\max_a q_\pi(s,a)\)</td>
+            <td>El operador greedy, con empates rotos de forma arbitraria</td>
+            <td>módulos 2, 3, 4, 5 y 6</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f6">
+            <td>\(v_{k+1}(s)=\max_a\sum_{s',r}p(s',r\mid s,a)[r+\gamma v_k(s')]\)</td>
+            <td>Iteración de valor: la de evaluación con \(\max_a\) en vez de \(\sum_a\pi(a\mid s)\)</td>
+            <td>módulos 5 y 6</td>
+          </tr>
+          <tr data-t="t3.ecuaciones.f7">
+            <td>\(q_{k+1}(s,a)=\sum_{s',r}p(s',r\mid s,a)[r+\gamma\max_{a'}q_k(s',a')]\)</td>
+            <td>La misma, para valores de acción: el antepasado directo de Q-learning</td>
+            <td>módulo 5, solo como texto</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A6 · errores frecuentes                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="errores">
+    <!-- El guion titula este bloque «Cinco confusiones que cuestan puntos» y a
+         continuación lista SEIS (t3.err.1 … t3.err.6). Las seis filas son
+         buenas, así que se corrige el número del título. Reportado. -->
+    <h2 data-t="t3.errores.h2">Seis confusiones que cuestan puntos</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t3.errores.cab">
+            <th>Confusión</th><th>Corrección</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t3.err.1">
+            <td>“La política greedy respecto a \(v_\pi\) es óptima.”</td>
+            <td>Solo está <strong>garantizada</strong> como mejora. Que en esta rejilla salga óptima a la primera es una peculiaridad del ejemplo (Sutton &amp; Barto §4.3 y pie de la figura 4.1). El módulo 4 lo comprueba barrido a barrido.</td>
+          </tr>
+          <tr data-t="t3.err.2">
+            <td>“Hay que esperar a que la evaluación converja para poder mejorar.”</td>
+            <td>No. La evaluación converge solo en el límite, y la política greedy deja de cambiar mucho antes: en esta rejilla, en el barrido 3 de 173 (Sutton &amp; Barto §4.4). Es la razón de ser de la iteración de valor.</td>
+          </tr>
+          <tr data-t="t3.err.3">
+            <td>“La iteración de valor es evaluar la política greedy.”</td>
+            <td>No: en la iteración de valor el \(\max\) está <strong>dentro</strong> de la actualización, y no hay política explícita hasta que se extrae al final (Sutton &amp; Barto §4.4, ecuación 4.10 y su caja).</td>
+          </tr>
+          <tr data-t="t3.err.4">
+            <td>“La programación dinámica también tiene tasa de aprendizaje.”</td>
+            <td>No. La actualización <strong>esperada</strong> sustituye el valor; no hay \(\alpha\). La distinción esperada / muestreada es justo lo que separará la DP de los métodos del Tema 4 (Sutton &amp; Barto §8.5, figura 8.6).</td>
+          </tr>
+          <tr data-t="t3.err.5">
+            <td>“Da igual inicializar \(V\) como sea.”</td>
+            <td>Arbitrario <strong>salvo el terminal</strong>, que debe valer 0 (Sutton &amp; Barto §4.1). Con \(\gamma=1\), si \(V(\text{terminal})\ne 0\) la evaluación converge a algo que no es \(v_\pi\) y el error no está acotado. La caja de iteración de política del libro omite justo esa condición.</td>
+          </tr>
+          <tr data-t="t3.err.6">
+            <td>“Si la política no cambia entre dos barridos, el algoritmo para.”</td>
+            <td>Solo si comparas <strong>optimalidad</strong>, no identidad de acción. Con empates y desempate arbitrario, la política puede cambiar sin mejorar nada, y el algoritmo entra en un bucle (Sutton &amp; Barto, ejercicio 4.4). El módulo 3 lo hace ocurrir.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A7 · cierre                                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="cierre">
+    <h2 data-t="t3.cierre.h2">Qué hay que llevarse</h2>
+    <ul class="explicacion">
+      <li data-t="t3.cierre.1">Predicción, control y planificación no son sinónimos: la programación dinámica resuelve control <strong>usando un modelo</strong>, y por eso es planificación.</li>
+      <li data-t="t3.cierre.2">Bajar el umbral \(\theta\) de \(10^{-1}\) a \(10^{-4}\) pasa de 47 a 173 barridos y <strong>no cambia ni una flecha</strong> de la política greedy.</li>
+      <li data-t="t3.cierre.3">\(\pi'\) mejora a \(\pi\) exactamente cuando \(q_\pi(s,\pi'(s))\ge v_\pi(s)\); en la política de partida del módulo 2, solo <strong>2 de los 56</strong> cambios posibles mejoran de verdad.</li>
+      <li data-t="t3.cierre.4">El operador greedy no promete mejora estricta: si hay igualdad, las dos políticas son óptimas. Ése es el criterio de parada de la iteración de política.</li>
+      <li data-t="t3.cierre.5">La última línea del pseudocódigo compara acciones, no valores: con desempate aleatorio, la probabilidad de parar en una ronda es <strong>1/256</strong> en esta rejilla.</li>
+      <li data-t="t3.cierre.6">La política óptima está lista en el barrido <strong>3</strong>; la evaluación necesita <strong>173</strong> para llegar a \(-14/-20/-22\). Ésa es toda la motivación de la iteración de valor.</li>
+      <li data-t="t3.cierre.7">Iteración de política e iteración de valor son el mismo esquema con distinto reparto de esfuerzo: \(m=\infty\) frente a \(m=1\). En esta rejilla, 178 barridos frente a 4.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A8 · glosario de notación                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="glosario">
+    <h2 data-t="t3.glosario.h2">Glosario de notación del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t3.glosario.cab">
+            <th>Símbolo</th><th>Significado</th><th>Dónde aparece</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t3.glosario.f1">
+            <td>\(V(s)\)</td>
+            <td><strong>estimación</strong> en curso de \(v_\pi\) o \(v_*\); mayúscula = array de estimaciones, minúscula = valor verdadero</td>
+            <td>las tres cajas de pseudocódigo (bloque «Iteración de política» y módulos 3 y 5) y los módulos 1, 3, 5 y 6</td>
+          </tr>
+          <tr data-t="t3.glosario.f2">
+            <td>\(\Delta\)</td>
+            <td>mayor cambio absoluto de un barrido; condición de parada \(\Delta&lt;\theta\)</td>
+            <td>bloque «Predicción», las cajas de pseudocódigo y la métrica «Cambio máximo» de los módulos 1, 3 y 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f3">
+            <td>\(\mathcal{S}^+\)</td>
+            <td>estados <strong>incluyendo</strong> el terminal; \(\mathcal{S}\) son los no terminales</td>
+            <td>bloque «Predicción» y las cajas de pseudocódigo de los módulos 3 y 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f4">
+            <td>\(v_k\)</td>
+            <td>la sucesión de aproximaciones de la evaluación iterativa</td>
+            <td>bloques «Predicción» y «Eficiencia de las iteraciones», módulos 4 y 5, y las ecuaciones clave</td>
+          </tr>
+          <tr data-t="t3.glosario.f5">
+            <td>\(\doteq\)</td>
+            <td>igualdad por definición</td>
+            <td>las ecuaciones de los bloques de predicción, operadores de mejora e iteración de valor, y la tabla de ecuaciones clave</td>
+          </tr>
+          <tr data-t="t3.glosario.f6">
+            <td>\(\pi'\)</td>
+            <td>política alternativa / mejorada</td>
+            <td>bloques «Teorema de mejora» y «Operadores de mejora», módulo 2 y las ecuaciones clave</td>
+          </tr>
+          <tr data-t="t3.glosario.f7">
+            <td>\(\theta\)</td>
+            <td>umbral escalar de parada. <strong>Nunca</strong> el vector de parámetros de política del Tema 6</td>
+            <td>deslizador del módulo 1; parámetro fijo declarado en los módulos 3 y 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f8">
+            <td>\(T\)</td>
+            <td>etiqueta de celda del estado terminal. En el Tema 3 no se usa en ninguna fórmula: las fórmulas dicen \(V(\text{terminal})=0\), como el libro</td>
+            <td>las dos esquinas de las rejillas de los módulos 1 a 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f9">
+            <td>\(m\)</td>
+            <td><strong>notación propia de este recurso</strong>: barridos de evaluación entre dos mejoras. No es del libro</td>
+            <td>deslizador y curva de coste del módulo 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f10">
+            <td>\(e\), \(g\)</td>
+            <td><strong>notación propia de este recurso</strong>: residuos de evaluación y de mejora. No son del libro</td>
+            <td>las dos barras de residuos del módulo 6</td>
+          </tr>
+          <tr data-t="t3.glosario.f11">
+            <td>\(p(s',r\mid s,a)\)</td>
+            <td>dinámica del MDP</td>
+            <td>las ecuaciones de los bloques y las cajas de pseudocódigo de los módulos 3 y 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f12">
+            <td>\(\pi(a\mid s)\), \(\pi(s)\)</td>
+            <td>política estocástica / determinista</td>
+            <td>todos los bloques y los seis módulos</td>
+          </tr>
+          <tr data-t="t3.glosario.f13">
+            <td>\(v_\pi\), \(q_\pi\), \(v_*\), \(q_*\)</td>
+            <td>funciones de valor verdaderas</td>
+            <td>todos los bloques y los seis módulos</td>
+          </tr>
+          <tr data-t="t3.glosario.f14">
+            <td>\(\gamma\)</td>
+            <td>descuento; aquí siempre 1</td>
+            <td>las ecuaciones de todos los bloques; declarado como dato fijo en los módulos 3 y 5</td>
+          </tr>
+          <tr data-t="t3.glosario.f15">
+            <td>\(k\)</td>
+            <td>número de barrido de evaluación</td>
+            <td>deslizador «Barrido \(k\)» del módulo 4, eje de las gráficas de los módulos 1 y 4, y bloque «Eficiencia de las iteraciones»</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion nota" data-t="t3.glosario.aviso">
+      Dos avisos de notación. \(V(s)\), \(\Delta\) y \(\mathcal{S}^+\) aparecen en todas las cajas
+      de pseudocódigo pero <strong>no están</strong> en el fichero de notación de la asignatura;
+      aquí se usan como los usa el libro. Y \(\theta\) tiene dos sentidos en el curso: en el Tema 3
+      es siempre un <strong>umbral escalar</strong>, nunca el vector de parámetros de la política
+      del Tema 6.
+    </p>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema2.html" data-t="t3.pie.anterior">← Tema 2 · Procesos de Decisión de Markov</a>
+    </p>
+    <p data-t="t3.pie.1">
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulo 4.
+    </p>
+    <p class="suave" data-t="t3.pie.2">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema3.js"></script>
+</body>
+</html>

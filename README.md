@@ -27,6 +27,12 @@ diapositiva deje abierto, sobra.
 | `Tema2#slide-15` | ¿Cuántas ecuaciones salen de la cuadrícula? | T2 · módulo 3 |
 | `Tema2#slide-18` | Diagrama de backup de los estados 3 y 4 | T2 · módulo 4 |
 | `Tema2#slide-19` | ¿Puede haber varias políticas óptimas? | T2 · módulo 5 |
+| `3_Tema3#slide-9`, `#slide-10` | «Algunas consideraciones» que no contienen ninguna | T3 · módulo 1 |
+| `Tema3_DP#slide-6` | ¿Qué podemos afirmar sobre las políticas negra, roja, verde y azul? *(Wooclap sin responder)* | T3 · módulo 2 |
+| `3_Tema3#slide-8`, `Tema3_DP#slide-11` | ¿Puede el `else go to 2` no terminar nunca? | T3 · módulo 3 |
+| `3_Tema3#slide-10`, `Tema3_DP#slide-12` | La figura dibuja que en \(k=3\) la política ya es óptima, y nadie lo dice | T3 · módulo 4 |
+| `3_Tema3#slide-11`, `Tema3_DP#slide-13` | ¿Hace falta esperar a que converja la evaluación? | T3 · módulo 5 |
+| `Tema3_DP#slide-16` | La glosa que falta sobre la recta \(v=v_\pi\) | T3 · módulo 6 |
 
 ---
 
@@ -142,6 +148,44 @@ en HTML, en JS y en los cuestionarios tenga inglés; que no sobren claves; que l
 de opciones conserven su longitud (si no, `correcta` apuntaría a otra opción); y que
 ninguna traducción se haya quedado en español. Para añadir un idioma basta otro fichero
 como `en.js` y una entrada en `IDIOMAS`.
+
+### Subíndices fuera de LaTeX
+
+Dentro de `\(...\)` los subíndices los pone KaTeX. Fuera —rótulos de gráfica, botones,
+cabeceras de tabla, lecturas generadas por JS— **hay que escribirlos con `<sub>`**:
+`v<sub>π</sub>`, `v<sub>k</sub>`, `v<sub>π′</sub>`, `v<sub>*</sub>`. Un `v_π` escrito en
+crudo se lee en pantalla con el guion bajo y rompe la coincidencia carácter a carácter
+con la diapositiva, que es la regla del curso.
+
+En los SVG no existe `<sub>`, así que `textoSvg()` (en `nucleo.js`) acepta esa **misma
+marca** y la compone con `<tspan>` desplazado. Ventaja: un rótulo se escribe igual y se
+traduce con una sola clave, vaya al DOM o al lienzo. La prima va **dentro** del
+subíndice —`v<sub>π′</sub>`, no `v<sub>π</sub>′`— porque la prosa del sitio escribe
+`v_{\pi'}`.
+
+Dos tests de `tests/i18n.test.js` vigilan que no se cuele ningún subíndice en crudo, en
+español y en inglés. La excepción son las **cajas de pseudocódigo** (`<pre class="codigo">`,
+claves `t3.b6.caja`, `t3.m3.caja`, `t3.m5.caja`): son transcripción literal en
+monoespaciado, donde `Σ_{s',r}`, `argmax_a` y `π_*` comparten una convención de texto
+plano y marcar solo una parte la rompería.
+
+### Lienzos que crecen en modo clase
+
+Un SVG dibujado a 600×300 no crece con `?modo=clase`: el resto de la página sube a
+`--base: 20px` y los rótulos del lienzo se quedan en 13 px dentro de una caja de 1500 px,
+con medio diagrama de aire a la derecha. `lienzo()` acepta por eso `{ escalable: true }`
+—`diagramaDosRectas` lo expone como opción `escalable`, y hoy solo lo usa el módulo 6 del
+T3, que es el que se proyecta—: el SVG pasa a `width:100%` con
+`max-width: var(--lienzo-max, <ancho natural>px)`, así que **mientras nadie defina esa
+variable se ve exactamente igual que antes** (modo normal y móvil, intactos). En modo
+clase `estilo.css` la sube a `min(100%, 1200px)`.
+
+Lo bueno de escalar por `viewBox` es que crece **todo** el contenido del lienzo sin tocar
+un solo `font-size`: rótulos, glosas y también el `dy` y el `font-size` de los subíndices
+de `textoSvg()`, que son proporcionales al cuerpo de letra. La leyenda, en cambio, es HTML
+y queda fuera del `viewBox`: la sube aparte la regla `.lienzo-escalable + .leyenda`. El
+tope de 1200 px existe porque el lienzo conserva la proporción —todo el ancho que gana lo
+gana también en alto— y a pantalla completa se comería la mitad del proyector.
 
 ### El orden de las opciones de los cuestionarios
 

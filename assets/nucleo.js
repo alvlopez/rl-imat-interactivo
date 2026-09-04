@@ -4,7 +4,8 @@
 
    Contiene:
      · generador aleatorio con semilla (reproducibilidad)
-     · cuatro tipos de gráfica en SVG: líneas, violín, rejilla y árbol de backup
+     · cinco tipos de gráfica en SVG: líneas, violín, rejilla, árbol de backup
+       y el diagrama de las dos rectas de la GPI (Tema 3)
      · componente de autocomprobación (quiz)
      · conmutadores de idioma, de tema y de modo clase
    ========================================================================== */
@@ -181,13 +182,72 @@ export function el(etiqueta, atributos = {}, contenido = null) {
   return nodo;
 }
 
-function lienzo(ancho, alto) {
+/** Redondeo corto para atributos geométricos. */
+const num2 = (x) => Math.round(x * 100) / 100;
+
+/**
+ * Texto SVG que admite subíndices escritos como en el resto del sitio.
+ *
+ * Dentro de un SVG no existe <sub>, así que un rótulo como «v = v_π» acababa
+ * mostrando el guion bajo literal y rompiendo la notación del curso. Aquí se
+ * acepta la MISMA marca que en el HTML —«v = v<sub>π</sub>»— y se compone con
+ * <tspan> desplazado: así hay una sola convención de escritura y una sola
+ * clave de traducción, valga el rótulo para el DOM o para el lienzo.
+ *
+ * El desplazamiento es proporcional al tamaño de letra, no absoluto, para que
+ * el subíndice siga siendo legible cuando el SVG se escala (modo clase).
+ *
+ * @param {object} atributos - Atributos del <text>; se lee `font-size`.
+ * @param {string} texto - Rótulo, con cero o más <sub>…</sub>.
+ * @returns {SVGElement} Nodo <text> listo para insertar.
+ */
+export function textoSvg(atributos, texto) {
+  const cadena = String(texto ?? "");
+  const nodo = el("text", atributos);
+  if (!cadena.includes("<sub>")) {          // caso común: sin subíndices
+    nodo.textContent = cadena;
+    return nodo;
+  }
+  const base = Number(atributos["font-size"]) || 13;
+  const salto = base * 0.28;                // cuánto baja la línea base
+  const menor = Math.max(8, Math.round(base * 0.78));
+  /* split con grupo de captura: [normal, sub, normal, sub, …] */
+  const partes = cadena.split(/<sub>(.*?)<\/sub>/);
+  let pendiente = 0;                        // dy acumulado que hay que deshacer
+  partes.forEach((parte, i) => {
+    if (!parte) return;
+    const esSub = i % 2 === 1;
+    const dy = esSub ? salto - pendiente : -pendiente;
+    nodo.appendChild(el("tspan", {
+      dy: dy === 0 ? null : num2(dy),
+      "font-size": esSub ? menor : null,
+    }, parte));
+    pendiente = esSub ? salto : 0;
+  });
+  return nodo;
+}
+
+/**
+ * Lienzo SVG. Por omisión sale a su tamaño natural y solo encoge (móvil).
+ *
+ * Con `escalable`, en cambio, ocupa el ancho de su caja hasta el tope que
+ * marque la variable CSS `--lienzo-max` —cuyo valor por defecto es el ancho
+ * natural, así que sin más CSS se ve exactamente igual que antes—. Como todo
+ * lo que hay dentro está en unidades del viewBox, al crecer el lienzo crecen
+ * con él los rótulos y los desplazamientos de los subíndices, sin tocar ni un
+ * `font-size`. `estilo.css` sube ese tope en modo clase (proyector).
+ */
+function lienzo(ancho, alto, { escalable = false } = {}) {
   return el("svg", {
     viewBox: `0 0 ${ancho} ${alto}`,
     width: ancho,
     height: alto,
     role: "img",
-    style: "max-width:100%;height:auto",
+    preserveAspectRatio: escalable ? "xMidYMid meet" : null,
+    class: escalable ? "lienzo-escalable" : null,
+    style: escalable
+      ? `width:100%;max-width:var(--lienzo-max, ${ancho}px);height:auto`
+      : "max-width:100%;height:auto",
   });
 }
 
@@ -311,8 +371,13 @@ export function graficaLineas(series, opciones = {}) {
       x1: x, x2: x, y1: m.s, y2: m.s + h,
       stroke: tono("--acento"), "stroke-width": 1.2, "stroke-dasharray": "5 4",
     }));
+    // Cerca del borde derecho el rótulo se sale del lienzo: se ancla al otro
+    // lado de su línea. Lo destapó la anotación «k = 173» del Tema 3.
+    const alFinal = x > m.i + w * 0.62;
     svg.appendChild(el("text", {
-      x: x + 5, y: m.s + 12, fill: tono("--acento"), "font-size": 11, "font-weight": 600,
+      x: alFinal ? x - 5 : x + 5, y: m.s + 12,
+      "text-anchor": alFinal ? "end" : "start",
+      fill: tono("--acento"), "font-size": 11, "font-weight": 600,
     }, a.texto));
   }
 
@@ -498,15 +563,49 @@ export function graficaViolin(valores, opciones = {}) {
  * 6. Rejilla (gridworld)
  * ----------------------------------------------------------------------- */
 
+/* Los marcadores de punta de flecha necesitan un id único por documento: si
+   dos SVG de la misma página los llamaran igual, url(#id) resolvería siempre
+   al primero y todas las flechas saldrían del color del primer lienzo. */
+let contadorPunta = 0;
+
+/**
+ * Registra un marcador de punta de flecha del color pedido y devuelve su id.
+ * Se memoiza por color para no duplicar el <defs> cuando una rejilla pinta
+ * dos juegos de flechas (π y π′) o el diagrama de GPI pinta tres trayectorias.
+ */
+export function defsPunta(svg, color) {
+  let defs = svg.querySelector("defs[data-puntas]");
+  if (!defs) {
+    defs = el("defs", { "data-puntas": "1" });
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  const yaEsta = [...defs.children].find((m) => m.dataset.color === color);
+  if (yaEsta) return yaEsta.getAttribute("id");
+
+  const id = `punta-${++contadorPunta}`;
+  const marcador = el("marker", {
+    id, viewBox: "0 0 10 10", refX: 8, refY: 5,
+    markerWidth: 5, markerHeight: 5, orient: "auto-start-reverse",
+  }, el("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: color }));
+  marcador.dataset.color = color;
+  defs.appendChild(marcador);
+  return id;
+}
+
 /**
  * Dibuja una rejilla de estados. Es el lienzo de todos los módulos del Tema 2.
  *
  * config: {
- *   filas, columnas, celdas: [{ fila, col, etiqueta, subetiqueta, color, borde,
+ *   filas, columnas, celdas: [{ fila, col, etiqueta, subetiqueta, esquina, color, borde,
  *                               textoColor, cunas: [4 valores en orden N,S,O,E],
- *                               flechas: ['N','E'], atenuada, titulo }],
+ *                               flechas: ['N','E'], colorFlecha,
+ *                               flechas2: ['O'], colorFlecha2, atenuada, titulo }],
  *   lado, alSeleccionar(indiceCelda), seleccion, bandas: [{fila?,col?,texto,color}]
  * }
+ *
+ * `flechas2` es un segundo juego de flechas superpuesto al primero, con su
+ * propio color: lo pide el módulo 2 del Tema 3 para pintar π en negro y π′ en
+ * rojo sobre la misma celda. Si no se usa, la rejilla se comporta como antes.
  */
 export function rejilla(config) {
   const {
@@ -599,34 +698,174 @@ export function rejilla(config) {
         fill: c.textoColor || tono("--texto-suave"),
       }, c.subetiqueta));
     }
+    /* Rótulo de esquina: el nombre del estado sin disputarle el centro de la
+       celda ni a la etiqueta ni a las flechas. La subetiqueta centrada y las
+       flechas ocupan la misma banda (y + lado/2 + 15 frente a + 16), así que
+       una celda con valor Y política necesita este sitio. Lo pide el Tema 3. */
+    if (c.esquina) {
+      grupo.appendChild(el("text", {
+        x: x + 5, y: y + 13, "font-size": 10.5, "font-family": "monospace",
+        fill: c.textoColor || tono("--texto-suave"), opacity: 0.85,
+      }, c.esquina));
+    }
 
-    /* flechas de política */
-    if (c.flechas && c.flechas.length) {
+    /* flechas de política: hasta dos juegos superpuestos (π y π′) */
+    const dibujarFlechas = (dirs, color) => {
+      if (!dirs || !dirs.length) return;
       const cx = x + lado / 2;
       const cy = y + lado / 2 + (c.etiqueta ? 16 : 0);
       const largo = lado * 0.26;
       const delta = { N: [0, -1], S: [0, 1], O: [-1, 0], E: [1, 0] };
-      c.flechas.forEach((dir) => {
+      const punta = defsPunta(svg, color);
+      dirs.forEach((dir) => {
         const [dx, dy] = delta[dir];
         grupo.appendChild(el("line", {
           x1: cx, y1: cy, x2: cx + dx * largo, y2: cy + dy * largo,
-          stroke: c.colorFlecha || tono("--acento"), "stroke-width": 2.6,
-          "stroke-linecap": "round", "marker-end": "url(#punta)",
+          stroke: color, "stroke-width": 2.6,
+          "stroke-linecap": "round", "marker-end": `url(#${punta})`,
         }));
       });
-    }
+    };
+    dibujarFlechas(c.flechas, c.colorFlecha || tono("--acento"));
+    dibujarFlechas(c.flechas2, c.colorFlecha2 || tono("--peligro"));
 
     if (c.titulo) grupo.appendChild(el("title", {}, c.titulo));
     if (alSeleccionar) grupo.addEventListener("click", () => alSeleccionar(indice, c));
     svg.appendChild(grupo);
   });
 
-  /* punta de flecha */
-  const defs = el("defs", {}, el("marker", {
-    id: "punta", viewBox: "0 0 10 10", refX: 8, refY: 5,
-    markerWidth: 5, markerHeight: 5, orient: "auto-start-reverse",
-  }, el("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: tono("--acento") })));
-  svg.insertBefore(defs, svg.firstChild);
+  return svg;
+}
+
+/* ----------------------------------------------------------------------- *
+ * 6b. Diagrama de las dos rectas (GPI) — Sutton & Barto §4.6
+ * ----------------------------------------------------------------------- */
+
+/**
+ * De los dos residuos normalizados a coordenadas del lienzo.
+ *
+ * La cuña tiene el vértice a la derecha y se abre hacia la izquierda con
+ * semiángulo β. Un punto con w = 0 cae exactamente sobre la recta inferior
+ * (π = greedy(v)) y uno con u = 0, sobre la superior (v = v_π); el origen de
+ * los dos residuos es el vértice, es decir (v_*, π_*).
+ *
+ * Es función pura a propósito: la geometría se puede comprobar desde node
+ * sin DOM (aserción M6-A7 del guion del Tema 3).
+ *
+ * @param {number} u - Residuo de evaluación normalizado a [0, 1].
+ * @param {number} w - Residuo de mejora normalizado a [0, 1].
+ * @returns {{x: number, y: number}} Punto en píxeles del lienzo.
+ */
+export function coordenadasDosRectas(u, w, opciones = {}) {
+  const { ancho = 600, alto = 300, beta = 14, vertice = null, margenIzq = 40 } = opciones;
+  const v = vertice || { x: ancho - 40, y: alto / 2 };
+  const mitad = (v.x - margenIzq) / 2;
+  const tan = Math.tan((beta * Math.PI) / 180);
+  return { x: v.x - mitad * (u + w), y: v.y + mitad * tan * (u - w) };
+}
+
+/**
+ * La cuña del diagrama de iteración generalizada de la política.
+ *
+ * @param {object[]} trayectorias - [{ nombre, color, puntos: [{etiqueta, u, w}],
+ *   hasta }], con `u` y `w` ya normalizados a [0,1] y `hasta` el índice del
+ *   último punto que se dibuja (para el avance paso a paso; si falta, todos).
+ * @param {object} [opciones] - { ancho, alto, beta, vertice, rotulos:
+ *   { sup, supGlosa, inf, infGlosa, vertice, inicio }, mensaje, escalable }
+ *   `escalable` deja que el lienzo se estire hasta `--lienzo-max` (modo clase).
+ * @returns {SVGElement} Lienzo con las dos rectas, sus rótulos y las
+ *   poligonales de flechas.
+ */
+export function diagramaDosRectas(trayectorias, opciones = {}) {
+  const {
+    ancho = 600, alto = 300, beta = 14, vertice = null, rotulos = {},
+    mensaje = t("grafica.sinDatos", "Sin datos todavía."), escalable = false,
+  } = opciones;
+  const margenIzq = 40;
+  const v = vertice || { x: ancho - 40, y: alto / 2 };
+  const svg = lienzo(ancho, alto, { escalable });
+  const colorLinea = tono("--texto");
+  const colorSuave = tono("--texto-suave");
+  const geo = { ancho, alto, beta, vertice: v, margenIzq };
+  const punto = (p) => coordenadasDosRectas(p.u, p.w, geo);
+
+  /* --- las dos rectas: los extremos son los puntos (0,1) y (1,0) al doble
+         de escala, o sea el borde izquierdo del lienzo --- */
+  const extremoSup = coordenadasDosRectas(0, 2, geo);
+  const extremoInf = coordenadasDosRectas(2, 0, geo);
+  for (const extremo of [extremoSup, extremoInf]) {
+    svg.appendChild(el("line", {
+      x1: v.x, y1: v.y, x2: extremo.x, y2: extremo.y,
+      stroke: colorLinea, "stroke-width": 1.6, opacity: 0.85,
+    }));
+  }
+
+  /* --- rótulos de las rectas, inclinados con ellas --- */
+  const rotular = (texto, glosa, x, y, giro) => {
+    if (!texto) return;
+    const grupo = el("g", { transform: `translate(${x} ${y}) rotate(${giro})` });
+    grupo.appendChild(textoSvg({
+      x: 0, y: -6, "font-size": 13, "font-weight": 600, fill: colorLinea,
+    }, texto));
+    if (glosa) {
+      grupo.appendChild(el("text", {
+        x: 0, y: 12, "font-size": 11, fill: colorSuave,
+      }, glosa));
+    }
+    svg.appendChild(grupo);
+  };
+  const enRectaSup = coordenadasDosRectas(0, 1.55, geo);
+  const enRectaInf = coordenadasDosRectas(1.55, 0, geo);
+  rotular(rotulos.sup, rotulos.supGlosa, enRectaSup.x, enRectaSup.y, beta);
+  rotular(rotulos.inf, rotulos.infGlosa, enRectaInf.x, enRectaInf.y, -beta);
+
+  /* --- el vértice: v_*, π_* --- */
+  svg.appendChild(el("circle", { cx: v.x, cy: v.y, r: 4, fill: colorLinea }));
+  if (rotulos.vertice) {
+    svg.appendChild(textoSvg({
+      x: v.x - 6, y: v.y - 10, "text-anchor": "end",
+      "font-size": 12, "font-weight": 600, fill: colorLinea,
+    }, rotulos.vertice));
+  }
+
+  const conPuntos = trayectorias.filter((tr) => tr.puntos && tr.puntos.length);
+  if (!conPuntos.length) {
+    svg.appendChild(el("text", {
+      x: ancho / 2, y: alto - 16, "text-anchor": "middle",
+      fill: colorSuave, "font-size": 13,
+    }, mensaje));
+    return svg;
+  }
+
+  /* --- una poligonal de flechas por trayectoria --- */
+  for (const tr of conPuntos) {
+    const hasta = tr.hasta ?? tr.puntos.length - 1;
+    const visibles = tr.puntos.slice(0, hasta + 1).map(punto);
+    const color = tr.color || tono("--acento");
+    const marca = defsPunta(svg, color);
+    for (let i = 1; i < visibles.length; i++) {
+      const a = visibles[i - 1];
+      const b = visibles[i];
+      if (Math.hypot(b.x - a.x, b.y - a.y) < 0.5) continue; // paso nulo: sin flecha
+      svg.appendChild(el("line", {
+        x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+        stroke: color, "stroke-width": 2, "stroke-linecap": "round",
+        "marker-end": `url(#${marca})`, opacity: 0.9,
+      }));
+    }
+    visibles.forEach((p, i) => {
+      svg.appendChild(el("circle", {
+        cx: p.x, cy: p.y, r: i === visibles.length - 1 ? 5 : 2.6,
+        fill: color, opacity: i === visibles.length - 1 ? 1 : 0.65,
+      }));
+    });
+    if (rotulos.inicio && visibles.length) {
+      svg.appendChild(el("text", {
+        x: visibles[0].x, y: visibles[0].y + 18, "text-anchor": "middle",
+        "font-size": 11, fill: colorSuave,
+      }, rotulos.inicio));
+    }
+  }
 
   return svg;
 }
