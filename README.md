@@ -33,6 +33,16 @@ diapositiva deje abierto, sobra.
 | `3_Tema3#slide-10`, `Tema3_DP#slide-12` | La figura dibuja que en \(k=3\) la política ya es óptima, y nadie lo dice | T3 · módulo 4 |
 | `3_Tema3#slide-11`, `Tema3_DP#slide-13` | ¿Hace falta esperar a que converja la evaluación? | T3 · módulo 5 |
 | `Tema3_DP#slide-16` | La glosa que falta sobre la recta \(v=v_\pi\) | T3 · módulo 6 |
+| `4_Tema4#slide-4` | «Con \(q_*\) sacas la política; con \(v_*\) solo si tienes el modelo», enunciado y nunca demostrado | T4 · módulo 1 |
+| `4_Tema4#slide-21` | La comparación MC/TD, punto por punto y **sin ninguna evidencia** | T4 · módulo 2 |
+| `4_Tema4#slide-36` | La figura del acantilado, proyectada **sin un solo hiperparámetro** | T4 · módulo 3 |
+| `Tema4_2_ModelFree#slide-18` | «Si ε se redujera, ambos convergen a \(\pi_*\)», sin comprobar | T4 · módulo 3 |
+| `Tema4_2_ModelFree#slide-23` | «Expected SARSA mejora consistentemente a SARSA», sin evidencia | T4 · módulo 3 |
+| `4_Tema4#slide-37`, `#slide-38` | «¡El aprendizaje doble funciona!», sin el porqué | T4 · módulo 4 |
+| `4_Tema4_2#slide-5` | «¿Hay un valor óptimo de \(n\)?» — **el título no se responde** | T4 (cont.) · módulo 1 |
+| `4_Tema4_2#slide-4` | «Supón \(n=10\): ¿qué pasa al principio de un episodio?» | T4 (cont.) · módulo 1 |
+| `4_Tema4_2#slide-17` | «Con λ podemos acelerar el aprendizaje» — sin ninguna curva que lo respalde | T4 (cont.) · módulo 1 |
+| `4_Tema4_2#slide-14` | ¿La culpa se la lleva el timbre o la luz? **La diapositiva lo deja ahí** | T4 (cont.) · módulo 2 |
 
 ---
 
