@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="meta.titulo.tema4b">Tema 4 (cont.) · Fórmulas intermedias — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 4 (continuación) de Aprendizaje por Refuerzo (IMAT): el continuo entre Monte Carlo y TD a un paso — retorno a n pasos, SARSA a n pasos, retorno λ, vista hacia adelante y hacia atrás, trazas de elegibilidad y SARSA(λ).">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
+    <nav>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
+      <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+      <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
+      <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ================================================================= -->
+  <!-- A1 · portada  ·  A2 · índice                                      -->
+  <!-- ================================================================= -->
+  <div class="portada-tema">
+    <p class="kicker" data-t="t4b.kicker">Tema 4 (continuación) · Sutton &amp; Barto, capítulo 7 y §12.1-§12.2</p>
+    <h1 data-t="t4b.h1">Fórmulas intermedias entre Monte Carlo y TD a un paso</h1>
+    <p class="entradilla" data-t="t4b.entradilla">
+      En la página anterior quedaron los dos extremos: Monte Carlo espera al final del
+      episodio y usa el retorno real; TD a un paso actualiza en el acto y arrastra todo el
+      futuro en una sola estimación. Entre los dos no hay un abismo, hay un
+      <strong>continuo</strong>. Aquí se recorre entero: primero eligiendo un número de pasos
+      \(n\), después promediando <strong>todos</strong> los \(n\) a la vez con el retorno
+      \(\lambda\), y por último dándole la vuelta a la vista para que ese promedio se pueda
+      calcular en línea, con una <strong>traza de elegibilidad</strong> por estado. Se
+      responden dos preguntas que las diapositivas plantean y dejan en el aire: si hay un
+      \(n\) óptimo y qué pasa al principio de un episodio cuando \(n=10\); y si, ante una
+      descarga eléctrica, la culpa se la lleva el timbre o la luz.
+    </p>
+
+    <!-- Enlace hacia atrás: esta página se lee suponiendo leída la anterior. -->
+    <p class="explicacion" data-t="t4b.entradilla.vuelta">
+      Esto continúa <strong><a href="tema4.html">Tema 4 ·
+      Aprendizaje por refuerzo sin modelo</a></strong>, donde están Monte Carlo, TD(0), el
+      error \(\delta_t\), SARSA, Q-learning y el sesgo de maximización. Se da por leída: aquí
+      se usan \(V(S_t)\), \(\delta_t\) y la regla «nueva ← anterior + \(\alpha\)(objetivo −
+      anterior)» sin volver a definirlos.
+    </p>
+
+    <div class="aviso" data-t="t4b.aviso.unicaFuente">
+      <strong>Aviso sobre las fuentes.</strong> Este bloque es el que el temario llama
+      <strong>T4.3</strong>, y de él solo existe <strong>una</strong>
+      baraja de clase: las 17 diapositivas de <code>4_Tema4_2</code>. La presentación
+      equivalente de la otra colección (<code>Tema4_3_FormulasIntermedias</code>) está sin
+      rellenar: su portada es correcta, su índice está vacío y el resto son las diapositivas
+      del Tema 5.2 copiadas. Por eso esta página lleva más texto que las demás y trae los
+      pseudocódigos completos: para este bloque <strong>es la única fuente escrita</strong>
+      además de esas 17 diapositivas.
+    </div>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t4b.semillaLabel">Semilla</label>
+        <input type="number" id="semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <span class="suave" data-t="t4b.semilla">Semilla 2026 · todo lo aleatorio de esta página se reproduce con ella</span>
+      </div>
+    </div>
+
+    <nav class="indice" aria-label="Módulos del bloque">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t4b.indice.m1">El continuo en \(n\): ¿hay un \(n\) óptimo?</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t4b.indice.m2">Trazas de elegibilidad: ¿el timbre o la luz?</span></a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- A3 · mapa del bloque                                              -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="mapa">
+    <h2 data-t="t4b.mapa.h2">Mapa del bloque</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4b.mapa.cab">
+            <th>Concepto</th><th>De dónde sale</th><th>A dónde lleva</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4b.mapa.f1">
+            <td>El objetivo a un paso</td>
+            <td>La regla de TD(0) del tema anterior: el futuro entra por \(V(S_{t+1})\)</td>
+            <td>Si se puede arrancar a un paso, se puede arrancar a \(n\) → el retorno a \(n\) pasos</td>
+          </tr>
+          <tr data-t="t4b.mapa.f2">
+            <td>Retorno a \(n\) pasos</td>
+            <td>Truncar el retorno real en \(n\) recompensas y cerrar con \(V_{t+n-1}(S_{t+n})\)</td>
+            <td>\(n\) pasa a ser un hiperparámetro con su compromiso sesgo-varianza → módulo 1</td>
+          </tr>
+          <tr data-t="t4b.mapa.f3">
+            <td>\(n\)-step TD</td>
+            <td>Meter \(G_{t:t+n}\) en la regla de actualización de siempre</td>
+            <td>Un retardo de \(n\) pasos, y \(n-1\) actualizaciones que se hacen al terminar</td>
+          </tr>
+          <tr data-t="t4b.mapa.f4">
+            <td>SARSA a \(n\) pasos</td>
+            <td>Cambiar estados por pares estado-acción</td>
+            <td>Una recompensa lejana refuerza las \(n\) últimas acciones, no solo la última</td>
+          </tr>
+          <tr data-t="t4b.mapa.f5">
+            <td>Promediar varios \(n\)</td>
+            <td>\(\tfrac12 G_{t:t+2} + \tfrac12 G_{t:t+4}\): cualquier media con pesos que sumen 1 vale</td>
+            <td>Si valen todas las medias, ¿por qué elegir? → retorno \(\lambda\)</td>
+          </tr>
+          <tr data-t="t4b.mapa.f6">
+            <td>Retorno \(\lambda\)</td>
+            <td>Ponderar \(G_{t:t+n}\) con \((1-\lambda)\lambda^{n-1}\) y la cola con \(\lambda^{T-t-1}\)</td>
+            <td>\(\lambda=0\) es TD(0) y \(\lambda=1\) es Monte Carlo: un único mando entre los dos extremos</td>
+          </tr>
+          <tr data-t="t4b.mapa.f7">
+            <td>Vista hacia adelante</td>
+            <td>Desde cada estado, mirar al futuro y actualizar hacia \(G_t^\lambda\)</td>
+            <td>Es la base teórica, pero es <strong>fuera de línea</strong>: hay que esperar al final</td>
+          </tr>
+          <tr data-t="t4b.mapa.f8">
+            <td>Vista hacia atrás y trazas</td>
+            <td>Gritar \(\delta_t\) hacia atrás y repartirlo según \(z_t(s)\)</td>
+            <td>Se calcula en línea, con memoria \(O(\lvert\mathcal{S}\rvert)\) → módulo 2, y de ahí a \(w_{t+1}=w_t+\alpha\delta_t z_t\)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1 · de dónde venimos: las dos reglas, juntas                     -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1">
+    <header>
+      <h2 data-t="t4b.b1.h2">Las dos reglas que ya conocemos</h2>
+      <p class="fuente" data-t="t4b.b1.fuente">4_Tema4_2#slide-2 · Sutton &amp; Barto §5.1 (Monte Carlo) y §6.1, ec. (6.2) (TD(0))</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b1.p1">
+      Las dos reglas del tema anterior tienen exactamente la misma forma y se diferencian en
+      una sola cosa: <strong>de dónde sale el objetivo</strong>.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b1.ec">
+      \[ V(S_t) \leftarrow V(S_t) + \alpha\big[\,G_t - V(S_t)\,\big] \qquad\text{(Monte Carlo)} \]
+      \[ V(S_t) \leftarrow V(S_t) + \alpha\big[\,R_{t+1} + \gamma V(S_{t+1}) - V(S_t)\,\big] \qquad\text{(TD a un paso)} \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b1.p2">
+      El objetivo de Monte Carlo es el retorno real \(G_t\): hay que esperar a que el episodio
+      termine para conocerlo. El objetivo de TD <strong>trae todo el futuro a un paso</strong>:
+      una recompensa real, \(R_{t+1}\), y una estimación, \(\gamma V(S_{t+1})\), que resume de
+      golpe todo lo que venga después. Esa asimetría —una recompensa real frente a <em>todo</em>
+      lo demás estimado— es lo que este bloque va a graduar.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B2 · la pregunta bisagra                                          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b2">
+    <header>
+      <h2 data-t="t4b.b2.h2">¿Podríamos hacer <em>bootstrapping</em> \(n\) pasos después?</h2>
+      <p class="fuente" data-t="t4b.b2.fuente">4_Tema4_2#slide-3 (la pregunta y el abanico de diagramas) · Sutton &amp; Barto §7.1 y figura 7.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b2.p1">
+      Nada obliga a arrancar exactamente en el paso siguiente. Se pueden usar <strong>dos</strong>
+      recompensas reales y estimar a partir de la tercera; o tres; o \(n\). En un extremo,
+      \(n=1\), está TD(0); en el otro, cuando \(n\) llega o supera la longitud del episodio, no
+      queda ninguna estimación en el objetivo y lo que queda es Monte Carlo. <strong>Todo lo de
+      en medio son métodos legítimos</strong>, con nombre propio: métodos de \(n\) pasos.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b2.p2">
+      El libro es explícito sobre por qué merecen un capítulo: <em>“los mejores métodos suelen
+      ser intermedios entre los dos extremos”</em>. Y da una segunda razón, menos citada: los
+      métodos de \(n\) pasos <strong>liberan de la tiranía del paso de tiempo</strong>. Con TD a
+      un paso, el mismo intervalo decide dos cosas distintas —cada cuánto se puede cambiar de
+      acción y sobre cuánto tiempo se arranca la estimación—, y a menudo interesa actuar deprisa
+      y arrancar despacio.
+    </p>
+
+    <!-- Figura estática (reproducción de la figura 7.1): la dibuja tema4b.js
+         con arbolBackup, una llamada por columna. -->
+    <div class="viz">
+      <div id="b2-figura"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B3 · el retorno a n pasos → módulo 1                              -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b3">
+    <header>
+      <h2 data-t="t4b.b3.h2">El retorno a \(n\) pasos</h2>
+      <p class="fuente" data-t="t4b.b3.fuente">4_Tema4_2#slide-4 · Sutton &amp; Barto §7.1, ecuaciones (7.1) y (7.2), y la caja <em>n-step TD for estimating V ≈ v<sub>π</sub></em></p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b3.p1">
+      La definición es la que cabe esperar: \(n\) recompensas reales y, en lugar del resto del
+      episodio, la estimación que se tenía del estado al que se llega.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b3.ec1">
+      \[ G_{t:t+n} \;\doteq\; R_{t+1} + \gamma R_{t+2} + \cdots + \gamma^{n-1}R_{t+n} + \gamma^{n} V_{t+n-1}(S_{t+n}) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b3.ec2">
+      \[ V_{t+n}(S_t) \;\doteq\; V_{t+n-1}(S_t) + \alpha\big[\,G_{t:t+n} - V_{t+n-1}(S_t)\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b3.p2">
+      Si \(t+n \ge T\), es decir, si la ventana de \(n\) pasos llega a la terminación o la pasa,
+      <strong>todos los términos que faltan se toman como cero</strong> y el retorno a \(n\)
+      pasos se define igual al retorno completo: \(G_{t:t+n} \doteq G_t\). Es lo que hace que
+      \(n\) muy grande sea exactamente Monte Carlo y no una aproximación suya.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b3.p3">
+      Y ahora la pregunta con la que cierra la diapositiva: <em>“supón que tomamos \(n=10\), ¿qué
+      pasa al principio de un episodio?”</em>. Pasa que <strong>no se actualiza nada</strong>.
+      \(G_{0:10}\) necesita \(R_{10}\) y \(V_9(S_{10})\), que no existen hasta el paso 10; en
+      general, no hay ninguna actualización durante los primeros \(n-1\) pasos de cada episodio.
+      Para compensar, al terminar el episodio se hacen \(n-1\) actualizaciones
+      <strong>adicionales</strong>, ya sin más experiencia que la que hay en el buffer. El total
+      sigue siendo exactamente \(T\) actualizaciones por episodio, sea cual sea \(n\): lo que
+      cambia es <strong>cuándo</strong> se hacen y <strong>con qué objetivo</strong>.
+    </p>
+
+    <pre class="codigo" data-t="t4b.b3.caja">n-step TD para estimar V ≈ v_π
+Entrada: una política π
+Parámetros: tasa de aprendizaje α ∈ (0,1], entero positivo n
+Inicializar V(s) arbitrariamente, para todo s ∈ S⁺, con V(terminal) = 0
+Los accesos a S_t y R_t pueden indexarse módulo n+1
+
+Para cada episodio:
+    Inicializar y guardar S_0 ≠ terminal
+    T ← ∞
+    Para t = 0, 1, 2, …:
+        Si t &lt; T:
+            Tomar una acción según π(·|S_t)
+            Observar y guardar R_{t+1} y S_{t+1}
+            Si S_{t+1} es terminal: T ← t + 1
+        τ ← t − n + 1        (τ es el instante cuyo valor se actualiza)
+        Si τ ≥ 0:
+            G ← Σ_{i=τ+1}^{mín(τ+n, T)} γ^{i−τ−1} R_i
+            Si τ + n &lt; T:  G ← G + γ^n V(S_{τ+n})           (esto es G_{τ:τ+n})
+            V(S_τ) ← V(S_τ) + α [ G − V(S_τ) ]
+    hasta que τ = T − 1</pre>
+
+    <p class="explicacion" data-t="t4b.b3.p4">
+      Dos costes que conviene tener presentes: hay que <strong>guardar</strong> los últimos \(n\)
+      estados y recompensas —memoria \(O(n)\), indexando módulo \(n+1\)— y hay <strong>más
+      cómputo por paso</strong> que en un método a un paso. El capítulo 12 arreglará las dos
+      cosas.
+    </p>
+
+    <p><a class="siguiente" href="#m1" data-t="t4b.b3.continua">Continúa en el módulo 1 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B4 · n como hiperparámetro → módulo 1                             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b4">
+    <header>
+      <h2 data-t="t4b.b4.h2">¿Hay un valor óptimo de \(n\)?</h2>
+      <p class="fuente" data-t="t4b.b4.fuente">4_Tema4_2#slide-5 (el título, sin responder) y #slide-6 (el experimento) · Sutton &amp; Barto §7.1, Example 7.1 y figura 7.2</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b4.p1">
+      \(n\) es un <strong>hiperparámetro</strong>. Valores pequeños dan estimadores con
+      <strong>más sesgo y menos varianza</strong> —el objetivo depende mucho de una estimación
+      que todavía es mala—, y valores grandes, al revés: menos sesgo, porque hay más recompensas
+      reales dentro, y más varianza, porque hay más aleatoriedad acumulada. Y hay una tercera
+      consecuencia, que es la más operativa: \(n\) decide <strong>a cuántos estados llega</strong>
+      el efecto de una sola muestra de experiencia.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b4.p2">
+      El libro lo explica con un caso concreto: si el primer episodio va derecho del centro hasta
+      salir por la derecha, un método a <strong>un paso</strong> solo cambia el valor del
+      <strong>último</strong> estado visitado; a <strong>dos pasos</strong>, los dos últimos; y
+      con \(n\) mayor o igual que la longitud del episodio, <strong>todos los estados visitados,
+      y todos en la misma cantidad</strong>. Ese caso exacto es el que se puede recorrer en el
+      módulo siguiente.
+    </p>
+
+    <p class="explicacion nota" data-t="t4b.b4.p3">
+      Cuidado con la diapositiva: la cadena que dibuja arriba es la de <strong>5 estados</strong>
+      del capítulo 6, y la gráfica de abajo es la del experimento del capítulo 7, que usa
+      <strong>19 estados</strong>, recompensa <strong>\(-1\)</strong> al salir por la izquierda
+      (no 0) y valores iniciales a <strong>0</strong> (no 0,5). Son dos entornos distintos;
+      mezclarlos da curvas que no se parecen a las del libro. Esta página usa el de 19 estados,
+      que es el de la gráfica.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b4.p4">
+      Existe un teorema que respalda la familia entera: la <strong>propiedad de reducción del
+      error</strong>. Dice que el peor error de la <strong>esperanza</strong> del retorno a \(n\)
+      pasos está acotado por \(\gamma^{n}\) veces el peor error de la estimación de partida. Ojo
+      con la letra pequeña: es sobre la esperanza, en norma del máximo, y <strong>con
+      \(\gamma=1\) la cota es trivial</strong>. Como el experimento del módulo 1 usa
+      \(\gamma=1\), que el \(n\) intermedio gane es un <strong>resultado empírico</strong>, no un
+      corolario del teorema.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b4.ec">
+      \[ \max_s \Big| \mathbb{E}_\pi\big[G_{t:t+n}\mid S_t=s\big] - v_\pi(s) \Big| \;\le\; \gamma^{n}\max_s\big|V_{t+n-1}(s) - v_\pi(s)\big| \]
+    </p>
+
+    <p><a class="siguiente" href="#m1" data-t="t4b.b4.continua">Continúa en el módulo 1 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · el continuo en n                                       -->
+  <!-- El interior lo monta assets/tema4b.js: controles, las dos          -->
+  <!-- visualizaciones, las lecturas numéricas y el cuestionario.         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta" data-t="t4b.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t4b.m1.h2">El continuo en \(n\): ¿hay un \(n\) óptimo?</h2>
+      <p class="fuente" data-t="t4b.m1.fuente">4_Tema4_2#slide-4, #slide-5 y #slide-6 · Sutton &amp; Barto §7.1, Example 7.1 y figura 7.2</p>
+    </header>
+
+    <div id="m1-controles"></div>
+    <div id="m1-grafica"></div>
+    <div id="m1-metricas"></div>
+    <div id="m1-cronograma"></div>
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B5 · SARSA a n pasos                                              -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b5">
+    <header>
+      <h2 data-t="t4b.b5.h2">SARSA a \(n\) pasos</h2>
+      <p class="fuente" data-t="t4b.b5.fuente">4_Tema4_2#slide-7 (pseudocódigo, recortado por arriba en la diapositiva) y #slide-8 (figura 7.4) · Sutton &amp; Barto §7.2, ecuaciones (7.4) y (7.5), figura 7.4</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b5.p1">
+      El paso al control es el de siempre: <em>cambiar estados por pares estado-acción y usar una
+      política \(\varepsilon\)-greedy</em>. La única diferencia respecto de la predicción es que
+      el retorno se cierra con un valor de acción en vez de un valor de estado.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b5.ec1">
+      \[ G_{t:t+n} \;\doteq\; R_{t+1} + \gamma R_{t+2} + \cdots + \gamma^{n-1}R_{t+n} + \gamma^{n} Q_{t+n-1}(S_{t+n},A_{t+n}) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b5.ec2">
+      \[ Q_{t+n}(S_t,A_t) \;\doteq\; Q_{t+n-1}(S_t,A_t) + \alpha\big[\,G_{t:t+n} - Q_{t+n-1}(S_t,A_t)\,\big] \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b5.p2">
+      A partir de aquí el libro rebautiza el algoritmo del capítulo anterior: el SARSA de una
+      sola transición pasa a llamarse <strong>SARSA a un paso</strong>, o <strong>SARSA(0)</strong>.
+    </p>
+
+    <pre class="codigo" data-t="t4b.b5.caja">SARSA a n pasos para estimar Q ≈ q_* o q_π
+Inicializar Q(s,a) arbitrariamente, para todo s ∈ S⁺, a ∈ A, con Q(terminal,·) = 0
+Inicializar π como ε-greedy respecto a Q, o a una política fija dada
+Parámetros: tasa de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño, entero positivo n
+Los accesos a S_t, A_t y R_t pueden indexarse módulo n+1
+
+Para cada episodio:
+    Inicializar y guardar S_0 ≠ terminal
+    Elegir y guardar una acción A_0 ~ π(·|S_0)
+    T ← ∞
+    Para t = 0, 1, 2, …:
+        Si t &lt; T:
+            Tomar la acción A_t
+            Observar y guardar R_{t+1} y S_{t+1}
+            Si S_{t+1} es terminal:
+                T ← t + 1
+            si no:
+                Elegir y guardar A_{t+1} ~ π(·|S_{t+1})
+        τ ← t − n + 1
+        Si τ ≥ 0:
+            G ← Σ_{i=τ+1}^{mín(τ+n, T)} γ^{i−τ−1} R_i
+            Si τ + n &lt; T:  G ← G + γ^n Q(S_{τ+n}, A_{τ+n})   (esto es G_{τ:τ+n})
+            Q(S_τ, A_τ) ← Q(S_τ, A_τ) + α [ G − Q(S_τ, A_τ) ]
+            Si π se está aprendiendo, asegurar que π(·|S_τ) es ε-greedy respecto a Q
+    hasta que τ = T − 1</pre>
+
+    <p class="explicacion" data-t="t4b.b5.p3">
+      La figura de la diapositiva es la explicación en una imagen. Un mismo episodio hasta la
+      meta, con todos los valores empezando en cero y una única recompensa positiva al llegar. A
+      la derecha del camino, dos paneles: SARSA a un paso refuerza <strong>una sola</strong>
+      acción, la última; SARSA a 10 pasos refuerza <strong>las diez últimas</strong>, todas en la
+      misma cantidad. Con el mismo episodio y sin ninguna suposición adicional, uno aprende diez
+      veces más que el otro. Ése es el argumento entero.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b5.p4">
+      El capítulo tiene tres piezas más que aquí solo se nombran: <strong>SARSA esperado a \(n\)
+      pasos</strong>, que cambia el último valor por su esperanza \(\bar V_{t+n-1}(s)\doteq\sum_a
+      \pi(a\mid s)Q_t(s,a)\); la versión <strong>fuera de política</strong> con la razón de
+      muestreo de importancia truncada \(\rho_{t:h}\); y el <em><strong>tree backup</strong></em>,
+      que consigue aprendizaje fuera de política <strong>sin</strong> muestreo de importancia.
+      Están en §7.2, §7.3 y §7.5 del libro.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B6 · combinar varios n                                            -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b6">
+    <header>
+      <h2 data-t="t4b.b6.h2">Combinar distintos valores de \(n\)</h2>
+      <p class="fuente" data-t="t4b.b6.fuente">4_Tema4_2#slide-9 · Sutton &amp; Barto §12.1 (apertura), <em>compound update</em></p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b6.p1">
+      No hay ninguna obligación de elegir un solo \(n\). Una actualización es válida hacia
+      <strong>cualquier media</strong> de retornos a \(n\) pasos, con la única condición de que
+      los pesos sean positivos y <strong>sumen 1</strong>. El ejemplo de la diapositiva es el
+      mismo del libro: media a partes iguales de un retorno a dos pasos y uno a cuatro.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b6.ec">
+      \[ G^{\text{comp}}_t \;=\; \tfrac12\,G_{t:t+2} + \tfrac12\,G_{t:t+4} \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b6.p2">
+      A una actualización que promedia actualizaciones más simples el libro la llama
+      <strong>actualización compuesta</strong>, y demuestra que hereda la propiedad de reducción
+      del error de sus componentes; es decir, que las garantías de convergencia se conservan. Y
+      entonces aparece la pregunta obvia, que es la que abre el capítulo 12: si vale cualquier
+      media, ¿por qué elegir unos pocos \(n\) y no promediarlos <strong>todos</strong>?
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B7 · el retorno λ                                                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b7">
+    <header>
+      <h2 data-t="t4b.b7.h2">El retorno \(\lambda\): promediarlos todos</h2>
+      <p class="fuente" data-t="t4b.b7.fuente">4_Tema4_2#slide-10 y #slide-11 · Sutton &amp; Barto §12.1, ecuaciones (12.2) y (12.3), figuras 12.1 y 12.2</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b7.p1">
+      TD(\(\lambda\)) es una forma concreta de promediar <strong>todos</strong> los retornos a
+      \(n\) pasos: cada uno con peso proporcional a \(\lambda^{n-1}\), y todo normalizado por
+      \(1-\lambda\) para que los pesos sumen exactamente 1.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b7.ec1">
+      \[ G_t^{\lambda} \;\doteq\; (1-\lambda)\sum_{n=1}^{\infty}\lambda^{\,n-1}\,G_{t:t+n} \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b7.p2">
+      El retorno a un paso se lleva el peso mayor, \(1-\lambda\); el de dos pasos,
+      \((1-\lambda)\lambda\); el de tres, \((1-\lambda)\lambda^2\); y así,
+      <strong>desvaneciéndose por \(\lambda\) a cada paso adicional</strong>. El área total bajo
+      la curva de pesos vale 1.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b7.p3">
+      Al llegar al estado terminal, todos los retornos a \(n\) pasos posteriores valen ya lo
+      mismo: el retorno completo \(G_t\). Separando esos términos de la suma principal queda la
+      forma que se usa en la práctica, con una <strong>cola</strong> que acumula de golpe todo el
+      peso posterior a la terminación.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b7.ec2">
+      \[ G_t^{\lambda} \;=\; (1-\lambda)\sum_{n=1}^{T-t-1}\lambda^{\,n-1}G_{t:t+n} \;+\; \lambda^{\,T-t-1}G_t \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b7.p4">
+      Esta forma deja ver los dos extremos sin hacer ninguna cuenta. Con \(\lambda=1\) la suma
+      principal se anula y solo queda \(G_t\): actualizar hacia el retorno \(\lambda\) <strong>es
+      Monte Carlo</strong>. Con \(\lambda=0\), el retorno \(\lambda\) se reduce a \(G_{t:t+1}\),
+      el retorno a un paso: <strong>es TD(0)</strong>. De ahí el nombre del algoritmo original. Un
+      solo parámetro entre 0 y 1 recorre todo lo que en el bloque anterior costaba elegir un
+      \(n\) entero.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b7.ec3">
+      \[ V(S_t) \leftarrow V(S_t) + \alpha\big[\,G_t^{\lambda} - V(S_t)\,\big] \]
+    </p>
+
+    <!-- Figura estática (reproducción de la figura 12.2), sin controles:
+         el mando de λ está en el módulo 2. La dibuja assets/tema4b.js. -->
+    <div class="viz">
+      <p class="viz-titulo" data-t="t4b.b7.fig.titulo">Pesos del retorno \(\lambda\) (\(\lambda=0{,}9\)), área total 1</p>
+      <div id="b7-figura"></div>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B8 · la vista hacia adelante                                      -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b8">
+    <header>
+      <h2 data-t="t4b.b8.h2">La vista hacia adelante</h2>
+      <p class="fuente" data-t="t4b.b8.fuente">4_Tema4_2#slide-12 · Sutton &amp; Barto §12.1, ecuación (12.4) y figura 12.4</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b8.p1">
+      La forma de mirar que se ha usado hasta aquí tiene nombre: <strong>vista hacia
+      adelante</strong>. Desde cada estado visitado se mira al futuro, se decide cómo combinar
+      las recompensas que vendrán, se actualiza, y ya no se vuelve a tocar ese estado. Los
+      estados futuros, en cambio, se miran una y otra vez, uno por cada punto de observación
+      anterior.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b8.p2">
+      Es <strong>la base teórica</strong> de todo lo anterior, y a la vez un algoritmo
+      <strong>fuera de línea</strong>: \(G_t^\lambda\) no se conoce hasta que el episodio
+      termina, así que no se puede aplicar nada durante el episodio. El libro llama a esto
+      <strong>algoritmo del retorno \(\lambda\) fuera de línea</strong> y es honesto sobre su
+      papel: <em>“un ideal importante, pero de utilidad limitada”</em>. En una tarea continua,
+      directamente <strong>nunca</strong> se conoce.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b8.ec">
+      \[ V(S_t) \leftarrow V(S_t) + \alpha\big[\,G_t^{\lambda} - V(S_t)\,\big], \qquad t = 0,\ldots,T-1 \]
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B9 · la vista hacia atrás y las trazas → módulo 2                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b9">
+    <header>
+      <h2 data-t="t4b.b9.h2">La vista hacia atrás: trazas de elegibilidad</h2>
+      <p class="fuente" data-t="t4b.b9.fuente">4_Tema4_2#slide-13, #slide-14 y #slide-15 · Sutton &amp; Barto §12.2, ecuaciones (12.5), (12.6) y (12.7), figura 12.5</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b9.p1">
+      Si el problema es que hay que esperar al final, la solución es darle la vuelta a la mirada.
+      En la <strong>vista hacia atrás</strong> no se mira al futuro desde cada estado: se calcula
+      el error TD del momento y se <strong>grita hacia atrás</strong>, repartiéndolo entre los
+      estados ya visitados según cuánto haya contribuido cada uno a la situación actual. La
+      imagen del libro es literalmente ésa: ir cabalgando sobre la corriente de estados, calcular
+      \(\delta_t\) y gritárselo a los estados de detrás.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b9.p2">
+      ¿Cuánto ha contribuido cada estado? La diapositiva lo plantea con el ejemplo de David
+      Silver: suena el <strong>timbre</strong> varias veces, se enciende la <strong>luz</strong> y
+      llega una <strong>descarga eléctrica</strong>. ¿Qué la ha desencadenado? Una heurística de
+      <strong>frecuencia</strong> culpa al timbre, que ha ocurrido más veces. Una de
+      <strong>recencia</strong> culpa a la luz, que ha ocurrido justo antes. Las trazas de
+      elegibilidad <strong>combinan las dos</strong>, y lo hacen con un único parámetro; cuál de
+      las dos gana es exactamente lo que se puede medir en el módulo siguiente.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b9.ec1">
+      \[ z_0(s) = 0, \qquad z_t(s) \;=\; \gamma\lambda\, z_{t-1}(s) + \mathbb{1}(S_t = s) \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b9.p3">
+      Se lee sin esfuerzo: la traza de <strong>todos</strong> los estados se desvanece por
+      \(\gamma\lambda\) a cada paso, y la del estado que se acaba de visitar sube
+      <strong>1</strong>. La memoria de los pesos es a largo plazo; la traza es una <strong>memoria
+      a corto plazo</strong>, que normalmente dura menos que un episodio, y cuyo único efecto es
+      decidir a quién le toca aprender cuando llegue un error.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b9.ec2">
+      \[ \delta_t \;=\; R_{t+1} + \gamma V(S_{t+1}) - V(S_t) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b9.ec3">
+      \[ V(s) \leftarrow V(s) + \alpha\,\delta_t\, z_t(s) \qquad \text{para \textit{todos} los } s \]
+    </p>
+
+    <p class="explicacion" data-t="t4b.b9.p4">
+      Con \(\lambda=0\), la traza del paso actual vale 1 y todas las demás valen 0: solo se
+      actualiza el estado inmediatamente anterior, que es <strong>TD(0)</strong> exactamente. Con
+      \(\lambda=1\) el crédito solo decae por \(\gamma\) a cada paso; y si además \(\gamma=1\),
+      <strong>la traza no decae en absoluto</strong> y el método se comporta como Monte Carlo en
+      una tarea episódica sin descuento. A ese caso el libro lo llama <strong>TD(1)</strong>, y
+      añade algo que suele omitirse en clase: TD(1) es <strong>más general</strong> que Monte
+      Carlo, porque también sirve para tareas continuas descontadas y porque aprende
+      <strong>durante</strong> el episodio en vez de al final.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b9.p5">
+      La diapositiva dice que las dos vistas <em>“son fórmulas equivalentes, demostración
+      disponible en Sutton &amp; Barto”</em>. Conviene precisar, porque el libro afirma algo más
+      débil. Lo que demuestra es que TD(\(\lambda\)) <strong>aproxima</strong> al algoritmo del
+      retorno \(\lambda\) fuera de línea: con \(\alpha\) óptimo o menor los dos rinden
+      <em>“prácticamente idéntico”</em>, y con \(\alpha\) mayor de lo óptimo TD(\(\lambda\))
+      empeora mucho más y <strong>puede llegar a ser inestable</strong>. La igualdad
+      <strong>exacta</strong> solo se da si las actualizaciones se calculan pero <strong>no se
+      aplican</strong> durante el episodio —es decir, con los valores congelados—, que es el
+      ejercicio 12.4 del libro. Y hay una equivalencia exacta demostrada de verdad, pero es entre
+      <strong>otro par</strong> de algoritmos: el retorno \(\lambda\) <em>en línea</em> y <em>true
+      online</em> TD(\(\lambda\)) (§12.5), ninguno de los cuales se ve en esta asignatura.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b9.p6">
+      Es exactamente la misma letra pequeña que la de la identidad (6.6) del capítulo 6, la que
+      escribe \(G_t - V(S_t)\) como suma de errores TD: también allí la igualdad exige que \(V\)
+      no cambie durante el episodio. Dos veces en el mismo tema, y por la misma razón.
+    </p>
+
+    <!-- Comprobación numérica de la salvedad: episodio de juguete del módulo 2
+         con k = 3 timbres, α = 0,1, γ = 1, λ = 1 y V ≡ 0 de partida. -->
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4b.b9.tabla.cab">
+            <th>Qué se suma</th><th>Resultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4b.b9.tabla.f1">
+            <td>Actualizaciones que TD(\(\lambda=1\)) hacia atrás acumula sobre el timbre</td>
+            <td>\(-0{,}300\)</td>
+          </tr>
+          <tr data-t="t4b.b9.tabla.f2">
+            <td>Actualizaciones que la vista hacia adelante acumula sobre el timbre, con \(V\) congelada</td>
+            <td>\(-0{,}300\) — <strong>idénticas</strong></td>
+          </tr>
+          <tr data-t="t4b.b9.tabla.f3">
+            <td>Actualizaciones que Monte Carlo de cada visita acumula sobre el timbre, aplicándolas sobre la marcha</td>
+            <td>\(-0{,}271\) — <strong>ya no</strong></td>
+          </tr>
+          <tr data-t="t4b.b9.tabla.f4">
+            <td>Diferencia</td>
+            <td>\(0{,}029\), y crece con \(\alpha\)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion" data-t="t4b.b9.p7">
+      Las dos primeras filas coinciden hasta el último decimal porque en este episodio \(V\) no
+      cambia hasta el final. La tercera aplica sus actualizaciones sobre la marcha y por eso se
+      separa. La equivalencia entre las dos vistas es real, pero es <strong>esa</strong>.
+    </p>
+
+    <p><a class="siguiente" href="#m2" data-t="t4b.b9.continua">Continúa en el módulo 2 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · trazas de elegibilidad                                 -->
+  <!-- El interior lo monta assets/tema4b.js: controles, las dos          -->
+  <!-- visualizaciones, las lecturas numéricas y el cuestionario.         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta" data-t="t4b.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t4b.m2.h2">Trazas de elegibilidad: ¿el timbre o la luz?</h2>
+      <p class="fuente" data-t="t4b.m2.fuente">4_Tema4_2#slide-14 y #slide-15 · Sutton &amp; Barto §12.2, ecuaciones (12.5)-(12.7), y §12.6, ecuación (12.12)</p>
+      <p class="fuente" data-t="t4b.m2.determinista">Determinista: un solo episodio, sin azar. La semilla no interviene.</p>
+    </header>
+
+    <div id="m2-controles"></div>
+    <div id="m2-trazas"></div>
+    <div id="m2-credito"></div>
+    <div id="m2-metricas"></div>
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B10 · de tabular a aproximación                                   -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b10">
+    <header>
+      <h2 data-t="t4b.b10.h2">De tabular a aproximación: ese 1 no es arbitrario</h2>
+      <p class="fuente" data-t="t4b.b10.fuente">4_Tema4_2#slide-16 y #slide-17 · Sutton &amp; Barto, cap. 12 (apertura), §9.4 y §12.2, ecuación (12.5)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4b.b10.p1">
+      Este último tramo <strong>adelanta material del Tema 5</strong>. Usa el vector de pesos
+      \(w\), el vector de características \(x(s)\) y el gradiente \(\nabla\hat v(s,w)\), que se
+      definen allí. Se incluye porque cierra el bloque y porque explica de dónde sale una
+      constante que, tal como se ha presentado hasta aquí, parece sacada de la nada.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b10.p2">
+      El argumento tiene tres eslabones. <strong>Primero</strong>: el caso tabular es un caso
+      particular de la aproximación lineal, y el propio libro lo autoriza al abrir el capítulo
+      —<em>“todos estos resultados se aplican también a los casos tabular y de agregación de
+      estados, porque son casos particulares de la aproximación lineal”</em>—.
+      <strong>Segundo</strong>: en aproximación lineal el gradiente del valor aproximado
+      <strong>es</strong> el vector de características, \(\nabla\hat v(s,w) = x(s)\).
+      <strong>Tercero</strong>: si \(x(s)\) es la codificación <em>one-hot</em> del estado —un 1
+      en la componente de \(s\) y ceros en el resto—, sumar \(x(S_t)\) al vector de trazas es
+      exactamente sumar 1 a la componente del estado visitado y dejar que las demás decaigan. El
+      \(\mathbb{1}(S_t=s)\) de la fórmula tabular <strong>es</strong> el gradiente.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b10.ec1">
+      \[ z_{-1} \doteq 0, \qquad z_t \;\doteq\; \gamma\lambda\,z_{t-1} + \nabla\hat v(S_t, w_t) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b10.ec2">
+      \[ w_{t+1} \;=\; w_t + \alpha\,\delta_t\, z_t \]
+    </p>
+
+    <div class="aviso" data-t="t4b.b10.p3">
+      <strong>Un aviso de honestidad con la fuente.</strong> El capítulo 12 está escrito
+      <strong>entero</strong> en el lenguaje de la aproximación: sus ecuaciones y su único
+      recuadro de pseudocódigo van con \(w\) y con \(z\in\mathbb{R}^d\). <strong>En la 2.ª
+      edición no hay ningún pseudocódigo tabular de TD(\(\lambda\)) ni de
+      SARSA(\(\lambda\))</strong>. La forma tabular que se proyecta en clase y que se usa en esta
+      página es una <strong>adaptación legítima</strong> del caso lineal —el libro autoriza la
+      lectura—, pero es una adaptación, y no una cita.
+    </div>
+
+    <p class="explicacion" data-t="t4b.b10.p4">
+      Y con eso queda hecho el enganche con el resto del temario: la actualización de los pesos
+      depende del error TD, y el error TD depende del objetivo, que se construye <em>de una u
+      otra manera según el algoritmo</em> —SARSA, Q-learning, SARSA esperado—. Cambiar de
+      algoritmo es cambiar esa línea y nada más.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b10.p5">
+      Última precisión: la traza de estas fórmulas se llama <strong>acumulativa</strong> porque el
+      estado visitado <strong>suma</strong> 1 aunque su traza ya fuera positiva. Hay otras dos. La
+      <strong>traza de reemplazo</strong> <em>fija</em> la traza a 1 en vez de sumarla, y está
+      definida solo para el caso tabular o para características binarias. La <strong>traza
+      dutch</strong> es la que usa <em>true online</em> TD(\(\lambda\)) y tiene mejor fundamento
+      teórico; hoy el libro ve la de reemplazo como una aproximación tosca de la dutch. La
+      diapositiva <strong>solo usa la acumulativa</strong>; en el módulo 2 se puede conmutar a la
+      de reemplazo para ver qué cambia.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B11 · SARSA(λ): el hueco de examen                                -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b11">
+    <header>
+      <h2 data-t="t4b.b11.h2">SARSA(\(\lambda\)): el hueco que hay que tapar</h2>
+      <p class="fuente" data-t="t4b.b11.fuente">No aparece en ninguna de las dos colecciones · Sutton &amp; Barto §12.7, ecuaciones (12.15) y (12.16) · se examina: <code>Final_Cheatsheet_RL_IMAT</code> §SARSA(λ) y <code>Problemas.pdf#page-4</code>, problema 5</p>
+    </header>
+
+    <div class="aviso" data-t="t4b.b11.p1">
+      <strong>Aviso de cobertura.</strong> Las diapositivas presentan TD(\(\lambda\)) solo con
+      <strong>valores de estado</strong>, \(V(s)\leftarrow V(s)+\alpha\delta_t z_t(s)\), y con la
+      forma genérica en \(w\). <strong>SARSA(\(\lambda\)) y Q(\(\lambda\)) —con valores de
+      acción— no aparecen en ninguna de las dos colecciones</strong>, y sin embargo se examinan:
+      la chuleta que se entrega en el examen final trae una sección «SARSA(λ)» y el problema 5 de
+      la hoja de problemas pide resolver a mano TD(\(\lambda\)) hacia adelante, TD(\(\lambda\))
+      hacia atrás, SARSA(0) y SARSA(\(\lambda\)) sobre un MDP de cuatro estados. Es la laguna más
+      seria del bloque, y por eso este apartado existe.
+    </div>
+
+    <p class="explicacion" data-t="t4b.b11.p2">
+      El paso es el mismo que el de \(n\) pasos: cambiar estados por pares estado-acción. Hay una
+      traza por <strong>par</strong>, el error TD se construye con valores de acción, y la
+      actualización se aplica a toda la tabla \(Q\) en proporción a su traza.
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b11.ec1">
+      \[ z_t(s,a) \;=\; \gamma\lambda\,z_{t-1}(s,a) + \mathbb{1}(S_t=s,\;A_t=a) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b11.ec2">
+      \[ \delta_t \;\doteq\; R_{t+1} + \gamma\,Q(S_{t+1},A_{t+1}) - Q(S_t,A_t) \]
+    </p>
+
+    <p class="ecuacion" data-t="t4b.b11.ec3">
+      \[ Q(s,a) \leftarrow Q(s,a) + \alpha\,\delta_t\,z_t(s,a) \qquad \text{para \textit{todos} los pares} \]
+    </p>
+
+    <pre class="codigo" data-t="t4b.b11.caja">SARSA(λ) tabular  —  adaptación del caso lineal de Sutton &amp; Barto §12.7
+                      (el libro NO publica una versión tabular; ver el aviso de arriba)
+Parámetros: α ∈ (0,1], λ ∈ [0,1], ε &gt; 0, γ
+Inicializar Q(s,a) arbitrariamente para todo s ∈ S⁺, a ∈ A(s), con Q(terminal,·) = 0
+
+Para cada episodio:
+    z(s,a) ← 0  para todo s, a
+    Inicializar S;  elegir A ~ ε-greedy(Q, S)
+    Para cada paso del episodio:
+        Tomar la acción A, observar R y S'
+        Elegir A' ~ ε-greedy(Q, S')      (si S' es terminal, Q(S',·) = 0)
+        δ ← R + γ Q(S',A') − Q(S,A)
+        z(S,A) ← z(S,A) + 1                        (traza ACUMULATIVA)
+        Para todo s, a:
+            Q(s,a) ← Q(s,a) + α δ z(s,a)
+            z(s,a) ← γλ z(s,a)
+        S ← S';  A ← A'
+    hasta que S sea terminal</pre>
+
+    <p class="explicacion" data-t="t4b.b11.p3">
+      El libro remata con el mismo camino de la figura de SARSA a \(n\) pasos y un cuarto panel:
+      con SARSA(\(\lambda\)) y \(\lambda=0{,}9\) se refuerzan <strong>todas</strong> las acciones
+      del episodio, con intensidad decreciente hacia atrás. Un paso refuerza una; \(n\) pasos
+      refuerzan \(n\), todas por igual; la traza refuerza todas, desvaneciéndose con la recencia.
+      Y el pie de la figura remata: <em>“la estrategia del desvanecimiento suele ser la mejor”</em>.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b11.p4">
+      Si se quiere practicar con lápiz: el problema 5 de la hoja usa \(\alpha=0{,}1\),
+      \(\gamma=0{,}95\), \(\lambda=0{,}5\) y política \(\varepsilon\)-greedy con
+      \(\varepsilon=0{,}5\) en predicción y \(\varepsilon=0{,}05\) en control. Con esos números y
+      este pseudocódigo, el ejercicio sale.
+    </p>
+
+    <p class="explicacion" data-t="t4b.b11.p5">
+      De <strong>Q(\(\lambda\))</strong> —la versión fuera de política con trazas— basta saber que
+      existe y que su dificultad propia es qué hacer con la traza cuando la política de
+      comportamiento toma una acción que la política objetivo nunca tomaría: la respuesta clásica
+      es <strong>cortarla a cero</strong>. El libro lo trata fuera del tramo §12.1-§12.7 que cubre
+      este bloque.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A5 · ecuaciones clave                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="ecuaciones">
+    <h2 data-t="t4b.ecuaciones.h2">Ecuaciones clave del bloque</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4b.ecuaciones.cab">
+            <th>Ecuación</th><th>Qué dice</th><th>Dónde se usa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4b.ecuaciones.f1">
+            <td>\(G_{t:t+n} \doteq R_{t+1}+\cdots+\gamma^{n-1}R_{t+n}+\gamma^{n}V_{t+n-1}(S_{t+n})\)</td>
+            <td>\(n\) recompensas reales y una estimación para cerrar</td>
+            <td>B3, módulo 1</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f2">
+            <td>\(V_{t+n}(S_t) \doteq V_{t+n-1}(S_t)+\alpha[G_{t:t+n}-V_{t+n-1}(S_t)]\)</td>
+            <td>La regla de siempre, con el retorno a \(n\) pasos como objetivo</td>
+            <td>B3, módulo 1</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f3">
+            <td>\(G_{t:t+n}\doteq G_t\) si \(t+n\ge T\)</td>
+            <td>Si la ventana se pasa del final, el retorno a \(n\) pasos <strong>es</strong> el retorno real</td>
+            <td>B3, módulo 1</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f4">
+            <td>\(\max_s\lvert\mathbb{E}_\pi[G_{t:t+n}]-v_\pi(s)\rvert\le\gamma^{n}\max_s\lvert V_{t+n-1}(s)-v_\pi(s)\rvert\)</td>
+            <td>El error esperado se contrae por \(\gamma^n\)… salvo si \(\gamma=1\), donde la cota es trivial</td>
+            <td>B4</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f5">
+            <td>\(G_t^{\lambda}\doteq(1-\lambda)\sum_{n\ge1}\lambda^{n-1}G_{t:t+n}\)</td>
+            <td>Promedio exponencial de <strong>todos</strong> los retornos a \(n\) pasos</td>
+            <td>B7, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f6">
+            <td>\(G_t^{\lambda}=(1-\lambda)\sum_{n=1}^{T-t-1}\lambda^{n-1}G_{t:t+n}+\lambda^{T-t-1}G_t\)</td>
+            <td>Lo mismo, con la cola posterior a la terminación separada</td>
+            <td>B7</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f7">
+            <td>\(z_t(s)=\gamma\lambda z_{t-1}(s)+\mathbb{1}(S_t=s)\)</td>
+            <td>Todo decae por \(\gamma\lambda\); el estado visitado sube 1</td>
+            <td>B9, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f8">
+            <td>\(V(s)\leftarrow V(s)+\alpha\,\delta_t\,z_t(s)\)</td>
+            <td>El error del momento se reparte entre todos, en proporción a su traza</td>
+            <td>B9, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f9">
+            <td>\(z_t\doteq\gamma\lambda z_{t-1}+\nabla\hat v(S_t,w_t)\), \(w_{t+1}=w_t+\alpha\delta_t z_t\)</td>
+            <td>Lo mismo en aproximación: el 1 tabular es el gradiente <em>one-hot</em></td>
+            <td>B10</td>
+          </tr>
+          <tr data-t="t4b.ecuaciones.f10">
+            <td>\(z_t(s,a)=\gamma\lambda z_{t-1}(s,a)+\mathbb{1}(S_t=s,A_t=a)\)</td>
+            <td>Una traza por par estado-acción: SARSA(\(\lambda\))</td>
+            <td>B11</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A6 · errores frecuentes                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="errores">
+    <h2 data-t="t4b.errores.h2">Cinco confusiones que cuestan puntos</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4b.errores.cab">
+            <th>Se dice</th><th>Y en realidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4b.errores.e1">
+            <td>“Con \(n=10\), las diez primeras actualizaciones se hacen igual, solo que con otro objetivo”</td>
+            <td>No se hace <strong>ninguna</strong> actualización durante los primeros \(n-1\) pasos: no existe todavía \(G_{0:n}\). Y al terminar el episodio se hacen \(n-1\) actualizaciones adicionales para vaciar la cola. Se puede contar paso a paso en el módulo 1. <em>(S&amp;B §7.1)</em></td>
+          </tr>
+          <tr data-t="t4b.errores.e2">
+            <td>“La propiedad de reducción del error demuestra que un \(n\) intermedio es mejor”</td>
+            <td>No. La cota es sobre la <strong>esperanza</strong> del retorno, en norma del máximo, y con factor \(\gamma^{n}\); en el experimento del módulo 1, \(\gamma=1\) y la cota es trivial. Que \(n=4\) gane es un resultado <strong>empírico</strong>. <em>(S&amp;B §7.1, ec. 7.3)</em></td>
+          </tr>
+          <tr data-t="t4b.errores.e3">
+            <td>“El retorno \(\lambda\) pondera los retornos a \(n\) pasos con \(\lambda^{n}\)”</td>
+            <td>El peso es \((1-\lambda)\lambda^{n-1}\), y la cola posterior a la terminación es \(\lambda^{T-t-1}\). El factor \((1-\lambda)\) es justo el que hace que los pesos sumen 1; sin él no es una media. <em>(S&amp;B §12.1, ecs. 12.2 y 12.3)</em></td>
+          </tr>
+          <tr data-t="t4b.errores.e4">
+            <td>“La traza de elegibilidad se pone a 1 en el estado visitado”</td>
+            <td>Depende del tipo. La <strong>acumulativa</strong> —la de la diapositiva y la de esta página— <strong>suma</strong> 1, así que puede pasar de 1. La de <strong>reemplazo</strong> sí la fija en 1. La <strong>dutch</strong> es otra cosa. Se ve la diferencia conmutando el control del módulo 2. <em>(S&amp;B §12.2, ec. 12.5, y §12.6, ec. 12.12)</em></td>
+          </tr>
+          <tr data-t="t4b.errores.e5">
+            <td>“La vista hacia atrás es equivalente a la vista hacia adelante”</td>
+            <td>Solo <em>prácticamente idéntica</em>, y con \(\alpha\) óptimo o menor; con \(\alpha\) grande, TD(\(\lambda\)) puede ser inestable. La igualdad exacta exige que los valores <strong>no se actualicen</strong> durante el episodio (ejercicio 12.4). La equivalencia exacta demostrada es entre otro par de algoritmos: retorno \(\lambda\) en línea y <em>true online</em> TD(\(\lambda\)). <em>(S&amp;B §12.2 y §12.5)</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A7 · cierre                                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="cierre">
+    <h2 data-t="t4b.cierre.h2">Qué hay que llevarse</h2>
+    <ul class="explicacion">
+      <li data-t="t4b.cierre.v1">Monte Carlo y TD(0) no son dos métodos rivales: son los dos extremos de una familia con un parámetro. Con \(n\) pasos el parámetro es un entero; con el retorno \(\lambda\), un número entre 0 y 1.</li>
+      <li data-t="t4b.cierre.v2">Con \(n=10\) no se actualiza nada durante los nueve primeros pasos del episodio, y al terminar quedan nueve actualizaciones pendientes. Lo he contado paso a paso.</li>
+      <li data-t="t4b.cierre.v3">El mejor \(n\) es intermedio y <strong>depende de \(\alpha\)</strong>: con la semilla 2026, el mejor punto del barrido es \(n=4\) con \(\alpha=0{,}4\), y el mejor \(\alpha\) de \(n=1\) (0,8) es el peor posible para \(n=64\).</li>
+      <li data-t="t4b.cierre.v4">\(\lambda=0\) es TD(0) y \(\lambda=1\) es Monte Carlo, y lo sé por dos vías: por la forma del retorno \(\lambda\) con la cola separada, y por la forma de la traza.</li>
+      <li data-t="t4b.cierre.v5">Ante la descarga eléctrica, con \(\lambda\) grande la culpa se la lleva el timbre (frecuencia) y con \(\lambda\) pequeño, la luz (recencia). Con tres timbres el empate está en \(\lambda \approx 0{,}544\), y con dos, exactamente en la razón áurea.</li>
+      <li data-t="t4b.cierre.v6">El “+1” de la traza tabular es el gradiente de la aproximación lineal con codificación <em>one-hot</em>: no es una convención, es un caso particular de lo que viene en el Tema 5.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A8 · glosario de notación                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="glosario">
+    <h2 data-t="t4b.glosario.h2">Glosario de notación del bloque</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4b.glosario.cab">
+            <th>Símbolo</th><th>Significado</th><th>Dónde aparece</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4b.glosario.f1">
+            <td>\(G_{t:t+n}\)</td>
+            <td>retorno a \(n\) pasos: \(n\) recompensas reales más \(\gamma^{n}V_{t+n-1}(S_{t+n})\)</td>
+            <td>B3, B5, módulo 1</td>
+          </tr>
+          <tr data-t="t4b.glosario.f2">
+            <td>\(G_t^{\lambda}\)</td>
+            <td>retorno \(\lambda\): media exponencial de todos los \(G_{t:t+n}\)</td>
+            <td>B7, B8</td>
+          </tr>
+          <tr data-t="t4b.glosario.f3">
+            <td>\(z_t(s)\), \(z_t(s,a)\), \(z_t\)</td>
+            <td>traza de elegibilidad de un estado, de un par, o el vector completo</td>
+            <td>B9, B10, B11, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.glosario.f4">
+            <td>\(\lambda\)</td>
+            <td>parámetro de desvanecimiento de la traza, \(\lambda\in[0,1]\)</td>
+            <td>B7, B9, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.glosario.f5">
+            <td>\(\delta_t\)</td>
+            <td>error TD, \(\delta_t \doteq R_{t+1}+\gamma V(S_{t+1})-V(S_t)\)</td>
+            <td>B9, módulo 2</td>
+          </tr>
+          <tr data-t="t4b.glosario.f6">
+            <td>\(V(s)\), \(V_t(s)\)</td>
+            <td><strong>estimación</strong> de \(v_\pi(s)\); \(v_\pi\) en minúscula es el valor verdadero</td>
+            <td>todo el bloque</td>
+          </tr>
+          <tr data-t="t4b.glosario.f7">
+            <td>\(T\)</td>
+            <td><strong>instante final</strong> del episodio. El estado terminal se escribe «terminal»</td>
+            <td>B3, B7</td>
+          </tr>
+          <tr data-t="t4b.glosario.f8">
+            <td>\(\mathcal{S}^+\)</td>
+            <td>estados <strong>incluido</strong> el terminal</td>
+            <td>B3, B5</td>
+          </tr>
+          <tr data-t="t4b.glosario.f9">
+            <td>\(\mathbb{1}(\cdot)\)</td>
+            <td>función indicadora: 1 si se cumple, 0 si no</td>
+            <td>B9, B11</td>
+          </tr>
+          <tr data-t="t4b.glosario.f10">
+            <td>\(b(a\mid s)\)</td>
+            <td><strong>política de comportamiento</strong></td>
+            <td>B5 (mención de fuera de política)</td>
+          </tr>
+          <tr data-t="t4b.glosario.f11">
+            <td>\(w\), \(x(s)\), \(\nabla\hat v(s,w)\)</td>
+            <td>pesos, características y gradiente — <strong>adelanto del Tema 5</strong></td>
+            <td>B10</td>
+          </tr>
+          <tr data-t="t4b.glosario.f12">
+            <td>\(\bar V_t(s)\)</td>
+            <td>valor aproximado esperado, \(\bar V_t(s)\doteq\sum_a\pi(a\mid s)Q_t(s,a)\)</td>
+            <td>B5 (mención)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion nota" data-t="t4b.glosario.nota">
+      Dos avisos de notación. <strong>Primero</strong>: para la política de comportamiento, el
+      material de clase usa dos símbolos —\(\mu\) en una colección y \(b\) en la otra—. Esta
+      página usa siempre \(b\), que es el del libro y el de la bibliografía oficial.
+      <strong>Segundo</strong>: para la traza, el material usa \(z\) (Sutton &amp; Barto, 2.ª
+      edición), que es también el símbolo de la chuleta del examen; hay bibliografía y apuntes que
+      usan \(e\), de la 1.ª edición. Son el mismo objeto.
+    </p>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema4.html" data-t="t4b.pie.anterior">← Tema 4 · Aprendizaje por refuerzo sin modelo</a>
+    </p>
+    <p data-t="t4b.pie.1">
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulo 7 y §12.1-§12.2.
+    </p>
+    <p class="suave" data-t="t4b.pie.2">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema4b.js"></script>
+</body>
+</html>

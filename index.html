@@ -20,6 +20,8 @@
       <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
       <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
       <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+      <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
+      <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
     </nav>
     <div class="herramientas"></div>
   </div>
@@ -80,6 +82,35 @@
         <li>La última línea de la iteración de política, que puede no parar</li>
         <li>La política óptima está lista 170 barridos antes que los valores</li>
         <li>Iteración de valor y las tres trayectorias de la GPI</li>
+      </ul>
+    </a>
+
+    <a class="tarjeta" href="tema4.html">
+      <p class="num" data-t="index.t4.num">Tema 4 · Sutton caps. 5 y 6</p>
+      <h2 data-t="index.t4.h2">RL sin modelo</h2>
+      <p class="suave" data-t="index.t4.suave">
+        Cuando no hay modelo, el valor se estima desde la experiencia — y deja de bastar
+        con \(v_\pi\).
+      </p>
+      <ul data-t="index.t4.lista">
+        <li>Por qué sin modelo hay que ir a \(q_\pi(s,a)\), demostrado con dos entornos</li>
+        <li>Monte Carlo frente a TD(0) en el paseo aleatorio</li>
+        <li>SARSA, Q-learning y Expected SARSA en el borde del acantilado</li>
+        <li>Por qué el \(\max\) engaña, y qué arregla el aprendizaje doble</li>
+      </ul>
+    </a>
+
+    <a class="tarjeta" href="tema4b.html">
+      <p class="num" data-t="index.t4b.num">Tema 4 (cont.) · Sutton cap. 7 y §12.1-12.2</p>
+      <h2 data-t="index.t4b.h2">Fórmulas intermedias</h2>
+      <p class="suave" data-t="index.t4b.suave">
+        Entre Monte Carlo y TD a un paso no hay un salto: hay un continuo.
+      </p>
+      <ul data-t="index.t4b.lista">
+        <li>El retorno a \(n\) pasos, y si existe un \(n\) óptimo</li>
+        <li>SARSA a \(n\) pasos</li>
+        <li>El retorno \(\lambda\): promediar todos los \(n\) a la vez</li>
+        <li>Trazas de elegibilidad: ¿el timbre o la luz?</li>
       </ul>
     </a>
   </div>

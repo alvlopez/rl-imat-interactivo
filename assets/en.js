@@ -2385,6 +2385,40 @@ export const EN = {
     + "in this course: in Unit 3 it is always a <strong>scalar threshold</strong>, never the "
     + "policy parameter vector of Unit 6.",
 
+
+  /* =====================================================================
+   * Unit 4 — Model-free reinforcement learning (shared keys)
+   *
+   * The Spanish site splits this unit into two pages, mirroring the two
+   * lecture decks: chapters 5-6, and then chapter 7 plus §12.1-12.2.
+   * ===================================================================== */
+
+  "nav.tema4": "Unit 4 · Model-free RL",
+  "nav.tema4b": "Unit 4 (cont.) · In-between formulas",
+  "t3.pie.siguiente": "Unit 4 · Model-free RL →",
+
+  /* --- tarjetas del índice ---------------------------------------------- */
+  "index.t4.num": "Unit 4 · Sutton, chs. 5 and 6",
+  "index.t4.h2": "Model-free RL",
+  "index.t4.suave":
+    "With no model, value has to be estimated from experience — and \\(v_\\pi\\) "
+    + "stops being enough.",
+  "index.t4.lista":
+    "<li>Why having no model forces you to \\(q_\\pi(s,a)\\), shown with two environments</li>"
+    + "<li>Monte Carlo against TD(0) on the random walk</li>"
+    + "<li>SARSA, Q-learning and Expected SARSA on the cliff</li>"
+    + "<li>Why the \\(\\max\\) misleads, and what double learning fixes</li>",
+
+  "index.t4b.num": "Unit 4 (cont.) · Sutton, ch. 7 and §12.1-12.2",
+  "index.t4b.h2": "In-between formulas",
+  "index.t4b.suave":
+    "Between Monte Carlo and one-step TD there is no gap: there is a continuum.",
+  "index.t4b.lista":
+    "<li>The \\(n\\)-step return, and whether an optimal \\(n\\) exists</li>"
+    + "<li>\\(n\\)-step SARSA</li>"
+    + "<li>The \\(\\lambda\\)-return: averaging every \\(n\\) at once</li>"
+    + "<li>Eligibility traces: the bell or the light?</li>",
+
   /* --- pie --------------------------------------------------------------- */
   "t3.pie.anterior": "← Unit 2 · Markov Decision Processes",
   "t3.pie.1":
@@ -2394,4 +2428,2852 @@ export const EN = {
     + "Introduction</em>, 2nd ed., chapter 4.",
   "t3.pie.2":
     "Every simulation is reproducible: the same seed always yields the same result.",
+
+  /* ===================================================================== *
+   * Unit 4 — Model-free reinforcement learning
+   *
+   * Same rule as in Unit 3: the deck references of the Spanish page become
+   * Sutton & Barto sections, examples and figures. Terminology is the
+   * book's own (return, bootstrapping, on-policy, off-policy, importance
+   * sampling, maximisation bias, backup diagram).
+   * ===================================================================== */
+
+  /* --- portada e índice -------------------------------------------------- */
+  "meta.titulo.tema4": "Unit 4 · Model-free RL — RL IMAT",
+  "t4.kicker": "Unit 4 · Sutton &amp; Barto, chapters 5 and 6",
+  "t4.h1": "Model-free reinforcement learning",
+  "t4.entradilla":
+    "Up to here, everything you could compute relied on \\(p(s',r\\mid s,a)\\). From now "
+    + "on you do not have it. This page answers the questions the unit leaves open: why, "
+    + "with no model, you have to estimate \\(q_\\pi(s,a)\\) and \\(v_\\pi(s)\\) is not "
+    + "enough; what really separates Monte Carlo from temporal difference —and it is not "
+    + "speed—; which hyperparameters sit behind the cliff-walking figure that gets "
+    + "projected in class without a single one of them; and why the \\(\\max\\) of a set of "
+    + "noisy estimates always misleads upwards.",
+  "t4.subtitulo":
+    "It follows the order of the lecture deck, slide by slide, with the explanatory text of "
+    + "the book interleaved. The continuation —\\(n\\)-step methods, TD(λ) and eligibility "
+    + "traces— is on the second page.",
+  "t4.semillaLabel": "Seed",
+  "t4.semilla": "Seed 2026 · everything random on this page is reproduced from it",
+  "t4.avisoEstocastico":
+    "This unit is stochastic from beginning to end. Every chart states how many independent "
+    + "runs it averages over; changing the seed changes the numbers, not the conclusions.",
+  "t4.indice.m1": "From \\(v\\) to \\(q\\): what the model was doing for you",
+  "t4.indice.m2": "Monte Carlo against TD(0) on the random walk",
+  "t4.indice.m3": "SARSA against Q-learning on the edge of the cliff",
+  "t4.indice.m4": "The \\(\\max\\) misleads: maximisation bias",
+
+  /* --- A3 · mapa del tema ------------------------------------------------ */
+  "t4.mapa.h2": "Map of the unit",
+  "t4.mapa.cab": "<th>Concept</th><th>Where it comes from</th><th>Where it leads</th>",
+  "t4.mapa.f1":
+    "<td>No model</td>"
+    + "<td>In most real problems there is no \\(p(s',r\\mid s,a)\\), or computing it costs "
+    + "more than sampling</td>"
+    + "<td>Value functions have to be built <strong>from experience</strong></td>",
+  "t4.mapa.f2":
+    "<td>\\(q\\) rather than \\(v\\)</td>"
+    + "<td>The greedy operator on \\(v\\) needs \\(p\\); on \\(q\\) it needs nothing</td>"
+    + "<td>The whole unit estimates \\(q_\\pi(s,a)\\) → module 1</td>",
+  "t4.mapa.f3":
+    "<td>Monte Carlo</td>"
+    + "<td>Averaging the returns observed after visiting a state</td>"
+    + "<td>Unbiased, no bootstrapping, and you must wait until the episode ends</td>",
+  "t4.mapa.f4":
+    "<td>Maintaining exploration</td>"
+    + "<td>With a deterministic policy you only ever see the actions it picks</td>"
+    + "<td>Exploring starts, ε-soft policies, or two policies (off-policy)</td>",
+  "t4.mapa.f5":
+    "<td>Bootstrapping</td>"
+    + "<td>The Bellman equation (6.4): the value of a state is written in terms of the next "
+    + "one</td>"
+    + "<td>TD(0): update without waiting for the end → module 2</td>",
+  "t4.mapa.f6":
+    "<td>TD error \\(\\delta_t\\)</td>"
+    + "<td>The difference between what you expected and what experience plus the bootstrap "
+    + "say</td>"
+    + "<td>It is the signal that drives everything else, eligibility traces on page 2 "
+    + "included</td>",
+  "t4.mapa.f7":
+    "<td>GPI on \\(Q\\)</td>"
+    + "<td>What Unit 3 already settled: evaluate and improve, alternating</td>"
+    + "<td>Model-free control is GPI with \\(Q\\) estimated from experience</td>",
+  "t4.mapa.f8":
+    "<td>SARSA</td>"
+    + "<td>TD(0) applied to the quintuple \\((S_t,A_t,R_{t+1},S_{t+1},A_{t+1})\\)</td>"
+    + "<td>On-policy: it evaluates the policy that is <strong>actually</strong> being "
+    + "followed</td>",
+  "t4.mapa.f9":
+    "<td>Q-learning</td>"
+    + "<td>Replacing \\(Q(S_{t+1},A_{t+1})\\) with \\(\\max_a Q(S_{t+1},a)\\)</td>"
+    + "<td>Off-policy: it learns \\(q_*\\) while behaving with something else → module 3</td>",
+  "t4.mapa.f10":
+    "<td>Maximisation bias</td>"
+    + "<td>Using the same set of estimates both to pick the maximum and to evaluate it</td>"
+    + "<td>Double learning; and the whole point of Double DQN in Unit 5 → module 4</td>",
+
+  /* --- B0 · cuando no hay modelo ----------------------------------------- */
+  "t4.b0.h2": "When there is no model",
+  "t4.b0.fuente":
+    "Written for this resource · Sutton &amp; Barto, ch. 5 (opening) and §5.2",
+  "t4.b0.p1":
+    "The three previous units always stood on the same floor: the dynamics "
+    + "\\(p(s',r\\mid s,a)\\). It is what the Bellman equations are written with, and with "
+    + "them dynamic programming computes \\(v_\\pi\\), \\(v_*\\) and an optimal policy "
+    + "without interacting with the environment even once. <strong>From here on that floor "
+    + "is gone.</strong>",
+  "t4.b0.p2":
+    "The book does not frame the distinction as “model / no model” but as something "
+    + "sharper: <strong>explicit distribution against samples</strong>. Learning from "
+    + "experience only needs sequences of states, actions and rewards; dynamic programming "
+    + "needs the complete distribution over every possible successor. And there are cases "
+    + "—blackjack is the book’s example— where the environment is known <strong>completely"
+    + "</strong> and computing \\(p\\) is still a tedious, error-prone exercise, while "
+    + "generating sample games is trivial.",
+  "t4.b0.cita":
+    "“Monte Carlo methods require only <strong>experience</strong>—sample sequences of "
+    + "states, actions, and rewards from actual or simulated interaction with an "
+    + "environment.” — Sutton &amp; Barto, ch. 5, first paragraph.",
+  "t4.b0.citaOrig":
+    "“Monte Carlo methods require only <em>experience</em>—sample sequences of states, "
+    + "actions, and rewards from actual or simulated interaction with an environment.”",
+  "t4.b0.p3":
+    "And there is a second consequence, less obvious and far more decisive: <strong>without "
+    + "the model, a table of state values is useless for recovering a policy</strong>. With "
+    + "a model you look one step ahead —\\(\\pi(s)=\\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)"
+    + "[r+\\gamma v(s')]\\)— and you are done. Without a model that expression cannot be "
+    + "evaluated: the missing factor is precisely the one you do not have. That is why the "
+    + "whole unit estimates <strong>action values</strong>: with \\(q\\), the policy comes "
+    + "out of an \\(\\arg\\max\\) that needs nothing else.",
+  "t4.b0.ec":
+    "\\[ \\pi(s) \\;=\\; \\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)\\big[\\,r+\\gamma v(s')"
+    + "\\,\\big] \\qquad\\text{against}\\qquad \\pi(s) \\;\\doteq\\; \\arg\\max_a q(s,a) \\]",
+  "t4.b0.p4":
+    "The first one is Unit 3’s and needs \\(p\\). The second is equation (5.1) of the book "
+    + "and needs nothing. That asymmetry is why every algorithm from now on —MC, SARSA, "
+    + "Q-learning, Expected SARSA— works on \\(Q(s,a)\\) and not on \\(V(s)\\), except when "
+    + "the problem is pure <strong>prediction</strong>, where \\(V\\) suffices because "
+    + "nothing has to be chosen.",
+  "t4.b0.p5": "The full logical chain of the unit, in six steps:",
+  "t4.b0.li1":
+    "With no \\(p\\) I cannot compute expectations → I learn from samples.",
+  "t4.b0.li2":
+    "With samples and no \\(p\\), \\(v\\) does not give me the policy → I need \\(q\\).",
+  "t4.b0.li3":
+    "With \\(q\\) and a deterministic policy I never see every action → I need exploration.",
+  "t4.b0.li4":
+    "If I explore, the policy I follow is not the one I want to evaluate → on-policy with "
+    + "ε-soft, or off-policy with importance sampling.",
+  "t4.b0.li5":
+    "Waiting for the end of the episode is expensive, and useless for continuing tasks → "
+    + "bootstrapping, TD.",
+  "t4.b0.li6":
+    "One-step TD and Monte Carlo are the two ends of one spectrum → \\(n\\)-step methods, "
+    + "on the next page.",
+  "t4.b0.continua": "Continues in module 1 →",
+
+  /* --- MÓDULO 1 (cabecera en HTML) --------------------------------------- */
+  "t4.m1.etiqueta": "MODULE 1",
+  "t4.m1.h2": "From \\(v\\) to \\(q\\): what the model was doing for you",
+  "t4.m1.fuente":
+    "Sutton &amp; Barto §5.2 (<em>Monte Carlo Estimation of Action Values</em>) and §5.3, "
+    + "equation (5.1)",
+  "t4.m1.determinista": "Deterministic: exact values, not simulated. The seed plays no part.",
+
+  /* --- B1 · «Hasta ahora…» ----------------------------------------------- */
+  "t4.b1.h2": "So far…",
+  "t4.b1.fuente":
+    "Review of units 1 to 3 · Sutton &amp; Barto, chapters 2, 3 and 4",
+  "t4.b1.p1":
+    "The lecture deck opens with six review slides. They are not filler: each one carries a "
+    + "piece that Unit 4 is about to reuse untouched.",
+  "t4.b1.cab": "<th>From</th><th>What gets reused</th>",
+  "t4.b1.t1":
+    "<td>Unit 1</td>"
+    + "<td>Reward and return, the <strong>update rules</strong> that estimate them from "
+    + "experience, and the exploration/exploitation dilemma with ε-greedy. All of it "
+    + "reappears here intact.</td>",
+  "t4.b1.t2":
+    "<td>Unit 2</td>"
+    + "<td>The MDP, the Markov property and the <strong>two</strong> value functions. And "
+    + "the observation that opens this unit: with \\(q_*\\) the deterministic optimal policy "
+    + "falls out directly; with \\(v_*\\), only if you have the model.</td>",
+  "t4.b1.t3":
+    "<td>Unit 3</td>"
+    + "<td>Iterative policy evaluation, the improvement operator and the fact that "
+    + "<strong>if the policy does not change when you apply it, it is because it is "
+    + "optimal</strong>. Policy iteration solves control whenever there is a model.</td>",
+  "t4.b1.t4":
+    "<td>Unit 3, the figure</td>"
+    + "<td>The generalised policy iteration triangle: \\(v\\) and \\(\\pi\\) converging "
+    + "between the lines \\(v = v_\\pi\\) and \\(\\pi = \\text{greedy}(v)\\) towards "
+    + "\\(v_*,\\pi_*\\). The skeleton does not change in this unit; the only thing that "
+    + "changes is <strong>where the numbers come from</strong>.</td>",
+  "t4.b1.nota":
+    "The two review figures are pure images on the slide: whatever is said about them is "
+    + "said out loud. Here they come with the written gloss, which is exactly what is "
+    + "missing when you study from the PDF.",
+
+  /* --- B2 · lo que necesitamos para el control ---------------------------- */
+  "t4.b2.h2": "So, what we need for control",
+  "t4.b2.fuente":
+    "Sutton &amp; Barto §5.10 (Summary) and chapter 6 (opening)",
+  "t4.b2.p1":
+    "The slide boils it down to two things: <strong>(1)</strong> a method to estimate the "
+    + "action values of a given policy, and <strong>(2)</strong> a method to improve the "
+    + "policy. We already have the second one —it is the greedy operator of Unit 3, and it "
+    + "works the same on \\(Q\\) as on \\(v\\)—. What is missing, and it is the whole of "
+    + "Unit 4, is the first: <strong>evaluating without a model</strong>.",
+  "t4.b2.p2":
+    "Put another way: we already know how to state control. What we do not know is where to "
+    + "get the numbers from when there is no \\(p\\). The answer throughout the unit is "
+    + "always the same: from a <strong>stream of experience</strong>.",
+  "t4.b2.p3":
+    "It pays to pin down the <strong>two axes</strong> that separate the methods right from "
+    + "the start, because they are independent and get confused all the time:",
+  "t4.b2.cab":
+    "<th>Method</th><th>Does it need \\(p\\)?</th><th>Does it bootstrap?</th>",
+  "t4.b2.f1": "<td>Dynamic programming (U3)</td><td>Yes</td><td>Yes</td>",
+  "t4.b2.f2": "<td>Monte Carlo</td><td>No</td><td>No</td>",
+  "t4.b2.f3": "<td>Temporal difference</td><td>No</td><td>Yes</td>",
+  "t4.b2.f4": "<td>Exhaustive search</td><td>Yes</td><td>No</td>",
+  "t4.b2.p4":
+    "That the two axes are independent is spelled out by the book as it closes chapter 5: "
+    + "Monte Carlo differs from dynamic programming in <strong>two</strong> ways, it "
+    + "operates on sample experience and it does not bootstrap, <em>“and these two "
+    + "differences are not tightly linked, and can be separated”</em>. Chapter 6 is exactly "
+    + "that: learning from experience <strong>and</strong> bootstrapping as well.",
+
+  /* --- B3 · predicción de Monte Carlo ------------------------------------ */
+  "t4.b3.h2": "Monte Carlo prediction",
+  "t4.b3.fuente":
+    "Sutton &amp; Barto §5.1, <em>First-visit MC prediction</em> box",
+  "t4.b3.p1":
+    "The idea fits in one sentence: <strong>if \\(v_\\pi(s)\\) is the expected return from "
+    + "\\(s\\), estimate it by averaging the returns you have actually observed after "
+    + "visiting \\(s\\)</strong>. Nothing else is needed: no \\(p\\), no equations, no "
+    + "system to solve. What is needed is experience, and that the episodes "
+    + "<strong>terminate</strong>.",
+  "t4.b3.ec":
+    "\\[ v_\\pi(s) \\;\\doteq\\; \\mathbb{E}_\\pi\\!\\left[\\,G_t \\mid S_t = s\\,\\right] "
+    + "\\qquad\\Longrightarrow\\qquad V(s) \\;\\leftarrow\\; \\text{average}"
+    + "\\big(\\text{Returns}(s)\\big) \\]",
+  "t4.b3.p2":
+    "Each occurrence of \\(s\\) in an episode is a <strong>visit</strong>. The "
+    + "<strong>first-visit</strong> method averages the returns following the first visit of "
+    + "each episode; the <strong>every-visit</strong> one averages them all. Both converge "
+    + "to \\(v_\\pi(s)\\) as the number of visits goes to infinity. First-visit is easier to "
+    + "analyse —its returns are independent and identically distributed, the estimator is "
+    + "<strong>unbiased</strong> and its standard error falls as \\(1/\\sqrt{n}\\)—; "
+    + "every-visit converges too, but its returns are correlated within an episode and the "
+    + "book confines itself to saying that it converges quadratically, pointing to Singh and "
+    + "Sutton (1996).",
+  "t4.b3.caja":
+    "First-visit MC prediction, for estimating V ≈ v<sub>π</sub>\n\n"
+    + "Input: the policy π to be evaluated\n"
+    + "Initialise:\n"
+    + "    V(s) ∈ R, arbitrarily, for all s ∈ S\n"
+    + "    Returns(s) ← an empty list, for all s ∈ S\n"
+    + "Loop forever (for each episode):\n"
+    + "    Generate an episode following π:  S_0, A_0, R_1, S_1, A_1, R_2, …, "
+    + "S_{T−1}, A_{T−1}, R_T\n"
+    + "    G ← 0\n"
+    + "    Loop for each step of the episode, t = T−1, T−2, …, 0:\n"
+    + "        G ← γG + R_{t+1}\n"
+    + "        Unless S_t appears in S_0, S_1, …, S_{t−1}:\n"
+    + "            Append G to Returns(S_t)\n"
+    + "            V(S_t) ← average(Returns(S_t))",
+  "t4.b3.p3":
+    "Two properties that get asked about a lot. First: <strong>the estimates of each state "
+    + "are independent</strong>. The estimate of one state is not built on the estimate of "
+    + "any other, unlike what happens in dynamic programming. Monte Carlo <strong>does not "
+    + "bootstrap</strong>. Second, a consequence of the first: the cost of estimating the "
+    + "value of <strong>one</strong> state does not depend on the number of states. If only "
+    + "ten states out of a million interest you, you can generate episodes that start there "
+    + "and forget about the rest.",
+
+  /* --- B4 · la traza del gridworld de juguete ---------------------------- */
+  "t4.b4.h2": "How the values evolve: the trace on the toy gridworld",
+  "t4.b4.fuente":
+    "The same 3×3 gridworld as in Unit 2 · Sutton &amp; Barto §5.1",
+  "t4.b4.p1":
+    "The lecture slide projects a full episode on the 3×3 gridworld of Unit 2 and announces "
+    + "<em>“how the state values evolve”</em>. <strong>The values are never actually "
+    + "shown</strong>, and it does not say what \\(\\gamma\\) is either, nor whether the "
+    + "method is first-visit or every-visit. Here is the whole computation.",
+  "t4.b4.episodio":
+    "S_0 = 1,  A_0 = right,  R_1 = −1\n"
+    + "S_1 = 2,  A_1 = down,   R_2 = −1\n"
+    + "S_2 = 5,  A_2 = right,  R_3 = −1\n"
+    + "S_3 = 6,  A_3 = down,   R_4 = −1\n"
+    + "S_4 = T",
+  "t4.b4.erratum":
+    "<strong>Erratum in the material.</strong> The slide writes \\(A_3 = r\\) (right), but "
+    + "in the drawing the trace goes <strong>down</strong> from state 6 to the terminal "
+    + "state, which sits right below it. With this geometry, going right from 6 bounces off "
+    + "the wall and leaves the agent in 6: the episode would never end. The correct action "
+    + "is <strong>down</strong>, and that is the one used here. The other three do match the "
+    + "drawing.",
+  "t4.b4.cab":
+    "<th>\\(t\\)</th><th>\\(S_t\\)</th><th>\\(R_{t+1}\\)</th>"
+    + "<th>\\(G_t\\) with \\(\\gamma=1\\)</th><th>\\(V(S_t)\\) after the episode</th>",
+  "t4.b4.f1": "<td>3</td><td>6</td><td>−1</td><td><strong>−1</strong></td><td>−1</td>",
+  "t4.b4.f2": "<td>2</td><td>5</td><td>−1</td><td><strong>−2</strong></td><td>−2</td>",
+  "t4.b4.f3": "<td>1</td><td>2</td><td>−1</td><td><strong>−3</strong></td><td>−3</td>",
+  "t4.b4.f4": "<td>0</td><td>1</td><td>−1</td><td><strong>−4</strong></td><td>−4</td>",
+  "t4.b4.p2":
+    "The loop runs <strong>backwards</strong>, from \\(t=T-1\\) down to \\(t=0\\), "
+    + "accumulating \\(G \\leftarrow \\gamma G + R_{t+1}\\); that is why the first return "
+    + "computed is the one of the last state visited. With \\(\\gamma = 1\\) and \\(r=-1\\) "
+    + "at every step, \\(G_t\\) is simply <strong>minus the number of steps that were left "
+    + "before termination</strong>. All four states appear exactly once in the episode, so "
+    + "<strong>first-visit and every-visit give exactly the same thing</strong> —which is "
+    + "why the slide can afford not to say which one it uses—.",
+  "t4.b4.p3":
+    "And there is the limitation in one line: after one episode you know something about "
+    + "<strong>four</strong> of the eight states, and nothing about the other four. With "
+    + "\\(\\gamma=1\\), the optimal values of this grid are \\(v_*(s) = -d(s)\\), where "
+    + "\\(d(s)\\) is the shortest distance to the terminal state: \\(-4,\\,-3,\\,-2\\) in "
+    + "the top row, \\(-3,\\,-2,\\,-1\\) in the middle one and \\(-2,\\,-1,\\,0\\) in the "
+    + "bottom one. The estimate \\(V(1)=-4\\) that this single episode yields coincides with "
+    + "\\(v_*(1)\\) out of sheer luck: the episode happened to follow a shortest path.",
+
+  /* --- B5 · limitaciones, exploración y políticas ε-soft ------------------ */
+  "t4.b5.h2": "Limitations, exploration and ε-soft policies",
+  "t4.b5.fuente": "Sutton &amp; Barto §5.2, §5.3 and §5.4",
+  "t4.b5.p1":
+    "The slide lists four limitations: <strong>it only works for episodic MDPs</strong>, "
+    + "because the episode has to end before \\(G_t\\) is known; the estimator is unbiased "
+    + "but has <strong>high variance</strong>, so learning is slow; with deterministic "
+    + "policies there are state-action pairs that are <strong>never visited</strong>, and "
+    + "with no visits there is nothing to average; and all of this gets worse when "
+    + "estimating <strong>action</strong> values, which is exactly what the unit needs.",
+  "t4.b5.p2":
+    "The underlying problem has a name in the book: <strong>maintaining exploration</strong>. "
+    + "If \\(\\pi\\) is deterministic, following \\(\\pi\\) only ever produces returns for "
+    + "<strong>one</strong> action per state, and the estimates of the rest never improve. "
+    + "There are three ways out, and chapter 5 goes through them in this order:",
+  "t4.b5.li1":
+    "<strong>Exploring starts</strong>: require every episode to begin at a pair "
+    + "\\((s,a)\\) chosen so that <strong>all</strong> of them have nonzero probability. It "
+    + "guarantees that every pair is visited, but it is an unrealistic assumption as soon as "
+    + "you learn from real interaction: initial conditions are rarely that obliging.",
+  "t4.b5.li2":
+    "<strong>ε-soft policies</strong>, on-policy: require \\(\\pi(a\\mid s) \\ge "
+    + "\\varepsilon/|A(s)|\\) for every state and every action. ε-greedy policies are the "
+    + "member of this family closest to greedy. You always explore a little, and you learn "
+    + "about the policy you are really following.",
+  "t4.b5.li3":
+    "<strong>Two policies</strong>, off-policy: one that generates behaviour and one that "
+    + "is learned. That is block B10.",
+  "t4.b5.caja":
+    "On-policy first-visit MC control (for ε-soft policies), estimates π ≈ π<sub>*</sub>\n\n"
+    + "Algorithm parameter: small ε &gt; 0\n"
+    + "Initialise:\n"
+    + "    π ← an arbitrary ε-soft policy\n"
+    + "    Q(s,a) ∈ R, arbitrarily, for all s ∈ S, a ∈ A(s)\n"
+    + "    Returns(s,a) ← an empty list, for all s ∈ S, a ∈ A(s)\n"
+    + "Repeat forever (for each episode):\n"
+    + "    Generate an episode following π:  S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T\n"
+    + "    G ← 0\n"
+    + "    Loop for each step of the episode, t = T−1, T−2, …, 0:\n"
+    + "        G ← γG + R_{t+1}\n"
+    + "        Unless the pair S_t, A_t appears in S_0,A_0, …, S_{t−1},A_{t−1}:\n"
+    + "            Append G to Returns(S_t, A_t)\n"
+    + "            Q(S_t, A_t) ← average(Returns(S_t, A_t))\n"
+    + "            A* ← argmax_a Q(S_t, a)      (ties broken arbitrarily)\n"
+    + "            For all a ∈ A(S_t):\n"
+    + "                π(a|S_t) ← 1 − ε + ε/|A(S_t)|   if a = A*\n"
+    + "                π(a|S_t) ← ε/|A(S_t)|           if a ≠ A*",
+  "t4.b5.erratum":
+    "<strong>The two lecture collections disagree, and this time it matters.</strong> The "
+    + "reference deck says that the policy improvement theorem extends to ε-soft policies "
+    + "and that this yields <em>“guarantees of convergence to an optimal policy”</em>. The "
+    + "other collection answers the opposite to the same question: <em>“<strong>No</strong>, "
+    + "because we keep exploring… but we can find the <strong>best policy among the ε-soft "
+    + "ones</strong>”</em>. <strong>The second one is right</strong>: the book proves that "
+    + "the optimum is attained <strong>among ε-soft policies</strong>, not \\(\\pi_*\\), "
+    + "unless \\(\\varepsilon\\to 0\\) (§5.4, p. 125). With \\(\\varepsilon\\) fixed, the "
+    + "policy you end up with still takes random actions a fraction \\(\\varepsilon\\) of "
+    + "the time, and that has a price you will see with your own eyes in module 3.",
+  "t4.b5.nota":
+    "Two warnings. First: the name <strong>GLIE</strong> (<em>greedy in the limit with "
+    + "infinite exploration</em>), used in class, <strong>does not appear in Sutton &amp; "
+    + "Barto</strong>: it comes from Singh et al. (2000) and from David Silver’s slides. The "
+    + "book states the equivalent condition without naming it, in §6.4: it converges "
+    + "<em>“as long as all state-action pairs are visited an infinite number of times and "
+    + "the policy converges in the limit to the greedy policy, which can be arranged, for "
+    + "example, with ε-greedy policies by setting \\(\\varepsilon = 1/t\\)”</em>. Second: "
+    + "<strong>Monte Carlo with exploring starts has no convergence proof</strong>. The book "
+    + "says so literally and adds that it is <em>“one of the most fundamental open "
+    + "theoretical questions in reinforcement learning”</em> (§5.3, p. 121). If anyone sells "
+    + "it to you as a theorem, it is not one.",
+
+  /* --- B6 · predicción con TD -------------------------------------------- */
+  "t4.b6.h2": "Temporal-difference prediction",
+  "t4.b6.fuente":
+    "Sutton &amp; Barto §6.1, equations (6.1), (6.2) and (6.5)",
+  "t4.b6.p1":
+    "Monte Carlo forces you to wait until the end of the episode: until it finishes, "
+    + "\\(G_t\\) is unknown and there is nothing to average. The slide poses the way out as "
+    + "a question to the room —<em>“what if we use our estimate of the next state to update "
+    + "the current one? what if we bootstrap?”</em>— and the answer was already written down "
+    + "in Unit 2:",
+  "t4.b6.ec1":
+    "\\[ v_\\pi(s) \\;\\doteq\\; \\mathbb{E}_\\pi[\\,G_t \\mid S_t=s\\,] \\tag{6.3} \\]"
+    + "\\[ = \\mathbb{E}_\\pi[\\,R_{t+1} + \\gamma G_{t+1} \\mid S_t=s\\,] "
+    + "\\tag{from (3.9)} \\]"
+    + "\\[ = \\mathbb{E}_\\pi[\\,R_{t+1} + \\gamma\\, v_\\pi(S_{t+1}) \\mid S_t=s\\,] "
+    + "\\tag{6.4} \\]",
+  "t4.b6.p2":
+    "Monte Carlo uses an estimate of <strong>(6.3)</strong> as its target: it replaces the "
+    + "expectation with a sampled return. Dynamic programming uses an estimate of "
+    + "<strong>(6.4)</strong>: it computes the expectations exactly with the model, but it "
+    + "does not know \\(v_\\pi(S_{t+1})\\) and uses \\(V(S_{t+1})\\) in its place. "
+    + "<strong>TD approximates for both reasons at once</strong>: it samples the expectation "
+    + "<em>and</em> it bootstraps on its own estimate. That single sentence sums up the "
+    + "whole chapter.",
+  "t4.b6.ec2":
+    "\\[ \\text{constant-}\\alpha\\text{ MC:}\\qquad V(S_t) \\;\\leftarrow\\; V(S_t) + "
+    + "\\alpha\\big[\\,G_t - V(S_t)\\,\\big] \\tag{6.1} \\]"
+    + "\\[ \\text{TD(0):}\\qquad V(S_t) \\;\\leftarrow\\; V(S_t) + \\alpha\\big[\\,R_{t+1} + "
+    + "\\gamma V(S_{t+1}) - V(S_t)\\,\\big] \\tag{6.2} \\]",
+  "t4.b6.p3":
+    "Underneath both sits the pattern that already showed up in Unit 1 and is not going "
+    + "away: <strong>NewEstimate ← OldEstimate + StepSize · [Target − OldEstimate]</strong>. "
+    + "The only thing that tells one algorithm from another in this entire unit is "
+    + "<strong>where the target comes from</strong>. In MC the target is \\(G_t\\), which "
+    + "requires the episode to end. In TD(0) it is \\(R_{t+1} + \\gamma V(S_{t+1})\\), which "
+    + "is available <strong>one step later</strong>.",
+  "t4.b6.caja":
+    "Tabular TD(0), for estimating v<sub>π</sub>\n\n"
+    + "Input: the policy π to be evaluated\n"
+    + "Algorithm parameter: step size α ∈ (0,1]\n"
+    + "Initialise V(s) for all s ∈ S⁺, arbitrarily except that V(terminal) = 0\n"
+    + "Loop for each episode:\n"
+    + "    Initialise S\n"
+    + "    Loop for each step of the episode:\n"
+    + "        A ← action given by π for S\n"
+    + "        Take A, observe R and S'\n"
+    + "        V(S) ← V(S) + α [ R + γV(S') − V(S) ]\n"
+    + "        S ← S'\n"
+    + "    until S is terminal",
+  "t4.b6.p4":
+    "The bracket has a name of its own, and it will show up in everything left in the "
+    + "course, eligibility traces and policy gradient included:",
+  "t4.b6.p5":
+    "It reads as <strong>the difference between what you expected to get from \\(S_t\\) "
+    + "—that is \\(V(S_t)\\)— and what the experience just observed plus the bootstrap say "
+    + "you should expect</strong>. One detail that gets asked: \\(\\delta_t\\) is the error "
+    + "of \\(V(S_t)\\), but <strong>it is not available until time \\(t+1\\)</strong>, "
+    + "because it depends on \\(R_{t+1}\\) and \\(S_{t+1}\\).",
+  "t4.b6.nota":
+    "Summing the TD errors of an episode recovers the Monte Carlo error exactly: "
+    + "\\(G_t - V(S_t) = \\sum_{k=t}^{T-1}\\gamma^{k-t}\\delta_k\\) (equation 6.6). "
+    + "<strong>The identity is only exact if \\(V\\) does not change during the "
+    + "episode</strong>, and TD(0) does change it; with small \\(\\alpha\\) it holds "
+    + "approximately. It is the hinge with the forward and backward views of the second "
+    + "page.",
+  "t4.b6.notacion":
+    "Note the capital \\(V\\) here, not \\(v\\). It is deliberate: \\(v_\\pi\\) is the "
+    + "<strong>true</strong> value function and \\(V\\) is the array of "
+    + "<strong>estimates</strong>. The course material mixes them; the book does not, and "
+    + "this whole unit is precisely about the difference between the two.",
+
+  /* --- B7 · Monte Carlo frente a TD -------------------------------------- */
+  "t4.b7.h2": "Monte Carlo against TD",
+  "t4.b7.fuente":
+    "Sutton &amp; Barto §6.2, Example 6.1, Figure 6.1, Example 6.2 and §6.3",
+  "t4.b7.p1":
+    "The example the slide uses to set up the contrast is <strong>driving home</strong>. "
+    + "You leave the office on a Friday at six and keep updating your prediction of the "
+    + "total travel time as things happen. The rewards are the minutes of each leg; the "
+    + "value of a state is the <strong>expected</strong> time left; and since this is pure "
+    + "prediction, the numbers are positive and \\(\\gamma = 1\\).",
+  "t4.b7.cab":
+    "<th>State</th><th>Elapsed time (min)</th><th>Predicted time to go</th>"
+    + "<th>Predicted total time</th>",
+  "t4.b7.f1":
+    "<td>leaving office, Friday at 6</td><td>0</td><td>30</td><td>30</td>",
+  "t4.b7.f2": "<td>reach car, raining</td><td>5</td><td>35</td><td>40</td>",
+  "t4.b7.f3": "<td>exiting highway</td><td>20</td><td>15</td><td>35</td>",
+  "t4.b7.f4": "<td>secondary road, behind truck</td><td>30</td><td>10</td><td>40</td>",
+  "t4.b7.f5": "<td>entering home street</td><td>40</td><td>3</td><td>43</td>",
+  "t4.b7.f6": "<td>arrive home</td><td>43</td><td>0</td><td>43</td>",
+  "t4.b7.p2":
+    "With Monte Carlo (and \\(\\alpha=1\\)) <strong>every</strong> correction points to the "
+    + "same place: the final outcome, 43. With TD, each estimate shifts towards <strong>the "
+    + "one immediately after it</strong>: as you reach the car in the rain you already know "
+    + "that 30 minutes was optimistic, and you can correct the initial prediction without "
+    + "waiting to get home. The book’s question says it better than any explanation: "
+    + "<em>“do you have to wait until you get home before increasing your estimate for the "
+    + "initial state?”</em>",
+  "t4.b7.p3":
+    "The summary projected in class, tidied up and with two nuances the slide leaves out:",
+  "t4.b7.cab2": "<th></th><th>Monte Carlo</th><th>TD</th>",
+  "t4.b7.g1":
+    "<td>Target</td><td>\\(G_t\\): the return actually observed</td>"
+    + "<td>\\(R_{t+1}+\\gamma V(S_{t+1})\\): one sample plus the bootstrap</td>",
+  "t4.b7.g2":
+    "<td>When can you update?</td><td>When the episode ends</td><td>One step later</td>",
+  "t4.b7.g3": "<td>Works for continuing tasks?</td><td>No</td><td>Yes</td>",
+  "t4.b7.g4":
+    "<td>Bias</td><td>None with <strong>first-visit</strong>. The <strong>every-visit</strong> "
+    + "estimator —the one module 2 uses— <strong>is</strong> biased in finite samples, "
+    + "though the bias goes to zero as the number of episodes grows</td>"
+    + "<td>Yes: the target uses an estimate</td>",
+  "t4.b7.g5":
+    "<td>Variance</td><td>High: the return depends on the whole trajectory</td>"
+    + "<td>Low: the target depends on a single transition</td>",
+  "t4.b7.g6":
+    "<td>Markov property</td><td>Does not exploit it</td>"
+    + "<td>Exploits it: underneath, it estimates the model of the process</td>",
+  "t4.b7.erratum":
+    "The reference deck writes <strong>“MDP property”</strong> twice where it should say "
+    + "<strong>“Markov property”</strong>; the other collection writes it correctly and, on "
+    + "top of that, gives the reason —the only formulation of the two that does—: TD "
+    + "<em>“is covertly trying to estimate \\(p\\)”</em>.",
+  "t4.b7.p4":
+    "And a warning about the claim “TD converges faster”. The book is explicit: <em>“no one "
+    + "has been able to prove mathematically that one method converges faster than the "
+    + "other. In fact, it is not even clear what is the most appropriate formal way to pose "
+    + "this question”</em> (§6.2, p. 146). What there is, is <strong>empirical "
+    + "evidence</strong>: on stochastic tasks TD usually gets there sooner. That is what you "
+    + "can check in the next module, and it is also all that can be claimed.",
+  "t4.b7.continua": "Continues in module 2 →",
+
+  /* --- MÓDULO 2 (cabecera en HTML) --------------------------------------- */
+  "t4.m2.etiqueta": "MODULE 2",
+  "t4.m2.h2": "Monte Carlo against TD(0) on the random walk",
+  "t4.m2.fuente":
+    "Sutton &amp; Barto §6.2, Example 6.2 (p. 147, the chart sits inside the example box "
+    + "and carries no figure number), §6.3, Figure 6.2 and Example 6.4 (p. 149)",
+
+  /* --- B8 · diagramas de backup y visión unificada ----------------------- */
+  "t4.b8.h2": "The three backup diagrams, and the unified view",
+  "t4.b8.fuente":
+    "Sutton &amp; Barto §5.1 (p. 117), §6.1 (p. 143), §3.5 (p. 81) and §8.11 (the unified "
+    + "view figure)",
+  "t4.b8.p1":
+    "The three methods you already know can be told apart at a glance by drawing "
+    + "<strong>which part of the tree of futures each update uses</strong>.",
+  "t4.b8.cab":
+    "<th>Method</th><th>Rule</th><th>What the diagram covers</th>",
+  "t4.b8.f1":
+    "<td>Monte Carlo</td>"
+    + "<td>\\(V(S_t) \\leftarrow V(S_t) + \\alpha\\,[\\,G_t - V(S_t)\\,]\\)</td>"
+    + "<td><strong>One</strong> branch, from \\(S_t\\) <strong>all the way to the terminal "
+    + "state</strong></td>",
+  "t4.b8.f2":
+    "<td>TD(0)</td>"
+    + "<td>\\(V(S_t) \\leftarrow V(S_t) + \\alpha\\,[\\,R_{t+1}+\\gamma V(S_{t+1}) - "
+    + "V(S_t)\\,]\\)</td>"
+    + "<td><strong>One</strong> branch, <strong>one single step</strong></td>",
+  "t4.b8.f3":
+    "<td>Dynamic programming</td>"
+    + "<td>\\(V(S_t) \\leftarrow \\mathbb{E}_\\pi[\\,R_{t+1}+\\gamma V(S_{t+1})\\,]\\)</td>"
+    + "<td><strong>All</strong> branches, <strong>one single level</strong></td>",
+  "t4.b8.p2":
+    "The next slide projects the “unified view”: a square with two axes and four corners. "
+    + "<strong>Neither collection explains the axes</strong>, and they are exactly what you "
+    + "should take away:",
+  "t4.b8.li1":
+    "The horizontal axis, <strong>width of the update</strong>, measures how many of the "
+    + "possible successors enter the target. On the left, one sampled successor "
+    + "(<strong>sample</strong> update); on the right, all of them weighted by \\(p\\) "
+    + "(<strong>expected</strong> update). It is the <strong>model</strong> axis.",
+  "t4.b8.li2":
+    "The vertical axis, <strong>depth of the update</strong>, measures how many steps you "
+    + "look ahead before cutting off with an estimate. At the top, one (pure "
+    + "bootstrapping); at the bottom, all the way to the end of the episode (no "
+    + "bootstrapping). It is the <strong>return</strong> axis.",
+  "t4.b8.p3":
+    "The four corners are then: <strong>TD</strong> (one branch, one step), <strong>dynamic "
+    + "programming</strong> (all branches, one step), <strong>Monte Carlo</strong> (one "
+    + "branch, to the end) and <strong>exhaustive search</strong> (all branches, to the "
+    + "end). And the inside of the square is not empty: the vertical axis is travelled by "
+    + "the \\(n\\)-step methods and by TD(λ), which are the second page of this unit.",
+
+  /* --- B9 · control sin modelo: GPI sobre Q ------------------------------ */
+  "t4.b9.h2": "Model-free control: GPI, but on \\(Q\\)",
+  "t4.b9.fuente": "Sutton &amp; Barto §5.3, equation (5.1)",
+  "t4.b9.p1":
+    "The control scheme does not change with respect to Unit 3: <strong>generalised policy "
+    + "iteration</strong>. Evaluation and improvement alternate, and you converge when "
+    + "neither moves anything any more. The only thing that changes —and it is everything "
+    + "that changes— is that evaluation no longer solves a system of equations but "
+    + "<strong>averages returns</strong>, and that what gets evaluated is \\(Q\\), not "
+    + "\\(V\\).",
+  "t4.b9.p2":
+    "Improvement is equation (5.1), \\(\\pi(s) \\doteq \\arg\\max_a q(s,a)\\), and it rests "
+    + "on the <strong>very same policy improvement theorem of Unit 3</strong>, with no "
+    + "variation: \\(q_{\\pi_k}(s,\\pi_{k+1}(s)) = \\max_a q_{\\pi_k}(s,a) \\ge "
+    + "q_{\\pi_k}(s,\\pi_k(s)) \\ge v_{\\pi_k}(s)\\). There is no new theory; there is a new "
+    + "object.",
+  "t4.b9.p3":
+    "With Monte Carlo the natural thing is to improve <strong>after a single "
+    + "episode</strong>, without waiting for evaluation to converge. It is not compulsory, "
+    + "but it is what is done, and it is exactly the same idea of truncating evaluation that "
+    + "in Unit 3 led from policy iteration to value iteration.",
+  "t4.b9.p4":
+    "For this scheme to come with guarantees, <strong>two unrealistic assumptions</strong> "
+    + "are needed: <strong>(1)</strong> that episodes have exploring starts and "
+    + "<strong>(2)</strong> that evaluation is done with infinitely many episodes. The "
+    + "second one is removed just as in dynamic programming: by not completing evaluation "
+    + "before improving. The first is the one that forces the choice between ε-soft policies "
+    + "(block B5) and off-policy methods (block B10).",
+
+  /* --- B10 · dentro y fuera de política · muestreo de importancia --------- */
+  "t4.b10.h2": "On-policy and off-policy, and importance sampling",
+  "t4.b10.fuente":
+    "Sutton &amp; Barto §5.5, equations (5.3), (5.5) and (5.6), and §5.6",
+  "t4.b10.p1":
+    "There are two ways of resolving the tension between “I want to learn about the optimal "
+    + "policy” and “I need to explore”. <strong>On-policy</strong> means learning about the "
+    + "same policy that generates the experience, accepting that this policy has to stay "
+    + "slightly exploratory forever. <strong>Off-policy</strong> means using two: the "
+    + "<strong>target policy</strong> \\(\\pi\\), the one you want to learn, and the "
+    + "<strong>behaviour policy</strong> \\(b\\), the one that is run and that explores.",
+  "t4.b10.notacion":
+    "Here the two collections use <strong>different symbols</strong> for the same thing. In "
+    + "class the behaviour policy is written <strong>μ</strong>; in the other collection, "
+    + "<strong>b</strong>. This page uses <strong>\\(b\\)</strong>, which is the one in "
+    + "Sutton &amp; Barto, 2nd edition, the reference textbook of the course. If you see μ "
+    + "on a slide, it is the same thing.",
+  "t4.b10.p2":
+    "Off-policy methods are <strong>more general</strong> —on-policy ones are the special "
+    + "case \\(\\pi = b\\)— and also <strong>noisier</strong>: greater variance and slower "
+    + "convergence. In exchange, they let you learn from someone else’s experience: from a "
+    + "historical log, from another agent, or from an old policy. It is the door through "
+    + "which experience replay will enter in Unit 5.",
+  "t4.b10.p3":
+    "For this to work one condition is needed, and it is the only one: "
+    + "<strong>coverage</strong>. Every action \\(\\pi\\) may take must also be possible "
+    + "under \\(b\\): \\(\\pi(a\\mid s) > 0 \\Rightarrow b(a\\mid s) > 0\\). It follows that "
+    + "\\(b\\) has to be <strong>stochastic</strong> in the states where it differs from "
+    + "\\(\\pi\\). The lecture slide asks “what must \\(\\pi\\) and \\(b\\) be like?” and "
+    + "never answers: <strong>that is exactly the answer</strong>, no more and no less. In "
+    + "particular \\(\\pi\\) may well be deterministic, and usually is (the greedy policy "
+    + "with respect to \\(Q\\)).",
+  "t4.b10.p4":
+    "The technical problem is that the observed returns come from \\(b\\) while what is "
+    + "needed are expectations under \\(\\pi\\). This is corrected by weighting each return "
+    + "by the <strong>importance-sampling ratio</strong>: the probability of the trajectory "
+    + "under \\(\\pi\\) divided by its probability under \\(b\\).",
+  "t4.b10.p5":
+    "Look at what just happened: the transition probabilities \\(p\\) appear "
+    + "<strong>identically in the numerator and in the denominator and cancel</strong>. The "
+    + "importance-sampling ratio depends only on the <strong>two policies</strong> and on "
+    + "the observed action sequence, not on the MDP. That is why the method is model-free, "
+    + "and it is the reason the slide can say that importance sampling <em>“allows moving "
+    + "from one policy to another without depending on the dynamics model”</em>.",
+  "t4.b10.p6":
+    "Once the returns are weighted there are two ways of averaging them, and their "
+    + "properties are opposite:",
+  "t4.b10.ec2":
+    "\\[ \\text{ordinary:}\\quad V(s) \\doteq \\frac{\\sum_{t\\in\\mathcal{T}(s)} "
+    + "\\rho_{t:T(t)-1}\\,G_t}{|\\mathcal{T}(s)|} \\tag{5.5} \\] "
+    + "\\[ \\text{weighted:}\\quad V(s) \\doteq \\frac{\\sum_{t\\in\\mathcal{T}(s)} "
+    + "\\rho_{t:T(t)-1}\\,G_t}{\\sum_{t\\in\\mathcal{T}(s)} \\rho_{t:T(t)-1}} \\tag{5.6} \\]",
+  "t4.b10.p7":
+    "The <strong>ordinary one is unbiased</strong> and the <strong>weighted one is "
+    + "biased</strong> (though the bias goes to zero). But the variance of the ordinary "
+    + "estimator is <strong>unbounded</strong>, because the ratios are unbounded too, "
+    + "whereas in the weighted one the largest weight any single return can carry is 1. In "
+    + "practice <strong>the weighted one is preferred</strong>, by a wide margin. Mind the "
+    + "order of that sentence: the usual confusion has it backwards, believing that the "
+    + "weighted one wins for being unbiased, when it wins <strong>despite</strong> being "
+    + "biased. And a fine point: the weighted estimator is <strong>zero when the denominator "
+    + "is zero</strong>.",
+  "t4.b10.p8":
+    "In the off-policy MC control pseudocode there is a line \\(W \\leftarrow W \\cdot "
+    + "\\tfrac{1}{b(A_t\\mid S_t)}\\), and next to it, with an arrow and a question mark, "
+    + "the general form \\(W \\leftarrow W \\cdot \\tfrac{\\pi(A_t\\mid S_t)}{b(A_t\\mid "
+    + "S_t)}\\). <strong>Why does the numerator disappear?</strong> Because in that "
+    + "algorithm the target policy is the <strong>deterministic greedy</strong> one with "
+    + "respect to \\(Q\\), and the line immediately above says <em>“if \\(A_t \\neq "
+    + "\\pi(S_t)\\), exit the inner loop”</em>. That is: by the time you reach that line, "
+    + "the action taken <strong>is</strong> the one \\(\\pi\\) would have taken, so "
+    + "\\(\\pi(A_t\\mid S_t)=1\\) and the numerator drops out on its own. It is not a "
+    + "simplification: it is a consequence.",
+  "t4.b10.p9":
+    "The symbol \\(C(s,a)\\) that appears in the same box is the <strong>cumulative sum of "
+    + "the weights</strong>, and it is what makes the weighted average incremental: without "
+    + "it you would have to store every return and every ratio.",
+
+  /* --- B11 · SARSA -------------------------------------------------------- */
+  "t4.b11.h2": "SARSA: TD(0) on the quintuple",
+  "t4.b11.fuente":
+    "Sutton &amp; Barto §6.4, equation (6.7), Example 6.5",
+  "t4.b11.p1":
+    "Going from prediction to control is literally replacing \\(V(s)\\) with \\(Q(s,a)\\). "
+    + "The book says it without ceremony: formally the two cases are identical —both are "
+    + "Markov chains with a reward process— and the convergence theorems for TD(0) on state "
+    + "values carry over unchanged to action values. Same rule, different object:",
+  "t4.b11.p2":
+    "The update uses <strong>all five elements</strong> of the transition from one "
+    + "state-action pair to the next: \\((S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1})\\). That "
+    + "quintuple is where the name comes from. And there is a detail that gets forgotten at "
+    + "implementation time: <strong>if \\(S_{t+1}\\) is terminal, then "
+    + "\\(Q(S_{t+1},A_{t+1})\\) is zero by definition</strong>.",
+  "t4.b11.caja":
+    "SARSA (on-policy TD control), for estimating Q ≈ q<sub>*</sub>\n\n"
+    + "Algorithm parameters: step size α ∈ (0,1], small ε &gt; 0\n"
+    + "Initialise Q(s,a) for all s ∈ S⁺, a ∈ A(s), arbitrarily except "
+    + "Q(terminal,·) = 0\n"
+    + "Loop for each episode:\n"
+    + "    Initialise S\n"
+    + "    Choose A from S using a policy derived from Q (for example, ε-greedy)\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Take action A, observe R and S'\n"
+    + "        Choose A' from S' using a policy derived from Q (for example, ε-greedy)\n"
+    + "        Q(S,A) ← Q(S,A) + α [ R + γQ(S',A') − Q(S,A) ]\n"
+    + "        S ← S';  A ← A'\n"
+    + "    until S is terminal",
+  "t4.b11.p3":
+    "SARSA converges with probability 1 to an optimal policy and to \\(q_*\\) provided three "
+    + "things hold: the usual conditions on \\(\\alpha\\), that <strong>all</strong> "
+    + "state-action pairs are visited infinitely often, and that the policy converges in the "
+    + "limit to the greedy one —which is achieved, for instance, with \\(\\varepsilon = "
+    + "1/t\\)—. All three, not two.",
+  "t4.b11.p4":
+    "The example used to project SARSA’s performance is the <strong>windy "
+    + "gridworld</strong>: a 7-row by 10-column grid with an upward crosswind that pushes "
+    + "the agent \\(0,0,0,1,1,1,2,2,1,0\\) cells upwards depending on the column it is in, "
+    + "<strong>on top of</strong> the effect of its own action. Four actions, \\(r=-1\\) per "
+    + "step, undiscounted.",
+  "t4.b11.hiper":
+    "The chart that gets projected —episodes completed against time steps— <strong>carries "
+    + "not a single hyperparameter</strong>: no \\(\\alpha\\), no \\(\\varepsilon\\), no "
+    + "\\(\\gamma\\), no per-step reward, no number of runs averaged. The book’s are: "
+    + "\\(\\varepsilon = 0.1\\), \\(\\alpha = 0.5\\), initial \\(Q\\) zero, \\(r=-1\\) per "
+    + "step, <strong>8,000 time steps</strong> and <strong>a single run</strong>. The "
+    + "outcome: towards the end the greedy policy had been optimal for a while, but ε-greedy "
+    + "exploration kept the average episode length at about <strong>17 steps</strong>, two "
+    + "above the minimum of <strong>15</strong>.",
+  "t4.b11.p5":
+    "The minimum of 15 steps is not a figure to take on trust: it is checked. With this "
+    + "geometry and these winds, a breadth-first search from \\(S\\) to \\(G\\) returns "
+    + "exactly <strong>15</strong>, which is what the book states. That is how you confirm "
+    + "that the row of winds has been read off the figure correctly.",
+  "t4.b11.p6":
+    "Two things worth saying about that curve that are not written on any slide of the "
+    + "reference collection. First: the <strong>slope</strong> is the rate at which episodes "
+    + "get solved, so what you should look at is not the height but when it takes off. "
+    + "Second, and more important: <strong>you cannot know a priori whether you have reached "
+    + "the optimum</strong>, not even once training is over. In practice one does not look "
+    + "for the global optimum; one looks for an agent that works well and is robust.",
+  "t4.b11.p7":
+    "And a remark that justifies the whole of chapter 6: <strong>Monte Carlo cannot "
+    + "comfortably be used in this environment</strong>, because termination is not "
+    + "guaranteed for every policy. If at some point you land on a policy that leaves the "
+    + "agent stuck, the episode never ends and MC has nothing to average. SARSA does not "
+    + "have that problem because it learns <strong>during</strong> the episode and abandons "
+    + "such policies right away.",
+
+  /* --- B12 · Q-learning --------------------------------------------------- */
+  "t4.b12.h2":
+    "Q-learning: learning \\(q_*\\) while behaving in some other way",
+  "t4.b12.fuente": "Sutton &amp; Barto §6.5, equation (6.8)",
+  "t4.b12.p1":
+    "The lecture slide does something no other slide in either collection does: it "
+    + "<strong>derives the target step by step</strong>. It starts from the SARSA rule, asks "
+    + "what happens if the next action is chosen by the <strong>greedy</strong> policy "
+    + "instead of the behaviour policy, and arrives at the \\(\\max\\):",
+  "t4.b12.erratum":
+    "On the slide the last step is written \\(= R_{t+1} + \\max_{a'} \\gamma "
+    + "Q(S_{t+1},a')\\), with \\(\\gamma\\) <strong>inside</strong> the maximum, and two "
+    + "lines below it is written \\(\\gamma \\max_a\\) again, outside. Both are equal because "
+    + "\\(\\gamma \\ge 0\\) and the maximum of a positive scalar times something is that "
+    + "scalar times the maximum; but the standard form —and the one in every textbook— has "
+    + "\\(\\gamma\\) <strong>outside</strong>, and that is the one used here.",
+  "t4.b12.p2":
+    "The behaviour policy is <strong>ε-greedy with respect to \\(Q\\)</strong>; the target "
+    + "policy is the <strong>greedy one with respect to \\(Q\\)</strong>. They are "
+    + "different, and that is why Q-learning is <strong>off-policy</strong>. Mind the "
+    + "reason: it is not off-policy because it uses ε-greedy —SARSA uses it too and is "
+    + "on-policy— but because <strong>its target evaluates the greedy policy</strong> while "
+    + "behaving with a different one.",
+  "t4.b12.p3":
+    "The consequence is strong: \\(Q\\) approximates \\(q_*\\) <strong>regardless of the "
+    + "policy being followed</strong>. The policy only decides which pairs get visited and "
+    + "updated; and all that is needed for convergence is that <strong>all</strong> of them "
+    + "keep being updated (plus the usual conditions on \\(\\alpha\\), which the lecture "
+    + "slide omits for Q-learning even though it writes them two slides earlier for SARSA).",
+  "t4.b12.caja":
+    "Q-learning (off-policy TD control), for estimating π ≈ π<sub>*</sub>\n\n"
+    + "Algorithm parameters: step size α ∈ (0,1], small ε &gt; 0\n"
+    + "Initialise Q(s,a) for all s ∈ S⁺, a ∈ A(s), arbitrarily except "
+    + "Q(terminal,·) = 0\n"
+    + "Loop for each episode:\n"
+    + "    Initialise S\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Choose A from S using a policy derived from Q (for example, ε-greedy)\n"
+    + "        Take action A, observe R and S'\n"
+    + "        Q(S,A) ← Q(S,A) + α [ R + γ max_a Q(S',a) − Q(S,A) ]\n"
+    + "        S ← S'\n"
+    + "    until S is terminal",
+  "t4.b12.p4":
+    "Compare the two boxes. The entire difference is <strong>where the next action is "
+    + "chosen</strong>: in SARSA it is chosen <strong>before</strong> the update and "
+    + "<strong>used</strong> in it; in Q-learning it is chosen <strong>after</strong>, and "
+    + "the update uses \\(\\max_a\\). Everything else is identical. That one line is where "
+    + "the two curves of the next module come from.",
+  "t4.b12.p5":
+    "A reading that helps pin the target down: in SARSA the target is a sample of the "
+    + "<strong>Bellman equation for \\(q_\\pi\\)</strong>; in Q-learning, of the "
+    + "<strong>Bellman optimality equation for \\(q_*\\)</strong>. They are the two objects "
+    + "of Unit 2, now estimated from experience.",
+  "t4.b12.continua": "Continues in module 3 →",
+
+  /* --- MÓDULO 3 (cabecera en HTML) --------------------------------------- */
+  "t4.m3.etiqueta": "MODULE 3",
+  "t4.m3.h2": "SARSA against Q-learning on the edge of the cliff",
+  "t4.m3.fuente":
+    "Sutton &amp; Barto §6.4, §6.5 and Example 6.6 (p. 154, the chart sits inside the "
+    + "example box and carries no figure number)",
+
+  /* --- B13 · Expected SARSA ---------------------------------------------- */
+  "t4.b13.h2": "Expected SARSA",
+  "t4.b13.fuente":
+    "<strong>Only in the second lecture collection</strong>; the reference deck does not "
+    + "cover it · Sutton &amp; Barto §6.6, equation (6.9), Figures 6.3 and 6.4",
+  "t4.b13.p1":
+    "There is room for a third method between SARSA and Q-learning. SARSA uses "
+    + "\\(Q(S_{t+1},A_{t+1})\\), where \\(A_{t+1}\\) is a <strong>sampled</strong> action; "
+    + "Q-learning uses the \\(\\max\\). Expected SARSA uses the "
+    + "<strong>expectation</strong> under the policy:",
+  "t4.b13.p2":
+    "It moves <strong>deterministically</strong> in the same direction that SARSA moves "
+    + "<strong>in expectation</strong>: hence the name. It costs more per step —every action "
+    + "has to be swept— but in exchange it <strong>removes the variance introduced by "
+    + "sampling \\(A_{t+1}\\)</strong>. Given the same amount of experience, it usually does "
+    + "somewhat better than SARSA.",
+  "t4.b13.p3":
+    "And there is a reading that closes the whole chapter: in the cliff-walking example "
+    + "Expected SARSA is used <strong>on-policy</strong>, but in general it may behave with "
+    + "a policy different from the target one, and then it is an <strong>off-policy</strong> "
+    + "method. In particular: <strong>if \\(\\pi\\) is the greedy policy and behaviour is "
+    + "exploratory, Expected SARSA is exactly Q-learning</strong>. Expected SARSA subsumes "
+    + "and generalises Q-learning.",
+  "t4.b13.honestidad":
+    "The lecture slide signs off with <em>“it consistently improves on SARSA”</em> and "
+    + "<strong>shows no figure or experiment to back it up</strong>. The evidence does "
+    + "exist: it is <strong>Figure 6.3</strong> of the book, a sweep of \\(\\alpha\\) from "
+    + "0.1 to 1.0 on the cliff with all three methods. It is not reproduced here, and for an "
+    + "honest reason: that figure averages <strong>50,000 runs</strong> for short-term "
+    + "performance and <strong>100,000 episodes</strong> for the asymptotic one, and a "
+    + "twenty-run version is not that figure and cannot be given its name. What can be given "
+    + "is its conclusion, which is concrete and checkable in module 3 by moving "
+    + "\\(\\alpha\\): on the cliff every transition is deterministic and all the randomness "
+    + "comes from the policy, so <strong>Expected SARSA can set \\(\\alpha = 1\\) without "
+    + "degrading</strong>, whereas <strong>SARSA only does well in the long run with small "
+    + "\\(\\alpha\\)</strong>, and there its short-term performance is poor.",
+
+  /* --- B14 · sesgo de maximización ---------------------------------------- */
+  "t4.b14.h2": "When the \\(\\max\\) misleads",
+  "t4.b14.fuente":
+    "Sutton &amp; Barto §6.7, Example 6.7, equation (6.10) and Figure 6.5",
+  "t4.b14.p1":
+    "Every control algorithm seen so far takes a <strong>maximum over estimated "
+    + "values</strong> to build its target policy. And there is a trap in that which is not "
+    + "obvious: <strong>the maximum of a set of estimates is implicitly used as an estimate "
+    + "of the maximum</strong>, and those two things are not the same.",
+  "t4.b14.p2":
+    "The limiting case makes it clear. Picture a state with many actions whose "
+    + "<strong>true</strong> values are all exactly zero, but whose estimates \\(Q(s,a)\\) "
+    + "are uncertain and spread above and below zero. The maximum of the true values is "
+    + "<strong>0</strong>. The maximum of the estimates is <strong>positive</strong>, almost "
+    + "surely. That is a <strong>positive bias</strong>, and it has a name: "
+    + "<strong>maximisation bias</strong>.",
+  "t4.b14.p3":
+    "The cause is specific and deserves a whole sentence: <strong>the same set of estimates "
+    + "is used for two different things</strong> —to <strong>choose</strong> which action is "
+    + "maximal and to <strong>evaluate</strong> how much it is worth—. The estimation error "
+    + "that makes an action look best is the very same error that is then copied over as its "
+    + "value.",
+  "t4.b14.p4":
+    "The fix is to separate the two roles. Two independent estimates are kept, \\(Q_1\\) and "
+    + "\\(Q_2\\). One decides which is the maximising action, \\(A^* = \\arg\\max_a "
+    + "Q_1(a)\\); the other supplies its value, \\(Q_2(A^*)\\). That estimate "
+    + "<strong>is</strong> unbiased: \\(\\mathbb{E}[Q_2(A^*)] = q(A^*)\\). Both are learned, "
+    + "and at each step <strong>only one</strong> is updated, drawn with probability "
+    + "\\(0.5\\): double learning <strong>doubles the memory but not the computation per "
+    + "step</strong>.",
+  "t4.b14.caja":
+    "Double Q-learning, for estimating Q_1 ≈ Q_2 ≈ q<sub>*</sub>\n\n"
+    + "Algorithm parameters: step size α ∈ (0,1], small ε &gt; 0\n"
+    + "Initialise Q_1(s,a) and Q_2(s,a), for all s ∈ S⁺, a ∈ A(s), with "
+    + "Q(terminal,·) = 0\n"
+    + "Loop for each episode:\n"
+    + "    Initialise S\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Choose A from S using the ε-greedy policy in Q_1 + Q_2\n"
+    + "        Take action A, observe R and S'\n"
+    + "        With probability 0.5:\n"
+    + "            Q_1(S,A) ← Q_1(S,A) + α ( R + γ Q_2(S', argmax_a Q_1(S',a)) − Q_1(S,A) )\n"
+    + "        else:\n"
+    + "            Q_2(S,A) ← Q_2(S,A) + α ( R + γ Q_1(S', argmax_a Q_2(S',a)) − Q_2(S,A) )\n"
+    + "        S ← S'\n"
+    + "    until S is terminal",
+  "t4.b14.p5":
+    "Two things that often get implemented wrong. First: the behaviour policy is ε-greedy "
+    + "on the <strong>sum</strong> (or the mean) of the two tables, not on one of them. "
+    + "Second: the coin decides <strong>which of the two tables gets updated</strong>, not "
+    + "which one is used for the \\(\\arg\\max\\); the one being updated is the one that "
+    + "supplies the \\(\\arg\\max\\), and <strong>the other one</strong> supplies the value. "
+    + "Cross them the wrong way and the algorithm stops correcting the bias, and it does not "
+    + "show up in the curves until it is too late.",
+  "t4.b14.p6":
+    "The lecture slide closes the unit with the figure of the experiment and the caption "
+    + "<em>“double learning works!”</em>. That it works can be seen; <strong>why</strong> it "
+    + "works, and <strong>how much</strong> it depends on the number of actions and on the "
+    + "noise, is what gets manipulated in the next module.",
+  "t4.b14.continua": "Continues in module 4 →",
+
+  /* --- MÓDULO 4 (cabecera en HTML) --------------------------------------- */
+  "t4.m4.etiqueta": "MODULE 4",
+  "t4.m4.h2": "The \\(\\max\\) misleads: maximisation bias and double learning",
+  "t4.m4.fuente":
+    "Sutton &amp; Barto §6.7, Example 6.7, equation (6.10) and Figure 6.5 (p. 157)",
+
+  /* --- B15 · cierre y continuación ---------------------------------------- */
+  "t4.b15.h2": "What is left: between TD(0) and Monte Carlo",
+  "t4.b15.fuente": "Sutton &amp; Barto, chapters 7 and 12",
+  "t4.b15.p1":
+    "One loose end remains, and it is the one that opens the second half of the unit. TD(0) "
+    + "bootstraps <strong>one step</strong> ahead: it brings the whole future in through a "
+    + "single estimate. Monte Carlo does not bootstrap at all: it waits until the end. "
+    + "Between those two extremes lies a whole continuum —look two steps ahead, four, "
+    + "\\(n\\)— and also a way of <strong>averaging them all at once</strong>, which is "
+    + "TD(λ).",
+  "t4.b15.p2":
+    "That continuum, the \\(n\\)-step return, \\(n\\)-step SARSA, the λ-return and "
+    + "eligibility traces are on the second page of this unit.",
+  "t4.b15.enlace":
+    "Continue: Unit 4 (continued) · In-between formulas from Monte Carlo to one-step TD →",
+
+  /* --- A5 · ecuaciones clave ---------------------------------------------- */
+  "t4.ecuaciones.h2": "Key equations of the unit",
+  "t4.ecuaciones.cab":
+    "<th>Equation</th><th>What it says</th><th>Where it is used on this page</th>",
+  "t4.ecuaciones.f1":
+    "<td>\\(\\pi(s) \\doteq \\arg\\max_a q(s,a)\\) — (5.1)</td>"
+    + "<td>With action values, the policy comes out without needing the model</td>"
+    + "<td>B0, B9, <strong>module 1</strong></td>",
+  "t4.ecuaciones.f2":
+    "<td>\\(v_\\pi(s) \\doteq \\mathbb{E}_\\pi[G_t\\mid S_t=s]\\) — (6.3)</td>"
+    + "<td>Value is the expected return: average it</td><td>B3, B6</td>",
+  "t4.ecuaciones.f3":
+    "<td>\\(v_\\pi(s) = \\mathbb{E}_\\pi[R_{t+1}+\\gamma v_\\pi(S_{t+1})\\mid S_t=s]\\) "
+    + "— (6.4)</td>"
+    + "<td>The value of a state is written in terms of the next one: you can bootstrap</td>"
+    + "<td>B6</td>",
+  "t4.ecuaciones.f4":
+    "<td>\\(V(S_t) \\leftarrow V(S_t) + \\alpha[G_t - V(S_t)]\\) — (6.1)</td>"
+    + "<td>Constant-\\(\\alpha\\) Monte Carlo: the target is the observed return</td>"
+    + "<td>B6, <strong>module 2</strong></td>",
+  "t4.ecuaciones.f5":
+    "<td>\\(V(S_t) \\leftarrow V(S_t) + \\alpha[R_{t+1}+\\gamma V(S_{t+1}) - V(S_t)]\\) "
+    + "— (6.2)</td>"
+    + "<td>TD(0): the target is available one step later</td>"
+    + "<td>B6, <strong>module 2</strong></td>",
+  "t4.ecuaciones.f6":
+    "<td>\\(\\delta_t \\doteq R_{t+1} + \\gamma V(S_{t+1}) - V(S_t)\\) — (6.5)</td>"
+    + "<td>The TD error: the signal that drives every update</td>"
+    + "<td>B6, and all of page 2</td>",
+  "t4.ecuaciones.f7":
+    "<td>\\(G_t - V(S_t) = \\sum_{k=t}^{T-1}\\gamma^{k-t}\\delta_k\\) — (6.6)</td>"
+    + "<td>The MC error is the discounted sum of the TD errors, if \\(V\\) does not "
+    + "change</td><td>B6</td>",
+  "t4.ecuaciones.f8":
+    "<td>\\(\\rho_{t:T-1} = \\prod_k \\frac{\\pi(A_k\\mid S_k)}{b(A_k\\mid S_k)}\\) "
+    + "— (5.3)</td>"
+    + "<td>The importance-sampling ratio: the dynamics cancel, only the policies are "
+    + "left</td><td>B10</td>",
+  "t4.ecuaciones.f9":
+    "<td>\\(Q(S_t,A_t) \\leftarrow Q(S_t,A_t) + \\alpha[R_{t+1}+\\gamma Q(S_{t+1},A_{t+1}) "
+    + "- Q(S_t,A_t)]\\) — (6.7)</td>"
+    + "<td>SARSA: it evaluates the action that is really going to be taken</td>"
+    + "<td>B11, <strong>module 3</strong></td>",
+  "t4.ecuaciones.f10":
+    "<td>\\(Q(S_t,A_t) \\leftarrow Q(S_t,A_t) + \\alpha[R_{t+1}+\\gamma \\max_a "
+    + "Q(S_{t+1},a) - Q(S_t,A_t)]\\) — (6.8)</td>"
+    + "<td>Q-learning: it evaluates the greedy policy, whatever the behaviour</td>"
+    + "<td>B12, <strong>module 3</strong></td>",
+  "t4.ecuaciones.f11":
+    "<td>\\(Q(S_t,A_t) \\leftarrow Q(S_t,A_t) + \\alpha[R_{t+1}+\\gamma \\sum_a "
+    + "\\pi(a\\mid S_{t+1})Q(S_{t+1},a) - Q(S_t,A_t)]\\) — (6.9)</td>"
+    + "<td>Expected SARSA: the expectation instead of the sample or the maximum</td>"
+    + "<td>B13</td>",
+  "t4.ecuaciones.f12":
+    "<td>\\(Q_1(S_t,A_t) \\leftarrow Q_1(S_t,A_t) + \\alpha[R_{t+1}+\\gamma "
+    + "Q_2(S_{t+1},\\arg\\max_a Q_1(S_{t+1},a)) - Q_1(S_t,A_t)]\\) — (6.10)</td>"
+    + "<td>Double learning: one table chooses, the other evaluates</td>"
+    + "<td>B14, <strong>module 4</strong></td>",
+
+  /* --- A6 · errores frecuentes -------------------------------------------- */
+  "t4.errores.h2": "Ten confusions that cost marks",
+  "t4.errores.cab":
+    "<th>What tends to be said</th><th>What is correct</th><th>Where it is checked</th>",
+  "t4.err.1":
+    "<td>“Monte Carlo is useful because there is no model”</td>"
+    + "<td>Half true. MC is useful <strong>even with the complete model</strong>, when "
+    + "computing \\(p\\) is painful: the book’s blackjack is the example. The real "
+    + "distinction is <strong>explicit distribution against samples</strong></td>"
+    + "<td>B0</td>",
+  "t4.err.2":
+    "<td>“Without a model you cannot bootstrap”</td>"
+    + "<td>False. TD bootstraps without a model: that is the thesis of chapter 6. Model and "
+    + "bootstrapping are <strong>two independent axes</strong></td><td>B2, B8</td>",
+  "t4.err.3":
+    "<td>“TD converges faster than MC (it has been proved)”</td>"
+    + "<td>False. The book says literally that <em>no one has been able to prove</em> that "
+    + "one converges faster than the other. It is an <strong>empirical</strong> "
+    + "observation</td><td>B7, <strong>module 2</strong></td>",
+  "t4.err.4":
+    "<td>“MC is unbiased and TD is biased, so MC is better”</td>"
+    + "<td>That is not the contrast. TD converges to the <strong>certainty-equivalence"
+    + "</strong> estimate, which is a desirable property, not a defect: it is the exactly "
+    + "correct answer for the maximum-likelihood model of the process</td>"
+    + "<td><strong>module 2</strong></td>",
+  "t4.err.5":
+    "<td>“On-policy MC control with ε-soft converges to the optimal policy”</td>"
+    + "<td>It converges to the <strong>best policy among the ε-soft ones</strong>, not to "
+    + "\\(\\pi_*\\), unless \\(\\varepsilon\\to0\\). The course material says the opposite "
+    + "in one place and the right thing in another</td><td>B5</td>",
+  "t4.err.6":
+    "<td>“Importance sampling corrects the difference in dynamics between the two "
+    + "policies”</td>"
+    + "<td>No: the dynamics <strong>cancel</strong>. \\(\\rho\\) depends only on the two "
+    + "policies and on the action sequence</td><td>B10</td>",
+  "t4.err.7":
+    "<td>“Weighted importance sampling is better because it is unbiased”</td>"
+    + "<td>The other way round: the <strong>ordinary</strong> one is unbiased and the "
+    + "<strong>weighted</strong> one is biased. The weighted one wins <strong>on "
+    + "variance</strong></td><td>B10</td>",
+  "t4.err.8":
+    "<td>“Q-learning is off-policy because it uses ε-greedy”</td>"
+    + "<td>No. It is off-policy because its <strong>target</strong> uses \\(\\max_a Q\\), "
+    + "that is, it evaluates the greedy policy while behaving with another one. SARSA also "
+    + "uses ε-greedy and is on-policy</td><td>B12, <strong>module 3</strong></td>",
+  "t4.err.9":
+    "<td>“Expected SARSA is on-policy”</td>"
+    + "<td>It depends. If the target policy differs from the behaviour policy, it is "
+    + "off-policy; and if the target is the greedy one, <strong>it is exactly "
+    + "Q-learning</strong></td><td>B13</td>",
+  "t4.err.10":
+    "<td>“Monte Carlo with exploring starts converges, it has been proved”</td>"
+    + "<td>False. The book calls it <em>one of the most fundamental open theoretical "
+    + "questions in reinforcement learning</em></td><td>B5</td>",
+
+  /* --- A7 · cierre --------------------------------------------------------- */
+  "t4.cierre.h2": "What to take away",
+  "t4.cierre.li1":
+    "<strong>With no model, a table of state values determines no policy at all.</strong> "
+    + "Module 1 has two environments with \\(v_\\pi\\) <strong>identical in all nine "
+    + "states</strong> and different greedy policies. That is why the whole unit estimates "
+    + "\\(q\\).",
+  "t4.cierre.li2":
+    "<strong>The only thing that tells MC from TD is where the target comes from</strong>, "
+    + "and every other difference follows from it: when you can update, how much bias there "
+    + "is and how much variance.",
+  "t4.cierre.li3":
+    "<strong>TD usually wins, but it has not been proved that it wins.</strong> In module 2 "
+    + "you see it with the book’s \\(\\alpha\\) values: TD brings the error down faster at "
+    + "every value, and with large \\(\\alpha\\) it goes back up afterwards.",
+  "t4.cierre.li4":
+    "<strong>Batch MC minimises the error on the data; batch TD gets the model right.</strong> "
+    + "With the eight episodes of the predictor example, \\(V(A)=0\\) and \\(V(A)=3/4\\) are "
+    + "the two answers, and only one of them believes in the Markov property.",
+  "t4.cierre.li5":
+    "<strong>SARSA learns the path that suits the policy it is following; Q-learning, the "
+    + "one that would suit the greedy policy it is not following.</strong> On the cliff that "
+    + "is 17 steps against 13, and \\(-27\\) against \\(-50\\) of actual performance.",
+  "t4.cierre.li6":
+    "<strong>With \\(\\varepsilon = 0\\) both algorithms give the same thing</strong> "
+    + "(\\(-13\\), a 13-step path): the difference between SARSA and Q-learning "
+    + "<strong>is created by exploration</strong>, not by the algebra.",
+  "t4.cierre.li7":
+    "<strong>The \\(\\max\\) of a set of noisy estimates is biased upwards, always.</strong> "
+    + "With ten actions of true value \\(-0.1\\) and noise of standard deviation 1, the "
+    + "estimated maximum averages \\(+1.44\\). Double learning fixes it by separating who "
+    + "chooses from who evaluates.",
+
+  /* --- A8 · glosario ------------------------------------------------------ */
+  "t4.glosario.h2": "Notation glossary for the unit",
+  "t4.glosario.cab":
+    "<th>Symbol</th><th>Meaning</th><th>Where it appears</th><th>Note</th>",
+  "t4.glosario.f1":
+    "<td>\\(v_\\pi(s)\\), \\(q_\\pi(s,a)\\)</td>"
+    + "<td><strong>true</strong> values under \\(\\pi\\)</td><td>the whole unit</td>"
+    + "<td>—</td>",
+  "t4.glosario.f2":
+    "<td>\\(v_*\\), \\(q_*\\)</td><td>optimal values</td><td>B0, B9</td><td>—</td>",
+  "t4.glosario.f3":
+    "<td>\\(V(s)\\), \\(Q(s,a)\\)</td><td>arrays of <strong>estimates</strong></td>"
+    + "<td>the whole unit</td>"
+    + "<td><strong>Capital = estimate.</strong> The course notation file lists \\(Q(s,a)\\) "
+    + "but not \\(V(s)\\): adding it is proposed</td>",
+  "t4.glosario.f4":
+    "<td>\\(G_t\\)</td><td>return from \\(t\\)</td><td>B3, B4, B6</td><td>—</td>",
+  "t4.glosario.f5":
+    "<td>\\(\\gamma\\)</td><td>discount</td><td>the whole unit</td>"
+    + "<td>On this page \\(\\gamma = 1\\) in all four modules</td>",
+  "t4.glosario.f6":
+    "<td>\\(\\alpha\\)</td><td>step size</td><td>B6, modules 2 and 3</td><td>—</td>",
+  "t4.glosario.f7":
+    "<td>\\(\\varepsilon\\)</td><td>exploration rate</td><td>B5, modules 3 and 4</td>"
+    + "<td>—</td>",
+  "t4.glosario.f8":
+    "<td>\\(\\delta_t\\)</td>"
+    + "<td>TD error, \\(R_{t+1}+\\gamma V(S_{t+1})-V(S_t)\\)</td><td>B6</td>"
+    + "<td>The course notation file writes it with lowercase \\(v\\); <strong>here and in "
+    + "the book it goes with capital \\(V\\)</strong>, because it is an estimate</td>",
+  "t4.glosario.f9":
+    "<td>\\(\\pi\\)</td><td><strong>target</strong> policy</td><td>B10, B12</td><td>—</td>",
+  "t4.glosario.f10":
+    "<td>\\(b(a\\mid s)\\)</td><td><strong>behaviour</strong> policy</td><td>B10</td>"
+    + "<td><strong>The lecture slide writes μ</strong>. This page uses \\(b\\), the book’s "
+    + "symbol</td>",
+  "t4.glosario.f11":
+    "<td>\\(\\rho_{t:T-1}\\)</td><td>importance-sampling ratio</td><td>B10</td>"
+    + "<td><strong>It is not written on any slide of either collection</strong></td>",
+  "t4.glosario.f12":
+    "<td>\\(C(s,a)\\)</td>"
+    + "<td>cumulative sum of weights (weighted off-policy MC)</td><td>B10</td>"
+    + "<td>It appears in the lecture pseudocode with no explanation</td>",
+  "t4.glosario.f13":
+    "<td>\\(Q_1\\), \\(Q_2\\)</td><td>the two tables of double learning</td>"
+    + "<td>B14, module 4</td><td>—</td>",
+  "t4.glosario.f14":
+    "<td>\\(\\mathcal{S}\\), \\(\\mathcal{S}^+\\)</td>"
+    + "<td>nonterminal states / including the terminal one</td><td>pseudocode boxes</td>"
+    + "<td>Missing from the course notation file</td>",
+  "t4.glosario.f15":
+    "<td>\\(T\\)</td><td><strong>final time step</strong> of the episode</td>"
+    + "<td>pseudocode boxes</td>"
+    + "<td>The course notation file says “terminal state”; <strong>in this unit \\(T\\) is a "
+    + "time index</strong>. The terminal state is written <code>terminal</code>, and "
+    + "<code>T</code> is only used as a cell label in the 3×3 grid</td>",
+  "t4.glosario.f16":
+    "<td>\\(A^*\\)</td><td>maximising action</td><td>B5, B14</td><td>—</td>",
+  "t4.glosario.f17":
+    "<td>\\(|A(s)|\\)</td><td>number of actions available in \\(s\\)</td><td>B5</td>"
+    + "<td>—</td>",
+
+  /* --- pie ---------------------------------------------------------------- */
+  "t4.pie.anterior": "← Unit 3 · Dynamic programming",
+  "t4.pie.siguiente": "Unit 4 (continued) · In-between formulas →",
+  "t4.pie.1":
+    "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
+    + "Mathematical Engineering and Artificial Intelligence · Universidad Pontificia "
+    + "Comillas · ICAI. Based on Sutton &amp; Barto, <em>Reinforcement Learning: An "
+    + "Introduction</em>, 2nd ed., chapters 5 and 6.",
+  "t4.pie.2":
+    "Every simulation is reproducible: the same seed always yields the same result.",
+
+  /* --- MÓDULO 1 · de v a q (assets/tema4.js) ------------------------------ */
+  "t4.m1.sinDatos": "The Bellman system could not be solved for this policy.",
+  "t4.m1.explicacion":
+    "You have the 3×3 gridworld of the unit and the equiprobable policy. The numbers are "
+    + "exact, not estimated. There is a single question: <strong>with what you hold in your "
+    + "hand, can you say which action is best in the chosen state?</strong> Change the table, "
+    + "take the model away, and watch what happens to the expression on the right.",
+  "t4.m1.tablaLabel": "Which table you hold",
+  "t4.m1.tablaV": "v<sub>π</sub>(s)",
+  "t4.m1.tablaQ": "q<sub>π</sub>(s,a)",
+  "t4.m1.modeloLabel": "Do you know \\(p(s',r\\mid s,a)\\)?",
+  "t4.m1.modeloSi": "Yes",
+  "t4.m1.modeloNo": "No",
+  "t4.m1.estadoLabel": "State",
+  "t4.m1.oPulsa": "— or click a cell",
+  "t4.m1.reiniciar": "Reset",
+  "t4.m1.gamma": "\\(\\gamma = 1\\) (fixed: it is part of the gridworld statement).",
+  "t4.m1.viz1v": "State values \\(v_\\pi(s)\\)",
+  "t4.m1.viz1q": "Action values \\(q_\\pi(s,a)\\)",
+  "t4.m1.celdaT": "Terminal state (T)",
+  "t4.m1.celdaN": "State {e}",
+  "t4.m1.rebote": "(bounces: s′ = s)",
+  "t4.m1.thAccion": "Action",
+  "t4.m1.thExpr": "Expression",
+  "t4.m1.thRes": "Result",
+  "t4.m1.derivTitulo": "What would have to be computed in state {s}",
+  "t4.m1.verQ":
+    "\\(\\pi({s}) = \\arg\\max_a q_\\pi({s},a) = \\) <strong>{acciones}</strong>. An "
+    + "\\(\\arg\\max\\) over four numbers and nothing else. <strong>It makes no difference "
+    + "whether you know \\(p\\)</strong>: flip the switch and note that nothing changes. "
+    + "This is equation (5.1), and it is the reason the whole unit estimates \\(q\\).",
+  "t4.m1.verVconP":
+    "With the model it can be done: \\(\\pi({s}) = \\arg\\max_a \\sum_{s',r} p(s',r\\mid "
+    + "s,a)[r+\\gamma v_\\pi(s')] = \\) <strong>{acciones}</strong>. This is exactly what "
+    + "policy improvement did in Unit 3, and it is why \\(v\\) was enough there.",
+  "t4.m1.verVsinP":
+    "<strong>It cannot be done.</strong> Going from \\(v_\\pi\\) to a policy requires "
+    + "knowing where each action leads, and that is precisely \\(p(s',r\\mid s,a)\\). "
+    + "Without that factor, all four expressions stay at “?”. Scroll down to the "
+    + "counterexample: there are <strong>two different environments</strong> with these very "
+    + "same nine numbers and different answers.",
+  "t4.m1.verEmpate":
+    "Here <strong>{n} actions are tied</strong> at the maximum. The \\(\\arg\\max\\) returns "
+    + "a set, not an action: any of them will do, and the book’s pseudocode says “ties broken "
+    + "arbitrarily”.",
+  "t4.m1.ceTitulo": "Two environments with the same \\(v_\\pi\\)",
+  "t4.m1.ceTexto":
+    "Environment <strong>B</strong> is identical to <strong>A</strong> except in state "
+    + "<strong>3</strong>, where the actions <em>down</em> and <em>left</em> are swapped: in "
+    + "A, <em>down</em> goes to 6 and <em>left</em> to 2; in B, the other way round. Since "
+    + "the policy is <strong>equiprobable</strong>, permuting the action labels of a state "
+    + "<strong>does not change the next-state distribution</strong>, and therefore "
+    + "<strong>does not change \\(v_\\pi\\) in any state</strong>. Check it: the two tables "
+    + "of nine numbers are identical. And yet the greedy action in state 3 is "
+    + "<strong>down</strong> in A and <strong>left</strong> in B.",
+  "t4.m1.cePanelA": "Environment A",
+  "t4.m1.cePanelB": "Environment B",
+  "t4.m1.ceGreedy": "Greedy action in state 3: {a}",
+  "t4.m1.ceDiferencia":
+    "Largest difference between the two \\(v_\\pi\\) tables: <strong>{d}</strong>",
+  "t4.m1.ceCierre":
+    "That is the proof. A table of state values does not determine a policy: you need action "
+    + "values, or the model. The slide states it in one line; this is why.",
+
+  /* --- MÓDULO 2 · MC frente a TD(0) (assets/tema4.js) --------------------- */
+  "t4.m2.explicacion":
+    "Five states in a row, you always start in the middle one and at every step you move "
+    + "left or right with equal probability. You win <strong>1</strong> if you exit on the "
+    + "right and <strong>0</strong> if you exit on the left. Since there is no discounting, "
+    + "<strong>the true value of a state is the probability of terminating on the right from "
+    + "there</strong>: \\(1/6, 2/6, 3/6, 4/6, 5/6\\). Both methods see <strong>exactly the "
+    + "same episodes</strong>, generated from the same seed: the only thing that changes is "
+    + "the update rule.",
+  "t4.m2.entorno": "The five-state random walk (Example 6.2)",
+  "t4.m2.alphaLabel": "Step size (\\(\\alpha\\))",
+  "t4.m2.episodiosLabel": "Episodes",
+  "t4.m2.marcas": "(fixed snapshots: 0, 1, 10 and 100)",
+  "t4.m2.modoLabel": "Update",
+  "t4.m2.modoLinea": "online",
+  "t4.m2.modoLote": "batch",
+  "t4.m2.reiniciar": "Reset",
+  "t4.m2.notaVisitas":
+    "Monte Carlo runs in <em>every-visit</em> mode: on this walk, states recur constantly "
+    + "within an episode. The book does not state which one it uses in this experiment.",
+  "t4.m2.notaAlphaLote":
+    "The book does not publish the \\(\\alpha\\) of batch training; it only says "
+    + "“sufficiently small”. Here \\(\\alpha = 0.002\\) is used, and not \\(0.01\\), because "
+    + "the batch sums the increments of every episode seen so far and the iteration is only "
+    + "stable if \\(\\alpha\\) times the number of visits per state is small: after 100 "
+    + "episodes state C has accumulated about 258 visits and \\(\\alpha=0.01\\) diverges. In "
+    + "batch mode the result does not depend on \\(\\alpha\\) as long as it is small, which "
+    + "is exactly what the book claims.",
+  "t4.m2.viz1": "Values estimated with TD(0), a single run",
+  "t4.m2.viz2": "RMS error against \\(v_\\pi\\), averaged over the five states",
+  "t4.m2.mRms0": "Initial error (\\(V \\equiv 0.5\\))",
+  "t4.m2.mRmsMC": "MC error after 100 episodes",
+  "t4.m2.mRmsTD": "TD error after 100 episodes",
+  "t4.m2.inicio": "start",
+  "t4.m2.moneda": "0.5 each way at every step · γ = 1",
+  "t4.m2.viz1vacio": "Move the episode slider to see the estimate.",
+  "t4.m2.calculando": "Computing batch mode…",
+  "t4.m2.viz1sinWorker":
+    "This browser does not support Web Workers: in batch mode only the error curves are "
+    + "drawn.",
+  "t4.m2.serieEp1": "1 episode",
+  "t4.m2.serieEp": "{k} episodes",
+  "t4.m2.serieVerdaderos": "True values",
+  "t4.m2.ejeXestados": "State",
+  "t4.m2.ejeYvalor": "Estimated value",
+  "t4.m2.viz1runs": "1 run · seed {semilla}",
+  "t4.m2.viz1runsLote": "1 run · seed {semilla} · the \\(V\\) converged after each batch",
+  "t4.m2.errorLote": "The batch computation failed: {m}",
+  "t4.m2.viz2runsLote":
+    "{n} independent runs · seeds {a}…{b} · α = {alpha} fixed",
+  "t4.m2.serieMCLote": "Batch Monte Carlo",
+  "t4.m2.serieTDLote": "Batch TD(0)",
+  "t4.m2.ejeX": "Episodes",
+  "t4.m2.ejeY": "RMS error",
+  "t4.m2.viz2vacio": "Computing the 100 runs…",
+  "t4.m2.serieMC": "MC, α = {a}",
+  "t4.m2.serieTD": "TD(0), α = {a}",
+  "t4.m2.viz2runs":
+    "{n} independent runs · seeds {a}…{b} · the thin curves are the book’s other α values",
+  "t4.m2.notaAlpha":
+    "Watch what the blue curve does: it drops fast and <strong>goes back up</strong>. With "
+    + "constant \\(\\alpha\\) the values never settle, they fluctuate in response to the "
+    + "latest episodes. This is Exercise 6.5 of the book, and it is why “larger \\(\\alpha\\) "
+    + "learns faster” is only half true. Here the minimum is at episode {k}, and from there "
+    + "on the error rises.",
+  "t4.m2.fin": "end",
+  "t4.m2.predTitulo": "You are the predictor",
+  "t4.m2.predTexto":
+    "Another Markov process, this time with two states. You have observed <strong>these "
+    + "eight episodes</strong>, and nothing else. Nobody argues about \\(V(B)\\): six of the "
+    + "eight times you were in B the process ended with return 1, and the other two with 0, "
+    + "so \\(V(B) = 3/4\\). <strong>What is \\(V(A)\\)?</strong>",
+  "t4.m2.predModelo": "The maximum-likelihood Markov process",
+  "t4.m2.predRespuesta":
+    "<strong>Both are defensible, and each one belongs to a method.</strong> "
+    + "\\(V(A) = {td}\\) comes from first building the most likely Markov model —from A you "
+    + "go to B 100% of the time with reward 0; from B you terminate with reward 1 75% of the "
+    + "time— and computing the exact value <strong>in that model</strong>. <strong>That is "
+    + "what batch TD(0) gives.</strong> \\(V(A) = {mc}\\) comes from looking at the data: A "
+    + "has been seen <strong>once</strong> and the return that followed was 0. <strong>That "
+    + "is what batch Monte Carlo gives</strong>, and it is also the estimate that "
+    + "<strong>minimises the squared error on the training data</strong>. That is the whole "
+    + "difference: <strong>batch Monte Carlo minimises the error on what was observed; batch "
+    + "TD(0) gets right the Markov model that generated it</strong> —what the book calls the "
+    + "<em>certainty-equivalence estimate</em>—. If you believe the process is Markov, "
+    + "\\(3/4\\) is the better prediction of the future; if you do not, it is not. "
+    + "<strong>This is what “TD is sensitive to the Markov property” means</strong>, and it "
+    + "is what the slides assert without showing. (\\(V(B) = {b}\\) in both methods.)",
+  "t4.m2.predOpc1": "\\(V(A) = 0\\)",
+  "t4.m2.predOpc2": "\\(V(A) = 3/4\\)",
+  "t4.m2.predVer": "Show the answer",
+  "t4.m2.semilla":
+    "Seed {n} · value panel: 1 run · error curves: {e} independent runs.",
+
+
+  /* --- MÓDULO 3 · acantilado (assets/tema4.js) ---------------------------- */
+  "t4.m3.viz1sarsa": "SARSA · greedy policy after 500 episodes",
+  "t4.m3.viz1q": "Q-learning · greedy policy after 500 episodes",
+  "t4.m3.viz1esarsa": "Expected SARSA · greedy policy after 500 episodes",
+  "t4.m3.explicacion":
+    "A 4×12 corridor. You start in the bottom-left corner and have to reach the bottom-right "
+    + "one. Every step costs \\(-1\\); the ten middle cells of the bottom row are the "
+    + "<strong>cliff</strong>: falling costs \\(-100\\) and sends you back to the start "
+    + "<strong>without ending the episode</strong>. The algorithms use the "
+    + "<strong>same</strong> ε-greedy policy, the <strong>same</strong> \\(\\alpha\\) and "
+    + "the <strong>same seed</strong>. The only difference is the line you have already "
+    + "seen: SARSA updates with the action it is about to take, Q-learning with the maximum, "
+    + "and Expected SARSA with the expectation under the policy.",
+  "t4.m3.declaracion":
+    "The book <strong>does not publish</strong> the \\(\\alpha\\) or the number of runs "
+    + "averaged in this figure: it only gives \\(\\varepsilon = 0.1\\) and the geometry. "
+    + "Here \\(\\alpha = 0.5\\) is used —the same one the book uses on the windy gridworld— "
+    + "and <strong>50 runs</strong> are averaged. Both are choices of this page, not of the "
+    + "book, and that is why they can be manipulated. Expected SARSA is added as a third "
+    + "curve: the book compares it with the other two in §6.6.",
+  "t4.m3.epsLabel": "Exploration (\\(\\varepsilon\\))",
+  "t4.m3.decaeLabel": "\\(\\varepsilon\\) over training",
+  "t4.m3.decaeFijo": "fixed",
+  "t4.m3.decaeDecrece": "\\(\\varepsilon_k = \\varepsilon_0/k\\)",
+  "t4.m3.alphaLabel": "Step size (\\(\\alpha\\))",
+  "t4.m3.reiniciar": "Back to the book’s values",
+  "t4.m3.viz2": "Sum of rewards during the episode",
+  "t4.m3.mSarsa": "SARSA · mean over episodes 100-500",
+  "t4.m3.mQ": "Q-learning · mean over episodes 100-500",
+  "t4.m3.mEsarsa": "Expected SARSA · mean over episodes 100-500",
+  "t4.m3.mBrecha": "Gap SARSA − Q-learning",
+  "t4.m3.mOptimas": "13-step greedy policies (out of 50)",
+  "t4.m3.calculando": "Computing…",
+  "t4.m3.celdaCliff": "Cliff: −100 and back to the start",
+  "t4.m3.cliff": "The cliff (−100)",
+  "t4.m3.repartoN": "{n} with {p} steps",
+  "t4.m3.repartoCiclo": "{n} that never arrive",
+  "t4.m3.longitud": "{n}-step path · return {r}",
+  "t4.m3.noLlega":
+    "This greedy policy never reaches the goal: it falls into a cycle. It happens in the "
+    + "states that exploration almost never visits.",
+  "t4.m3.reparto": "across the 50 runs: {lista}",
+  "t4.m3.ref13": "optimal path (13 steps)",
+  "t4.m3.ref15": "intermediate path (15 steps)",
+  "t4.m3.ref17": "safe path (17 steps)",
+  "t4.m3.ejeX": "Episodes",
+  "t4.m3.ejeY": "Sum of rewards",
+  "t4.m3.viz2vacio": "Computing the 50 runs…",
+  "t4.m3.viz2runs":
+    "{n} independent runs, moving average over {v} episodes · seeds {a}…{b}",
+  "t4.m3.recorte":
+    "The first episodes fall below the axis: the chart keeps the book’s range and clips them "
+    + "at \\(-100\\).",
+  "t4.m3.cortado": "Episodes cut off at 2,000 steps: {n}.",
+  "t4.m3.verDecrece":
+    "With decaying \\(\\varepsilon\\) the performance <strong>of both</strong> improves and "
+    + "approaches \\(-13\\): {s} and {q}. But look at SARSA’s greedy policy: in {n} of the 50 "
+    + "runs it is <strong>still not the 13-step path</strong>. The claim on the slide —“if "
+    + "\\(\\varepsilon\\) were gradually reduced, both would end up converging to "
+    + "\\(\\pi_*\\)”— is <strong>asymptotic</strong>, and it requires every state-action pair "
+    + "to keep being visited infinitely often. In 500 episodes with \\(\\varepsilon\\) "
+    + "falling as \\(1/k\\), the pairs next to the cliff stop being visited long before their "
+    + "values get corrected. The claim is right in the limit; in the experiment, it is not "
+    + "observed.",
+  "t4.m3.verCero":
+    "With \\(\\varepsilon = 0\\) the algorithms give <strong>the same thing</strong>: {s}, "
+    + "{q} and {e}, and all three greedy policies are the 13-step path. It makes sense: if "
+    + "the next action is always picked by the maximum, \\(Q(S_{t+1},A_{t+1})\\) "
+    + "<strong>is</strong> \\(\\max_a Q(S_{t+1},a)\\) and the rules coincide. <strong>The "
+    + "difference between SARSA and Q-learning is created by exploration, not by the "
+    + "algebra.</strong> (This is Exercise 6.12 of the book; the nuance is that the two "
+    + "updates coincide only as long as the greedy action does not change between the two "
+    + "moments at which each algorithm picks it.)",
+  "t4.m3.verNormal":
+    "Q-learning learns <strong>the values of the optimal policy</strong> —its greedy policy "
+    + "is the 13-step path, hugging the cliff, in {nq} of the 50 runs— and yet its "
+    + "<strong>actual</strong> performance is worse: {q} against {s}. The reason is that it "
+    + "<strong>behaves</strong> with \\(\\varepsilon={eps}\\), and every exploratory step "
+    + "next to the edge costs \\(-100\\). SARSA does not learn \\(q_*\\): it learns the "
+    + "values of the policy it is really following, exploration included, and that policy "
+    + "<strong>steers away from the edge</strong>.",
+  "t4.m3.verEsarsa":
+    "And the third curve answers a claim the material makes with no evidence at all. The "
+    + "lecture material says that Expected SARSA “consistently improves on SARSA”, and never "
+    + "checks it. Here you can see it: with these parameters it scores {e}, its greedy policy "
+    + "is <strong>the intermediate 15-step path in {n15} of the 50 runs</strong> —neither the "
+    + "cliff edge nor the top row— and, above all, <strong>it holds up with large "
+    + "\\(\\alpha\\)</strong>: at \\(\\alpha = 1.0\\), with the default seed, it stays "
+    + "at \\(-20.4\\) while SARSA "
+    + "sinks to \\(-94.9\\). That last point is what makes the claim strong, and it is on no "
+    + "slide.",
+  "t4.m3.rejillaRun":
+    "Policy of the run with seed {semilla}: a single one, not an average —an average policy "
+    + "is not a policy—.",
+  "t4.m3.semilla":
+    "Seed {n} · 50 independent runs · 500 episodes · γ = 1.",
+  "t4.m3.viz1vacio": "Running 500 episodes…",
+
+  /* --- MÓDULO 4 · sesgo de maximización (assets/tema4.js) ------------------ */
+  "t4.m4.explicacion":
+    "Two states. You always start in \\(A\\), where you have two actions: "
+    + "<strong>right</strong> terminates immediately with reward 0, and <strong>left</strong> "
+    + "takes you to \\(B\\), also with reward 0. In \\(B\\) there are many actions, all of "
+    + "them terminate immediately, and all of them give a random reward with mean "
+    + "\\(-0.1\\). So <strong>going left is always a mistake</strong>: its expected return is "
+    + "\\(-0.1\\) and right’s is 0. The optimum is to take <em>left</em> only when "
+    + "exploration forces it: <strong>5%</strong> of the time, which is \\(\\varepsilon/2\\) "
+    + "with two actions.",
+  "t4.m4.nbLabel": "Actions in state B",
+  "t4.m4.sigmaLabel": "Reward noise (\\(\\sigma\\))",
+  "t4.m4.reiniciar": "Back to the book’s values (10 actions, σ = 1)",
+  "t4.m4.parametrosFijos":
+    "\\(\\varepsilon = 0.1\\) · \\(\\alpha = 0.1\\) · \\(\\gamma = 1\\) · initial \\(Q\\) "
+    + "zero · ties broken at random. These are the ones of Figure 6.5 of the book.",
+  "t4.m4.diagrama": "The two-state MDP of Example 6.7",
+  "t4.m4.viz1": "The maximum of \\(n\\) noisy estimates, against the true maximum",
+  "t4.m4.viz1texto":
+    "The \\(n\\) actions of \\(B\\) are <strong>all worth exactly \\(-0.1\\)</strong>. Their "
+    + "estimates, however, are spread above and below. The maximum of the true values is "
+    + "\\(-0.1\\); <strong>the maximum of the estimates is far higher, and grows with "
+    + "\\(n\\)</strong>. With \\(n=2\\) and \\(\\sigma=1\\) its expected value is "
+    + "\\(-0.1 + \\sigma/\\sqrt{\\pi} \\approx 0.46\\); with \\(n=10\\), \\(\\approx "
+    + "1.44\\). That gap is the <strong>maximisation bias</strong>, and it is what Q-learning "
+    + "copies into \\(Q(A,\\text{left})\\) every time it updates.",
+  "t4.m4.n1":
+    "With a single action there is no bias: the maximum of one sample is unbiased. That is "
+    + "why the curve starts at \\(-0.1\\) and the experiment slider starts at 2.",
+  "t4.m4.viz2": "Percentage of <em>left</em> actions from \\(A\\)",
+  "t4.m4.mSesgo":
+    "Bias \\(\\mathbb{E}[\\max\\hat{Q}] - \\max q\\) with \\(n_B\\) actions",
+  "t4.m4.mPico": "Q-learning peak",
+  "t4.m4.mFinal": "Q-learning at episode 300",
+  "t4.m4.mFinalD": "Double Q-learning at episode 300",
+  "t4.m4.fin": "end",
+  "t4.m4.derecha": "right",
+  "t4.m4.izquierda": "left",
+  "t4.m4.ruido": "{n} actions · r ~ N(−0.1; {s}²)",
+  "t4.m4.calculando": "Computing…",
+  "t4.m4.serieMax": "\\(\\mathbb{E}[\\max_a \\hat{Q}(B,a)]\\)",
+  "t4.m4.serieVerdadero": "\\(\\max_a q(B,a) = -0.1\\)",
+  "t4.m4.ejeXn": "Number of actions in B",
+  "t4.m4.ejeYvalor": "Value",
+  "t4.m4.anotN": "n = {n}: {v}",
+  "t4.m4.viz1vacio": "Computing the expectation of the maximum…",
+  "t4.m4.viz1runs": "{m} samples per point · seed {semilla}",
+  "t4.m4.serieDoble": "Double Q-learning",
+  "t4.m4.ref5": "optimal (\\(\\varepsilon/2\\))",
+  "t4.m4.ejeXep": "Episodes",
+  "t4.m4.ejeYpct": "% of left actions from A",
+  "t4.m4.viz2vacio": "Computing the 2,000 runs…",
+  "t4.m4.viz2runs":
+    "<strong>{n} independent runs</strong> · seeds {a}…{b} · <em>the book averages "
+    + "10,000</em> · logarithmic horizontal axis",
+  "t4.m4.picoEn": "{p}% at episode {e}",
+  "t4.m4.verPocas":
+    "With only {n} actions the effect is barely visible: the estimated maximum is {b} and "
+    + "Q-learning hardly reaches {p}%. <strong>The bias grows with the number of actions "
+    + "being maximised over</strong>, because the more noisy estimates there are, the higher "
+    + "the largest of the errors sits. Push the slider up and watch.",
+  "t4.m4.verNormal":
+    "With {n} actions in \\(B\\), Q-learning ends up taking <em>left</em> <strong>{p}%"
+    + "</strong> of the time —when the optimum is 5%—, and by episode 300 it is still at "
+    + "<strong>{v}%</strong>. Double Q-learning never leaves 5%: <strong>{d}%</strong>. And "
+    + "the reason is in the panel above: the estimated maximum of \\(B\\) is {b} when the "
+    + "true one is \\(-0.1\\), so \\(Q(A,\\text{left})\\) inherits a positive value that does "
+    + "not exist.",
+  "t4.m4.verDoble":
+    "Double Q-learning does not remove the noise: it <strong>separates who chooses from who "
+    + "evaluates</strong>. \\(Q_1\\) says which action is the maximising one and \\(Q_2\\) "
+    + "says how much it is worth; since the errors of the two tables are independent, the "
+    + "error that made that action look best <strong>is not copied</strong> into its value. "
+    + "\\(\\mathbb{E}[Q_2(A^*)] = q(A^*)\\), and that is the whole trick. In this experiment "
+    + "its curve never goes above 53% for any \\(n_B\\), with the default seed.",
+  "t4.m4.semilla":
+    "Seed {n} · 2,000 independent runs in the experiment · 20,000 samples per point in the "
+    + "bias panel.",
+
+  /* --- figuras estáticas de los bloques (assets/tema4.js) ----------------- */
+  "t4.b4.figura":
+    "The episode 1 → 2 → 5 → 6 → T, with the return \\(G_t\\) of every state visited",
+  "t4.b4.celda": "State {e}: \\(G_t = {g}\\)",
+  "t4.b4.pie":
+    "The four states the episode does not visit are left with no estimate: that is the "
+    + "limitation of Monte Carlo in one line.",
+  "t4.b7.panelMC": "Changes recommended by Monte Carlo (\\(\\alpha = 1\\))",
+  "t4.b7.panelTD": "Changes recommended by TD(0) (\\(\\alpha = 1\\))",
+  "t4.b7.ejeX": "Situation (minutes elapsed)",
+  "t4.b7.ejeY": "Predicted total time (min)",
+  "t4.b7.vacio": "Fixed data from the example; nothing is simulated.",
+  "t4.b7.seriePrev": "Predicted total time",
+  "t4.b7.serieMC": "MC target: the actual outcome (43)",
+  "t4.b7.serieTD": "TD(0) target: the next estimate",
+  "t4.b7.pie":
+    "With Monte Carlo every correction points at the same number, 43, and you have to wait "
+    + "until you get home to make them. With TD(0) each estimate moves towards the next one, "
+    + "and it can be corrected one step later.",
+  "t4.b8.backupMC": "Monte Carlo: one branch, to the terminal state",
+  "t4.b8.backupTD": "TD(0): one branch, one single step",
+  "t4.b8.backupDP": "Dynamic programming: all branches, one single level",
+  "t4.b8.pie":
+    "All three start from the same state. What changes is which part of the tree of futures "
+    + "enters the update: the <strong>width</strong> —one sampled branch or all the ones the "
+    + "model knows— and the <strong>depth</strong> —one step or all the way to the terminal "
+    + "state—. The square is the terminal state and the ellipsis is the rest of the episode.",
+  "t4.b8.cuadrado": "The unified view: width and depth of the update",
+  "t4.b8.ejeAncho": "Width of the update",
+  "t4.b8.ejeProfundo": "Depth of the update",
+  "t4.b8.anchoIzq": "one sample",
+  "t4.b8.anchoDch": "all successors",
+  "t4.b8.esqTD": "one branch, one step",
+  "t4.b8.esqDPnombre": "Dynamic programming",
+  "t4.b8.esqDP": "all branches, one step",
+  "t4.b8.esqMC": "one branch, to the end",
+  "t4.b8.esqBusqueda": "Exhaustive search",
+  "t4.b8.esqBus": "all branches, to the end",
+  "t4.b8.interior": "n-step · TD(λ) — the second page of this unit",
+  "t4.b11.figura": "Windy gridworld 7×10, with a shortest path of 15 steps",
+  "t4.b11.celda": "Column {c}, wind {v}",
+  "t4.b11.pie":
+    "The row of numbers under the grid is the wind of each column, in cells upwards. A "
+    + "breadth-first search on this environment gives {n} steps from S to G, which is exactly "
+    + "what the book states: the check that the row of winds has been read correctly.",
+
+  /* --- cuestionario del módulo 1 ----------------------------------------- */
+  "t4.m1.quiz.0.enunciado":
+    "You have \\(v_*(s)\\) for every state of an MDP and no access to "
+    + "\\(p(s',r\\mid s,a)\\). Can you build an optimal policy?",
+  "t4.m1.quiz.0.opciones": [
+    "No: the greedy operator on \\(v\\) needs to know where each action leads, and that is "
+      + "\\(p\\).",
+    "Yes, always: \\(v_*\\) contains all the information of the MDP.",
+    "Yes, if the MDP is deterministic.",
+    "No, unless \\(\\gamma = 1\\).",
+  ],
+  "t4.m1.quiz.0.explicacion":
+    "The greedy operator on state values is \\(\\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)"
+    + "[r+\\gamma v(s')]\\): without \\(p\\) it cannot be evaluated. A deterministic MDP does "
+    + "not help, because what is missing is not the randomness but <strong>the "
+    + "destination</strong> of each action; in the gridworld on this page the transitions are "
+    + "deterministic and there are still two environments with the same \\(v_\\pi\\) and "
+    + "different greedy policies. And \\(\\gamma\\) has nothing to do with it: the problem is "
+    + "the same at any discount.",
+  "t4.m1.quiz.1.enunciado":
+    "In the module, environments A and B have identical \\(v_\\pi\\) in all nine states. Why?",
+  "t4.m1.quiz.1.opciones": [
+    "Because the policy is equiprobable, and permuting the labels of two actions of a state "
+      + "does not change the next-state distribution.",
+    "Because both grids have the same rewards.",
+    "Because \\(\\gamma = 1\\) and the values depend only on the distance to the terminal "
+      + "state.",
+    "It is a numerical coincidence of this particular example.",
+  ],
+  "t4.m1.quiz.1.explicacion":
+    "With \\(\\pi(a\\mid s)=0.25\\), the matrix \\(P_\\pi\\) of a state is the average of the "
+    + "four rows of \\(P\\); swapping two of those rows does not change the average, so "
+    + "\\(P_\\pi\\) is the same and so is the Bellman system. Matching rewards is necessary "
+    + "but not sufficient —any permutation of destinations preserves them and does not always "
+    + "preserve \\(v_\\pi\\); it only does so because the policy is uniform—. And under the "
+    + "equiprobable policy the values are <strong>not</strong> the distance to the terminal "
+    + "state: \\(v_\\pi(1)=-27\\) while the distance is 4.",
+  "t4.m1.quiz.2.enunciado":
+    "In Unit 3, \\(v\\) was enough to improve the policy. What has changed?",
+  "t4.m1.quiz.2.opciones": [
+    "Nothing in the theory: dynamic programming had \\(p\\), and it was \\(p\\) that turned "
+      + "\\(v\\) into a policy.",
+    "That policies are now stochastic.",
+    "That \\(v\\) no longer satisfies the Bellman equation when it is estimated from "
+      + "experience.",
+    "That the state space is larger and \\(v\\) does not fit in memory.",
+  ],
+  "t4.m1.quiz.2.explicacion":
+    "The improvement operator of Unit 3 was written \\(\\arg\\max_a \\sum_{s',r} "
+    + "p(s',r\\mid s,a)[r+\\gamma v(s')]\\), with \\(p\\) inside. What is lost now is exactly "
+    + "that factor. The Bellman equation is still true —it just cannot be evaluated—, "
+    + "stochastic policies already appeared in Unit 2, and the size of the state space is the "
+    + "problem of Unit 5, not of this one: here everything is still tabular.",
+
+  /* --- cuestionario del módulo 2 ----------------------------------------- */
+  "t4.m2.quiz.0.enunciado":
+    "With the eight episodes of “you are the predictor”, why is \\(V(A)=3/4\\) and not 0, if "
+    + "the only return observed after A was 0?",
+  "t4.m2.quiz.0.opciones": [
+    "Because batch TD builds the most likely Markov model and computes the exact value in "
+      + "it: from A you always go to B, and B is worth 3/4.",
+    "Because 3/4 minimises the squared error over the eight episodes.",
+    "Because with a single data point the Monte Carlo estimator is undefined.",
+    "Because \\(\\gamma=1\\) and the return has to be discounted from B.",
+  ],
+  "t4.m2.quiz.0.explicacion":
+    "It is the <em>certainty-equivalence estimate</em>: the process is estimated first —A→B "
+    + "with probability 1 and reward 0; from B you terminate with reward 1 six times out of "
+    + "eight— and then solved exactly in that model. The one that minimises the squared error "
+    + "on the data is <strong>Monte Carlo</strong>, and its answer is 0, not 3/4: that is "
+    + "precisely the difference. With one data point the Monte Carlo estimator is perfectly "
+    + "well defined (it equals the observed return), and discounting plays no part because "
+    + "\\(\\gamma=1\\).",
+  "t4.m2.quiz.1.enunciado":
+    "In the error chart, the TD curve with \\(\\alpha=0.15\\) falls fast and then goes back "
+    + "up. What explains that?",
+  "t4.m2.quiz.1.opciones": [
+    "That with a constant step size the values never settle: they keep responding to the "
+      + "latest episodes indefinitely.",
+    "That TD is biased and the bias grows with the number of episodes.",
+    "That the initialisation \\(V\\equiv0.5\\) is wrong for the outermost states.",
+    "That 100 runs are not enough to average out the noise.",
+  ],
+  "t4.m2.quiz.1.explicacion":
+    "With constant \\(\\alpha\\) the update never stops chasing the latest sample, so the "
+    + "estimate fluctuates around the true value with an amplitude that grows with "
+    + "\\(\\alpha\\); the mean error settles on a positive floor and can be worse than the "
+    + "transient minimum. The bias of TD goes to zero with experience, it does not grow. The "
+    + "initialisation at 0.5 is the book’s and it is a good one —it is the exact value of the "
+    + "central state— and averaging over 100 runs is what makes the effect visible, not what "
+    + "causes it.",
+  "t4.m2.quiz.2.enunciado":
+    "On this random walk TD gets there before MC at every \\(\\alpha\\) tried. What can be "
+    + "claimed from that?",
+  "t4.m2.quiz.2.opciones": [
+    "That on this task TD converges faster; there is no theorem guaranteeing that it does so "
+      + "in general.",
+    "That TD converges faster than MC, and it has been proved since 1988.",
+    "That MC does not converge on stochastic tasks.",
+    "That TD is unbiased and MC is not.",
+  ],
+  "t4.m2.quiz.2.explicacion":
+    "The book is explicit: <em>no one has been able to prove mathematically that one method "
+    + "converges faster than the other</em>, and it is not even clear how to pose the "
+    + "question formally. What there is, is empirical evidence on stochastic tasks, and this "
+    + "chart is one instance of it. Monte Carlo converges perfectly well here —just more "
+    + "slowly— and the bias is the other way round: the unbiased one is Monte Carlo.",
+
+  /* --- cuestionario del módulo 3 ----------------------------------------- */
+  "t4.m3.quiz.0.enunciado":
+    "Q-learning learns exactly the values of the optimal policy and still gets a worse sum of "
+    + "rewards than SARSA. How is that explained?",
+  "t4.m3.quiz.0.opciones": [
+    "Because it learns \\(q_*\\) but behaves with ε-greedy, and exploring next to the cliff "
+      + "costs \\(-100\\).",
+    "Because Q-learning does not converge in this environment.",
+    "Because SARSA uses a larger effective \\(\\alpha\\).",
+    "Because the sum of rewards measures the learned policy, not the executed one.",
+  ],
+  "t4.m3.quiz.0.explicacion":
+    "The policy Q-learning <strong>learns</strong> is the 13-step one, hugging the edge; the "
+    + "one it <strong>executes</strong> is that same policy with \\(\\varepsilon\\) of noise "
+    + "on top, and every detour next to the cliff costs \\(-100\\). SARSA evaluates the "
+    + "exploratory policy just as it is, so its values next to the edge are dreadful and its "
+    + "policy steers away. Q-learning converges perfectly well here, both use the same "
+    + "\\(\\alpha\\), and the metric of the chart is precisely the <strong>executed</strong> "
+    + "performance, episode by episode: if it measured the learned policy, Q-learning would "
+    + "win.",
+  "t4.m3.quiz.1.enunciado":
+    "You set \\(\\varepsilon = 0\\) and the curves overlap at \\(-13\\). Which conclusion is "
+    + "correct?",
+  "t4.m3.quiz.1.opciones": [
+    "That the difference between the algorithms is produced by exploration: without it, "
+      + "SARSA’s target coincides with the maximum.",
+    "That SARSA is a special case of Q-learning.",
+    "That with \\(\\varepsilon=0\\) nobody explores and so they all fail.",
+    "That \\(\\varepsilon\\) has no influence on the final result of any of them.",
+  ],
+  "t4.m3.quiz.1.explicacion":
+    "If the next action is always picked by maximising, then \\(Q(S_{t+1},A_{t+1})="
+    + "\\max_a Q(S_{t+1},a)\\) and the two rules write the same thing. Neither is a special "
+    + "case of the other in general: they are only so under greedy selection, and even then "
+    + "the moment at which each one picks the action differs, which is what Exercise 6.12 of "
+    + "the book asks about. And with \\(\\varepsilon=0\\) there is still initial exploration, "
+    + "because \\(Q\\) starts at zero and ties are broken at random: that is why they all "
+    + "reach \\(-13\\) instead of failing.",
+  "t4.m3.quiz.2.enunciado":
+    "You switch on \\(\\varepsilon_k = \\varepsilon_0/k\\) and performance improves, but "
+    + "SARSA’s greedy policy is still not the 13-step one in most runs. What is wrong with "
+    + "the claim “if \\(\\varepsilon\\) were gradually reduced, both would converge to "
+    + "\\(\\pi_*\\)”?",
+  "t4.m3.quiz.2.opciones": [
+    "Nothing is wrong: it is an asymptotic claim and it requires visiting every state-action "
+      + "pair infinitely often, which does not happen in 500 episodes with \\(\\varepsilon\\) "
+      + "falling that fast.",
+    "That SARSA never converges to \\(\\pi_*\\), not even in the limit.",
+    "That \\(\\varepsilon_0/k\\) does not meet the stochastic approximation conditions.",
+    "That the claim only holds for Q-learning.",
+  ],
+  "t4.m3.quiz.2.explicacion":
+    "The SARSA convergence theorem asks for three things at once: the conditions on "
+    + "\\(\\alpha\\), that every pair be visited infinitely often and that the policy tend to "
+    + "the greedy one. With \\(\\varepsilon\\) falling as \\(1/k\\) the third one is met "
+    + "quickly, but the second stops holding in practice: the pairs next to the cliff stop "
+    + "being visited before their values get corrected. In the limit SARSA does converge to "
+    + "\\(\\pi_*\\), and the claim holds for both methods; what does not stand up is reading "
+    + "it as a promise over 500 episodes.",
+
+  /* --- cuestionario del módulo 4 ----------------------------------------- */
+  "t4.m4.quiz.0.enunciado":
+    "Every action of state \\(B\\) is worth exactly \\(-0.1\\). Why does "
+    + "\\(\\max_a Q(B,a)\\) come out positive?",
+  "t4.m4.quiz.0.opciones": [
+    "Because the maximum of several noisy estimates of the same value is biased upwards, and "
+      + "the bias grows with the number of actions.",
+    "Because \\(\\alpha = 0.1\\) is too large and the estimates do not converge.",
+    "Because the reward has mean \\(-0.1\\) but its median is positive.",
+    "Because \\(\\gamma=1\\) and the returns accumulate.",
+  ],
+  "t4.m4.quiz.0.explicacion":
+    "Each \\(Q(B,a)\\) is a noisy estimate of \\(-0.1\\); taking the maximum of \\(n\\) of "
+    + "them systematically selects the one that has drifted furthest upwards, and that "
+    + "selection is not compensated by anything. With \\(n=2\\) and noise of standard "
+    + "deviation 1 the expectation of the maximum is \\(-0.1+1/\\sqrt{\\pi}\\approx0.46\\). It "
+    + "is not a problem of \\(\\alpha\\): with a smaller \\(\\alpha\\) the effect takes "
+    + "longer but does not go away. The normal distribution is symmetric, so its median is "
+    + "also \\(-0.1\\). And with \\(\\gamma=1\\) nothing accumulates: the episodes have two "
+    + "transitions.",
+  "t4.m4.quiz.1.enunciado":
+    "What exactly does double learning do to avoid the bias?",
+  "t4.m4.quiz.1.opciones": [
+    "It uses one table to decide which is the maximising action and the other one to evaluate "
+      + "its value, so that the error that picked it is not copied into its value.",
+    "It averages the two tables at every update, and the average halves the variance.",
+    "It updates both tables at every step, which doubles the amount of data.",
+    "It replaces the maximum with the expectation under the policy, like Expected SARSA.",
+  ],
+  "t4.m4.quiz.1.explicacion":
+    "The bias appears because the same set of estimates <strong>chooses</strong> and "
+    + "<strong>evaluates</strong>; with two independent tables, \\(Q_1\\) chooses "
+    + "\\(A^*=\\arg\\max_a Q_1(a)\\) and \\(Q_2\\) supplies \\(Q_2(A^*)\\), whose expectation "
+    + "is \\(q(A^*)\\). The average of the two tables is what is used to <strong>select the "
+    + "behaviour action</strong>, not for the update. At each step <strong>only one</strong> "
+    + "of the two is updated, drawn with probability 0.5: the method doubles the memory, not "
+    + "the computation or the data. And replacing the maximum with the expectation is "
+    + "Expected SARSA, which is a different algorithm and does not solve this problem.",
+  "t4.m4.quiz.2.enunciado":
+    "You lower the number of actions of \\(B\\) from 10 to 2 and the Q-learning curve barely "
+    + "rises. What follows from that?",
+  "t4.m4.quiz.2.opciones": [
+    "That the bias depends on the number of estimates being maximised over: with few actions "
+      + "there is little to overestimate.",
+    "That with two actions there is no maximisation bias at all.",
+    "That the bias depends on \\(\\alpha\\), not on the number of actions.",
+    "That with two actions Q-learning and double Q-learning are the same algorithm.",
+  ],
+  "t4.m4.quiz.2.explicacion":
+    "The more noisy estimates enter the maximum, the higher the largest of their errors sits: "
+    + "that is why the expectation of the maximum grows with \\(n\\). With two actions the "
+    + "bias still exists —it is \\(1/\\sqrt{\\pi}\\approx0.56\\) above the true value— but it "
+    + "is small enough that the curve barely takes off. \\(\\alpha\\) changes the speed, not "
+    + "the existence of the bias. And the two algorithms are still different with two "
+    + "actions: one keeps a single table and the other keeps two, with a crossed update.",
+
+  /* ===================================================================== *
+   * Unit 4 (continued) — In-between formulas
+   * ===================================================================== */
+
+  /* --- portada e índice -------------------------------------------------- */
+  "meta.titulo.tema4b": "Unit 4 (cont.) · In-between formulas — RL IMAT",
+  "t4b.kicker":
+    "Unit 4 (continued) · Sutton &amp; Barto, chapter 7 and §12.1-§12.2",
+  "t4b.h1": "In-between formulas from Monte Carlo to one-step TD",
+  "t4b.entradilla":
+    "The previous page left the two extremes standing: Monte Carlo waits until the end of "
+    + "the episode and uses the actual return; one-step TD updates on the spot and drags the "
+    + "whole future in through a single estimate. Between the two there is no gulf, there is "
+    + "a <strong>continuum</strong>. Here it is travelled end to end: first by choosing a "
+    + "number of steps \\(n\\), then by averaging <strong>all</strong> the \\(n\\) at once "
+    + "with the \\(\\lambda\\)-return, and finally by turning the view around so that this "
+    + "average can be computed online, with one <strong>eligibility trace</strong> per "
+    + "state. Two questions the slides raise and leave hanging get answered: whether there is "
+    + "an optimal \\(n\\) and what happens at the start of an episode when \\(n=10\\); and "
+    + "whether, faced with an electric shock, the blame falls on the bell or on the light.",
+  "t4b.entradilla.vuelta":
+    "This continues <strong><a href=\"tema4.html\">Unit 4 · Model-free reinforcement "
+    + "learning</a></strong>, where Monte Carlo, TD(0), the error \\(\\delta_t\\), SARSA, "
+    + "Q-learning and maximisation bias live. It is assumed read: \\(V(S_t)\\), "
+    + "\\(\\delta_t\\) and the rule “new ← old + \\(\\alpha\\)(target − old)” are used here "
+    + "without being defined again.",
+  "t4b.aviso.unicaFuente":
+    "<strong>A note on sources.</strong> This block is what the syllabus calls "
+    + "<strong>T4.3</strong>, and only <strong>one</strong> lecture deck of it exists: the "
+    + "17 slides of the reference collection. The equivalent presentation in the other "
+    + "collection has not been filled in: its cover page is right, its table of contents is "
+    + "empty and the rest are the slides of Unit 5.2 copied over. That is why this page "
+    + "carries more text than the others and includes the full pseudocode: for this block it "
+    + "<strong>is the only written source</strong> besides those 17 slides.",
+  "t4b.semillaLabel": "Seed",
+  "t4b.semilla": "Seed 2026 · everything random on this page is reproduced from it",
+  "t4b.indice.m1": "The continuum in \\(n\\): is there an optimal \\(n\\)?",
+  "t4b.indice.m2": "Eligibility traces: the bell or the light?",
+
+  /* --- A3 · mapa del bloque ---------------------------------------------- */
+  "t4b.mapa.h2": "Map of the block",
+  "t4b.mapa.cab": "<th>Concept</th><th>Where it comes from</th><th>Where it leads</th>",
+  "t4b.mapa.f1":
+    "<td>The one-step target</td>"
+    + "<td>The TD(0) rule of the previous unit: the future enters through "
+    + "\\(V(S_{t+1})\\)</td>"
+    + "<td>If you can bootstrap at one step, you can bootstrap at \\(n\\) → the "
+    + "\\(n\\)-step return</td>",
+  "t4b.mapa.f2":
+    "<td>\\(n\\)-step return</td>"
+    + "<td>Truncating the actual return at \\(n\\) rewards and closing with "
+    + "\\(V_{t+n-1}(S_{t+n})\\)</td>"
+    + "<td>\\(n\\) becomes a hyperparameter with its bias-variance trade-off → module 1</td>",
+  "t4b.mapa.f3":
+    "<td>\\(n\\)-step TD</td>"
+    + "<td>Putting \\(G_{t:t+n}\\) into the usual update rule</td>"
+    + "<td>A delay of \\(n\\) steps, and \\(n-1\\) updates that happen once it ends</td>",
+  "t4b.mapa.f4":
+    "<td>\\(n\\)-step SARSA</td>"
+    + "<td>Swapping states for state-action pairs</td>"
+    + "<td>A distant reward reinforces the last \\(n\\) actions, not just the last one</td>",
+  "t4b.mapa.f5":
+    "<td>Averaging several \\(n\\)</td>"
+    + "<td>\\(\\tfrac12 G_{t:t+2} + \\tfrac12 G_{t:t+4}\\): any average with weights summing "
+    + "to 1 is valid</td>"
+    + "<td>If every average is valid, why choose? → \\(\\lambda\\)-return</td>",
+  "t4b.mapa.f6":
+    "<td>\\(\\lambda\\)-return</td>"
+    + "<td>Weighting \\(G_{t:t+n}\\) by \\((1-\\lambda)\\lambda^{n-1}\\) and the tail by "
+    + "\\(\\lambda^{T-t-1}\\)</td>"
+    + "<td>\\(\\lambda=0\\) is TD(0) and \\(\\lambda=1\\) is Monte Carlo: a single dial "
+    + "between the two extremes</td>",
+  "t4b.mapa.f7":
+    "<td>Forward view</td>"
+    + "<td>From each state, look ahead and update towards \\(G_t^\\lambda\\)</td>"
+    + "<td>It is the theoretical basis, but it is <strong>offline</strong>: you have to wait "
+    + "for the end</td>",
+  "t4b.mapa.f8":
+    "<td>Backward view and traces</td>"
+    + "<td>Shouting \\(\\delta_t\\) backwards and sharing it out according to "
+    + "\\(z_t(s)\\)</td>"
+    + "<td>Computed online, with \\(O(\\lvert\\mathcal{S}\\rvert)\\) memory → module 2, and "
+    + "from there to \\(w_{t+1}=w_t+\\alpha\\delta_t z_t\\)</td>",
+
+  /* --- B1 · las dos reglas ------------------------------------------------ */
+  "t4b.b1.h2": "The two rules we already know",
+  "t4b.b1.fuente":
+    "Sutton &amp; Barto §5.1 (Monte Carlo) and §6.1, eq. (6.2) (TD(0))",
+  "t4b.b1.p1":
+    "The two rules of the previous unit have exactly the same shape and differ in one single "
+    + "thing: <strong>where the target comes from</strong>.",
+  "t4b.b1.ec":
+    "\\[ V(S_t) \\leftarrow V(S_t) + \\alpha\\big[\\,G_t - V(S_t)\\,\\big] "
+    + "\\qquad\\text{(Monte Carlo)} \\]"
+    + "\\[ V(S_t) \\leftarrow V(S_t) + \\alpha\\big[\\,R_{t+1} + \\gamma V(S_{t+1}) - "
+    + "V(S_t)\\,\\big] \\qquad\\text{(one-step TD)} \\]",
+  "t4b.b1.p2":
+    "The Monte Carlo target is the actual return \\(G_t\\): you have to wait for the episode "
+    + "to end before you know it. The TD target <strong>brings the whole future in at one "
+    + "step</strong>: one real reward, \\(R_{t+1}\\), and one estimate, "
+    + "\\(\\gamma V(S_{t+1})\\), which sums up in one go everything that comes after. That "
+    + "asymmetry —one real reward against <em>everything</em> else estimated— is what this "
+    + "block is going to grade.",
+
+  /* --- B2 · la pregunta bisagra ------------------------------------------- */
+  "t4b.b2.h2": "Could we <em>bootstrap</em> \\(n\\) steps later?",
+  "t4b.b2.fuente": "Sutton &amp; Barto §7.1 and Figure 7.1",
+  "t4b.b2.p1":
+    "Nothing forces you to bootstrap exactly at the next step. You can use <strong>two</strong> "
+    + "real rewards and estimate from the third; or three; or \\(n\\). At one end, \\(n=1\\), "
+    + "sits TD(0); at the other, when \\(n\\) reaches or exceeds the length of the episode, "
+    + "no estimate is left in the target and what remains is Monte Carlo. <strong>Everything "
+    + "in between is a legitimate method</strong>, with a name of its own: \\(n\\)-step "
+    + "methods.",
+  "t4b.b2.p2":
+    "The book is explicit about why they deserve a chapter: <em>“the best methods are often "
+    + "intermediate between the two extremes”</em>. And it gives a second, less quoted "
+    + "reason: \\(n\\)-step methods <strong>free you from the tyranny of the time step</strong>. "
+    + "With one-step TD, the same interval decides two different things —how often you can "
+    + "change action and over how much time you bootstrap— and it is often desirable to act "
+    + "fast and bootstrap slowly.",
+
+  /* --- B3 · el retorno a n pasos ------------------------------------------ */
+  "t4b.b3.h2": "The \\(n\\)-step return",
+  "t4b.b3.fuente":
+    "Sutton &amp; Barto §7.1, equations (7.1) and (7.2), and the <em>n-step TD for "
+    + "estimating V ≈ v<sub>π</sub></em> box",
+  "t4b.b3.p1":
+    "The definition is what you would expect: \\(n\\) real rewards and, in place of the rest "
+    + "of the episode, the estimate you had for the state you land on.",
+  "t4b.b3.ec1":
+    "\\[ G_{t:t+n} \\;\\doteq\\; R_{t+1} + \\gamma R_{t+2} + \\cdots + "
+    + "\\gamma^{n-1}R_{t+n} + \\gamma^{n} V_{t+n-1}(S_{t+n}) \\]",
+  "t4b.b3.ec2":
+    "\\[ V_{t+n}(S_t) \\;\\doteq\\; V_{t+n-1}(S_t) + \\alpha\\big[\\,G_{t:t+n} - "
+    + "V_{t+n-1}(S_t)\\,\\big] \\]",
+  "t4b.b3.p2":
+    "If \\(t+n \\ge T\\), that is, if the \\(n\\)-step window reaches termination or goes "
+    + "past it, <strong>every missing term is taken as zero</strong> and the \\(n\\)-step "
+    + "return is defined to equal the full return: \\(G_{t:t+n} \\doteq G_t\\). That is what "
+    + "makes a very large \\(n\\) exactly Monte Carlo, and not an approximation of it.",
+  "t4b.b3.p3":
+    "And now the question the slide closes with: <em>“suppose we take \\(n=10\\), what "
+    + "happens at the beginning of an episode?”</em>. What happens is that <strong>nothing "
+    + "gets updated</strong>. \\(G_{0:10}\\) needs \\(R_{10}\\) and \\(V_9(S_{10})\\), which "
+    + "do not exist until step 10; in general, there is no update at all during the first "
+    + "\\(n-1\\) steps of each episode. To compensate, once the episode ends \\(n-1\\) "
+    + "<strong>additional</strong> updates are made, with no more experience than what is "
+    + "already in the buffer. The total is still exactly \\(T\\) updates per episode, "
+    + "whatever \\(n\\) is: what changes is <strong>when</strong> they happen and <strong>with "
+    + "which target</strong>.",
+  "t4b.b3.caja":
+    "n-step TD for estimating V ≈ v<sub>π</sub>\n"
+    + "Input: a policy π\n"
+    + "Parameters: step size α ∈ (0,1], positive integer n\n"
+    + "Initialise V(s) arbitrarily, for all s ∈ S⁺, with V(terminal) = 0\n"
+    + "All accesses to S_t and R_t can be indexed mod n+1\n\n"
+    + "Loop for each episode:\n"
+    + "    Initialise and store S_0 ≠ terminal\n"
+    + "    T ← ∞\n"
+    + "    For t = 0, 1, 2, …:\n"
+    + "        If t &lt; T:\n"
+    + "            Take an action according to π(·|S_t)\n"
+    + "            Observe and store R_{t+1} and S_{t+1}\n"
+    + "            If S_{t+1} is terminal: T ← t + 1\n"
+    + "        τ ← t − n + 1        (τ is the time whose value is being updated)\n"
+    + "        If τ ≥ 0:\n"
+    + "            G ← Σ_{i=τ+1}^{min(τ+n, T)} γ^{i−τ−1} R_i\n"
+    + "            If τ + n &lt; T:  G ← G + γ^n V(S_{τ+n})           (this is G_{τ:τ+n})\n"
+    + "            V(S_τ) ← V(S_τ) + α [ G − V(S_τ) ]\n"
+    + "    until τ = T − 1",
+  "t4b.b3.p4":
+    "Two costs worth keeping in mind: the last \\(n\\) states and rewards have to be "
+    + "<strong>stored</strong> —\\(O(n)\\) memory, indexing mod \\(n+1\\)— and there is "
+    + "<strong>more computation per step</strong> than in a one-step method. Chapter 12 fixes "
+    + "both.",
+  "t4b.b3.continua": "Continues in module 1 →",
+
+  /* --- B4 · n como hiperparámetro ----------------------------------------- */
+  "t4b.b4.h2": "Is there an optimal value of \\(n\\)?",
+  "t4b.b4.fuente":
+    "Sutton &amp; Barto §7.1, Example 7.1 and Figure 7.2",
+  "t4b.b4.p1":
+    "\\(n\\) is a <strong>hyperparameter</strong>. Small values give estimators with "
+    + "<strong>more bias and less variance</strong> —the target depends heavily on an "
+    + "estimate that is still poor— and large values do the opposite: less bias, because "
+    + "there are more real rewards inside, and more variance, because there is more "
+    + "accumulated randomness. And there is a third consequence, the most operational one: "
+    + "\\(n\\) decides <strong>how many states are reached</strong> by the effect of a single "
+    + "sample of experience.",
+  "t4b.b4.p2":
+    "The book explains it with a concrete case: if the first episode goes straight from the "
+    + "centre and out to the right, a <strong>one-step</strong> method only changes the value "
+    + "of the <strong>last</strong> state visited; a <strong>two-step</strong> one, the last "
+    + "two; and with \\(n\\) greater than or equal to the length of the episode, <strong>every "
+    + "state visited, and all of them by the same amount</strong>. That exact case is the one "
+    + "you can walk through in the next module.",
+  "t4b.b4.p3":
+    "Careful with the slide: the chain it draws at the top is the <strong>5-state</strong> "
+    + "one of chapter 6, and the chart below is from the chapter 7 experiment, which uses "
+    + "<strong>19 states</strong>, reward <strong>\\(-1\\)</strong> on exiting to the left "
+    + "(not 0) and initial values at <strong>0</strong> (not 0.5). They are two different "
+    + "environments; mixing them yields curves that look nothing like the book’s. This page "
+    + "uses the 19-state one, which is the one in the chart.",
+  "t4b.b4.p4":
+    "There is a theorem backing the whole family: the <strong>error reduction "
+    + "property</strong>. It says that the worst error of the <strong>expectation</strong> of "
+    + "the \\(n\\)-step return is bounded by \\(\\gamma^{n}\\) times the worst error of the "
+    + "starting estimate. Mind the small print: it is about the expectation, in max norm, "
+    + "and <strong>with \\(\\gamma=1\\) the bound is trivial</strong>. Since the experiment in "
+    + "module 1 uses \\(\\gamma=1\\), the fact that an intermediate \\(n\\) wins is an "
+    + "<strong>empirical result</strong>, not a corollary of the theorem.",
+  "t4b.b4.ec":
+    "\\[ \\max_s \\Big| \\mathbb{E}_\\pi\\big[G_{t:t+n}\\mid S_t=s\\big] - v_\\pi(s) \\Big| "
+    + "\\;\\le\\; \\gamma^{n}\\max_s\\big|V_{t+n-1}(s) - v_\\pi(s)\\big| \\]",
+  "t4b.b4.continua": "Continues in module 1 →",
+
+  /* --- MÓDULO 1 (cabecera en HTML) --------------------------------------- */
+  "t4b.m1.etiqueta": "MODULE 1",
+  "t4b.m1.h2": "The continuum in \\(n\\): is there an optimal \\(n\\)?",
+  "t4b.m1.fuente":
+    "Sutton &amp; Barto §7.1, Example 7.1 and Figure 7.2",
+
+  /* --- B5 · SARSA a n pasos ----------------------------------------------- */
+  "t4b.b5.h2": "\\(n\\)-step SARSA",
+  "t4b.b5.fuente":
+    "Sutton &amp; Barto §7.2, equations (7.4) and (7.5), Figure 7.4",
+  "t4b.b5.p1":
+    "The move to control is the usual one: <em>swap states for state-action pairs and use an "
+    + "\\(\\varepsilon\\)-greedy policy</em>. The only difference from prediction is that the "
+    + "return is closed with an action value instead of a state value.",
+  "t4b.b5.ec1":
+    "\\[ G_{t:t+n} \\;\\doteq\\; R_{t+1} + \\gamma R_{t+2} + \\cdots + "
+    + "\\gamma^{n-1}R_{t+n} + \\gamma^{n} Q_{t+n-1}(S_{t+n},A_{t+n}) \\]",
+  "t4b.b5.ec2":
+    "\\[ Q_{t+n}(S_t,A_t) \\;\\doteq\\; Q_{t+n-1}(S_t,A_t) + \\alpha\\big[\\,G_{t:t+n} - "
+    + "Q_{t+n-1}(S_t,A_t)\\,\\big] \\]",
+  "t4b.b5.p2":
+    "From here on the book renames the algorithm of the previous chapter: the SARSA of a "
+    + "single transition becomes <strong>one-step SARSA</strong>, or "
+    + "<strong>SARSA(0)</strong>.",
+  "t4b.b5.caja":
+    "n-step SARSA for estimating Q ≈ q<sub>*</sub>, or q<sub>π</sub>\n"
+    + "Initialise Q(s,a) arbitrarily, for all s ∈ S⁺, a ∈ A, with Q(terminal,·) = 0\n"
+    + "Initialise π to be ε-greedy with respect to Q, or to a given fixed policy\n"
+    + "Parameters: step size α ∈ (0,1], small ε &gt; 0, positive integer n\n"
+    + "All accesses to S_t, A_t and R_t can be indexed mod n+1\n\n"
+    + "Loop for each episode:\n"
+    + "    Initialise and store S_0 ≠ terminal\n"
+    + "    Select and store an action A_0 ~ π(·|S_0)\n"
+    + "    T ← ∞\n"
+    + "    For t = 0, 1, 2, …:\n"
+    + "        If t &lt; T:\n"
+    + "            Take action A_t\n"
+    + "            Observe and store R_{t+1} and S_{t+1}\n"
+    + "            If S_{t+1} is terminal:\n"
+    + "                T ← t + 1\n"
+    + "            else:\n"
+    + "                Select and store A_{t+1} ~ π(·|S_{t+1})\n"
+    + "        τ ← t − n + 1\n"
+    + "        If τ ≥ 0:\n"
+    + "            G ← Σ_{i=τ+1}^{min(τ+n, T)} γ^{i−τ−1} R_i\n"
+    + "            If τ + n &lt; T:  G ← G + γ^n Q(S_{τ+n}, A_{τ+n})   (this is "
+    + "G_{τ:τ+n})\n"
+    + "            Q(S_τ, A_τ) ← Q(S_τ, A_τ) + α [ G − Q(S_τ, A_τ) ]\n"
+    + "            If π is being learned, ensure that π(·|S_τ) is ε-greedy w.r.t. Q\n"
+    + "    until τ = T − 1",
+  "t4b.b5.p3":
+    "The figure on the slide is the explanation in a single image. One episode up to the "
+    + "goal, with every value starting at zero and a single positive reward on arrival. To "
+    + "the right of the path, two panels: one-step SARSA reinforces <strong>one single"
+    + "</strong> action, the last one; 10-step SARSA reinforces <strong>the last ten"
+    + "</strong>, all by the same amount. With the same episode and no additional "
+    + "assumptions, one learns ten times as much as the other. That is the whole argument.",
+  "t4b.b5.p4":
+    "The chapter has three more pieces that are only named here: <strong>\\(n\\)-step "
+    + "Expected SARSA</strong>, which replaces the last value with its expectation "
+    + "\\(\\bar V_{t+n-1}(s)\\doteq\\sum_a \\pi(a\\mid s)Q_t(s,a)\\); the "
+    + "<strong>off-policy</strong> version with the truncated importance-sampling ratio "
+    + "\\(\\rho_{t:h}\\); and the <em><strong>tree backup</strong></em> algorithm, which "
+    + "achieves off-policy learning <strong>without</strong> importance sampling. They are in "
+    + "§7.2, §7.3 and §7.5 of the book.",
+
+  /* --- B6 · combinar varios n --------------------------------------------- */
+  "t4b.b6.h2": "Combining different values of \\(n\\)",
+  "t4b.b6.fuente":
+    "Sutton &amp; Barto §12.1 (opening), <em>compound update</em>",
+  "t4b.b6.p1":
+    "There is no obligation to pick a single \\(n\\). An update is valid towards "
+    + "<strong>any average</strong> of \\(n\\)-step returns, with the sole condition that the "
+    + "weights be positive and <strong>sum to 1</strong>. The example on the slide is the "
+    + "book’s own: an equal-parts average of a two-step and a four-step return.",
+  "t4b.b6.ec":
+    "\\[ G^{\\text{comp}}_t \\;=\\; \\tfrac12\\,G_{t:t+2} + \\tfrac12\\,G_{t:t+4} \\]",
+  "t4b.b6.p2":
+    "An update that averages simpler updates is what the book calls a <strong>compound "
+    + "update</strong>, and it proves that it inherits the error reduction property of its "
+    + "components; that is, that the convergence guarantees are preserved. And then the "
+    + "obvious question appears, the one that opens chapter 12: if any average is valid, why "
+    + "pick a few \\(n\\) instead of averaging <strong>all</strong> of them?",
+
+  /* --- B7 · el retorno λ --------------------------------------------------- */
+  "t4b.b7.h2": "The \\(\\lambda\\)-return: averaging them all",
+  "t4b.b7.fuente":
+    "Sutton &amp; Barto §12.1, equations (12.2) and (12.3), Figures 12.1 and 12.2",
+  "t4b.b7.p1":
+    "TD(\\(\\lambda\\)) is one particular way of averaging <strong>all</strong> the "
+    + "\\(n\\)-step returns: each one with weight proportional to \\(\\lambda^{n-1}\\), the "
+    + "whole thing normalised by \\(1-\\lambda\\) so that the weights sum to exactly 1.",
+  "t4b.b7.ec1":
+    "\\[ G_t^{\\lambda} \\;\\doteq\\; (1-\\lambda)\\sum_{n=1}^{\\infty}\\lambda^{\\,n-1}"
+    + "\\,G_{t:t+n} \\]",
+  "t4b.b7.p2":
+    "The one-step return carries the largest weight, \\(1-\\lambda\\); the two-step one, "
+    + "\\((1-\\lambda)\\lambda\\); the three-step one, \\((1-\\lambda)\\lambda^2\\); and so "
+    + "on, <strong>fading by \\(\\lambda\\) at each additional step</strong>. The total area "
+    + "under the weight curve is 1.",
+  "t4b.b7.p3":
+    "Once the terminal state is reached, every later \\(n\\)-step return is already worth the "
+    + "same thing: the full return \\(G_t\\). Separating those terms from the main sum leaves "
+    + "the form used in practice, with a <strong>tail</strong> that gathers in one go all the "
+    + "weight beyond termination.",
+  "t4b.b7.ec2":
+    "\\[ G_t^{\\lambda} \\;=\\; (1-\\lambda)\\sum_{n=1}^{T-t-1}\\lambda^{\\,n-1}G_{t:t+n} "
+    + "\\;+\\; \\lambda^{\\,T-t-1}G_t \\]",
+  "t4b.b7.p4":
+    "This form shows the two extremes without any computation. With \\(\\lambda=1\\) the main "
+    + "sum vanishes and only \\(G_t\\) is left: updating towards the \\(\\lambda\\)-return "
+    + "<strong>is Monte Carlo</strong>. With \\(\\lambda=0\\), the \\(\\lambda\\)-return "
+    + "reduces to \\(G_{t:t+1}\\), the one-step return: <strong>it is TD(0)</strong>. Hence "
+    + "the name of the original algorithm. A single parameter between 0 and 1 covers "
+    + "everything that in the previous block required choosing an integer \\(n\\).",
+  "t4b.b7.ec3":
+    "\\[ V(S_t) \\leftarrow V(S_t) + \\alpha\\big[\\,G_t^{\\lambda} - V(S_t)\\,\\big] \\]",
+  "t4b.b7.fig.titulo":
+    "Weights of the \\(\\lambda\\)-return (\\(\\lambda=0.9\\)), total area 1",
+
+  /* --- B8 · la vista hacia adelante ---------------------------------------- */
+  "t4b.b8.h2": "The forward view",
+  "t4b.b8.fuente":
+    "Sutton &amp; Barto §12.1, equation (12.4) and Figure 12.4",
+  "t4b.b8.p1":
+    "The way of looking used so far has a name: the <strong>forward view</strong>. From each "
+    + "state visited you look ahead, decide how to combine the rewards that are coming, "
+    + "update, and never touch that state again. Future states, by contrast, get looked at "
+    + "again and again, once for each earlier vantage point.",
+  "t4b.b8.p2":
+    "It is <strong>the theoretical basis</strong> of everything above, and at the same time "
+    + "an <strong>offline</strong> algorithm: \\(G_t^\\lambda\\) is not known until the "
+    + "episode ends, so nothing can be applied during the episode. The book calls this the "
+    + "<strong>offline \\(\\lambda\\)-return algorithm</strong> and is honest about its role: "
+    + "<em>“an important ideal, but of limited utility”</em>. On a continuing task it is "
+    + "simply <strong>never</strong> known.",
+  "t4b.b8.ec":
+    "\\[ V(S_t) \\leftarrow V(S_t) + \\alpha\\big[\\,G_t^{\\lambda} - V(S_t)\\,\\big], "
+    + "\\qquad t = 0,\\ldots,T-1 \\]",
+
+  /* --- B9 · la vista hacia atrás y las trazas ------------------------------ */
+  "t4b.b9.h2": "The backward view: eligibility traces",
+  "t4b.b9.fuente":
+    "Sutton &amp; Barto §12.2, equations (12.5), (12.6) and (12.7), Figure 12.5",
+  "t4b.b9.p1":
+    "If the problem is having to wait until the end, the solution is to turn the gaze around. "
+    + "In the <strong>backward view</strong> you do not look ahead from each state: you "
+    + "compute the TD error of the moment and <strong>shout it backwards</strong>, sharing it "
+    + "out among the states already visited according to how much each one contributed to the "
+    + "current situation. The book’s image is literally that: riding along the stream of "
+    + "states, computing \\(\\delta_t\\) and shouting it to the states behind you.",
+  "t4b.b9.p2":
+    "How much did each state contribute? The slide poses it with David Silver’s example: the "
+    + "<strong>bell</strong> rings several times, the <strong>light</strong> comes on and an "
+    + "<strong>electric shock</strong> arrives. What triggered it? A <strong>frequency</strong> "
+    + "heuristic blames the bell, which happened more often. A <strong>recency</strong> one "
+    + "blames the light, which happened right before. Eligibility traces <strong>combine "
+    + "both</strong>, and they do so with a single parameter; which of the two wins is exactly "
+    + "what can be measured in the next module.",
+  "t4b.b9.ec1":
+    "\\[ z_0(s) = 0, \\qquad z_t(s) \\;=\\; \\gamma\\lambda\\, z_{t-1}(s) + "
+    + "\\mathbb{1}(S_t = s) \\]",
+  "t4b.b9.p3":
+    "It reads effortlessly: the trace of <strong>every</strong> state fades by "
+    + "\\(\\gamma\\lambda\\) at each step, and the trace of the state just visited goes up by "
+    + "<strong>1</strong>. The memory of the weights is long-term; the trace is a "
+    + "<strong>short-term memory</strong>, normally lasting less than an episode, and its only "
+    + "effect is to decide whose turn it is to learn when an error arrives.",
+  "t4b.b9.ec2":
+    "\\[ \\delta_t \\;=\\; R_{t+1} + \\gamma V(S_{t+1}) - V(S_t) \\]",
+  "t4b.b9.ec3":
+    "\\[ V(s) \\leftarrow V(s) + \\alpha\\,\\delta_t\\, z_t(s) \\qquad "
+    + "\\text{for \\textit{all} } s \\]",
+  "t4b.b9.p4":
+    "With \\(\\lambda=0\\), the trace of the current step is 1 and all the others are 0: only "
+    + "the immediately preceding state gets updated, which is <strong>TD(0)</strong> exactly. "
+    + "With \\(\\lambda=1\\) the credit only decays by \\(\\gamma\\) at each step; and if in "
+    + "addition \\(\\gamma=1\\), <strong>the trace does not decay at all</strong> and the "
+    + "method behaves like Monte Carlo on an undiscounted episodic task. The book calls that "
+    + "case <strong>TD(1)</strong>, and adds something usually left out in class: TD(1) is "
+    + "<strong>more general</strong> than Monte Carlo, because it also works on discounted "
+    + "continuing tasks and because it learns <strong>during</strong> the episode instead of "
+    + "at the end.",
+  "t4b.b9.p5":
+    "The slide says that the two views <em>“are equivalent formulas, proof available in "
+    + "Sutton &amp; Barto”</em>. This needs qualifying, because the book claims something "
+    + "weaker. What it proves is that TD(\\(\\lambda\\)) <strong>approximates</strong> the "
+    + "offline \\(\\lambda\\)-return algorithm: at optimal \\(\\alpha\\) or below, the two "
+    + "perform <em>“virtually identically”</em>, and above optimal \\(\\alpha\\) "
+    + "TD(\\(\\lambda\\)) degrades far more and <strong>can become unstable</strong>. "
+    + "<strong>Exact</strong> equality only holds if the updates are computed but <strong>not "
+    + "applied</strong> during the episode —that is, with the values frozen—, which is "
+    + "Exercise 12.4 of the book. And there is an exact equivalence that really is proved, but "
+    + "it is between <strong>another pair</strong> of algorithms: the <em>online</em> "
+    + "\\(\\lambda\\)-return and <em>true online</em> TD(\\(\\lambda\\)) (§12.5), neither of "
+    + "which is covered in this course.",
+  "t4b.b9.p6":
+    "It is exactly the same small print as identity (6.6) of chapter 6, the one that writes "
+    + "\\(G_t - V(S_t)\\) as a sum of TD errors: there too the equality requires that \\(V\\) "
+    + "not change during the episode. Twice in the same unit, and for the same reason.",
+  "t4b.b9.tabla.cab": "<th>What is being summed</th><th>Result</th>",
+  "t4b.b9.tabla.f1":
+    "<td>Updates that backward TD(\\(\\lambda=1\\)) accumulates on the bell</td>"
+    + "<td>\\(-0.300\\)</td>",
+  "t4b.b9.tabla.f2":
+    "<td>Updates that the forward view accumulates on the bell, with \\(V\\) frozen</td>"
+    + "<td>\\(-0.300\\) — <strong>identical</strong></td>",
+  "t4b.b9.tabla.f3":
+    "<td>Updates that every-visit Monte Carlo accumulates on the bell, applying them as it "
+    + "goes</td><td>\\(-0.271\\) — <strong>no longer</strong></td>",
+  "t4b.b9.tabla.f4":
+    "<td>Difference</td><td>\\(0.029\\), and it grows with \\(\\alpha\\)</td>",
+  "t4b.b9.p7":
+    "The first two rows agree to the last decimal because in this episode \\(V\\) does not "
+    + "change until the end. The third one applies its updates as it goes and that is why it "
+    + "drifts apart. The equivalence between the two views is real, but it is "
+    + "<strong>that</strong> one.",
+  "t4b.b9.continua": "Continues in module 2 →",
+
+  /* --- MÓDULO 2 (cabecera en HTML) --------------------------------------- */
+  "t4b.m2.etiqueta": "MODULE 2",
+  "t4b.m2.h2": "Eligibility traces: the bell or the light?",
+  "t4b.m2.fuente":
+    "Sutton &amp; Barto §12.2, equations (12.5)-(12.7), and §12.6, equation (12.12)",
+  "t4b.m2.determinista":
+    "Deterministic: a single episode, no randomness. The seed plays no part.",
+
+  /* --- B10 · de tabular a aproximación ------------------------------------ */
+  "t4b.b10.h2": "From tabular to approximation: that 1 is not arbitrary",
+  "t4b.b10.fuente":
+    "Sutton &amp; Barto, ch. 12 (opening), §9.4 and §12.2, equation (12.5)",
+  "t4b.b10.p1":
+    "This last stretch <strong>brings forward material from Unit 5</strong>. It uses the "
+    + "weight vector \\(w\\), the feature vector \\(x(s)\\) and the gradient "
+    + "\\(\\nabla\\hat v(s,w)\\), which are defined there. It is included because it closes "
+    + "the block and because it explains where a constant that, as presented so far, looks "
+    + "pulled out of thin air actually comes from.",
+  "t4b.b10.p2":
+    "The argument has three links. <strong>First</strong>: the tabular case is a special case "
+    + "of linear approximation, and the book itself authorises this as it opens the chapter "
+    + "—<em>“all these results apply also to the tabular and state aggregation cases, because "
+    + "they are special cases of linear function approximation”</em>—. "
+    + "<strong>Second</strong>: in linear approximation the gradient of the approximate value "
+    + "<strong>is</strong> the feature vector, \\(\\nabla\\hat v(s,w) = x(s)\\). "
+    + "<strong>Third</strong>: if \\(x(s)\\) is the <em>one-hot</em> encoding of the state —a "
+    + "1 in the component of \\(s\\) and zeros elsewhere— then adding \\(x(S_t)\\) to the "
+    + "trace vector is exactly adding 1 to the component of the visited state and letting the "
+    + "rest decay. The \\(\\mathbb{1}(S_t=s)\\) of the tabular formula <strong>is</strong> the "
+    + "gradient.",
+  "t4b.b10.ec1":
+    "\\[ z_{-1} \\doteq 0, \\qquad z_t \\;\\doteq\\; \\gamma\\lambda\\,z_{t-1} + "
+    + "\\nabla\\hat v(S_t, w_t) \\]",
+  "t4b.b10.ec2": "\\[ w_{t+1} \\;=\\; w_t + \\alpha\\,\\delta_t\\, z_t \\]",
+  "t4b.b10.p3":
+    "<strong>A note of honesty about the source.</strong> Chapter 12 is written "
+    + "<strong>entirely</strong> in the language of approximation: its equations and its only "
+    + "pseudocode box use \\(w\\) and \\(z\\in\\mathbb{R}^d\\). <strong>In the 2nd edition "
+    + "there is no tabular pseudocode for TD(\\(\\lambda\\)) or for "
+    + "SARSA(\\(\\lambda\\))</strong>. The tabular form projected in class and used on this "
+    + "page is a <strong>legitimate adaptation</strong> of the linear case —the book "
+    + "authorises the reading— but it is an adaptation, not a quotation.",
+  "t4b.b10.p4":
+    "And with that the hook into the rest of the syllabus is in place: the weight update "
+    + "depends on the TD error, and the TD error depends on the target, which is built "
+    + "<em>one way or another depending on the algorithm</em> —SARSA, Q-learning, Expected "
+    + "SARSA—. Changing algorithm means changing that line and nothing else.",
+  "t4b.b10.p5":
+    "One last point: the trace in these formulas is called <strong>accumulating</strong> "
+    + "because the visited state <strong>adds</strong> 1 even if its trace was already "
+    + "positive. There are two others. The <strong>replacing trace</strong> <em>sets</em> the "
+    + "trace to 1 instead of adding to it, and it is defined only for the tabular case or for "
+    + "binary features. The <strong>dutch trace</strong> is the one used by <em>true online</em> "
+    + "TD(\\(\\lambda\\)) and has better theoretical grounding; today the book sees the "
+    + "replacing trace as a crude approximation of the dutch one. The slide <strong>only uses "
+    + "the accumulating one</strong>; in module 2 you can switch to the replacing trace to see "
+    + "what changes.",
+
+  /* --- B11 · SARSA(λ) ----------------------------------------------------- */
+  "t4b.b11.h2": "SARSA(\\(\\lambda\\)): the gap that has to be filled",
+  "t4b.b11.fuente":
+    "In neither lecture collection · Sutton &amp; Barto §12.7, equations (12.15) and "
+    + "(12.16) · it is examined: final cheatsheet, §SARSA(λ), and problem 5 of the problem "
+    + "sheet",
+  "t4b.b11.p1":
+    "<strong>Coverage warning.</strong> The slides present TD(\\(\\lambda\\)) only with "
+    + "<strong>state values</strong>, \\(V(s)\\leftarrow V(s)+\\alpha\\delta_t z_t(s)\\), and "
+    + "with the generic form in \\(w\\). <strong>SARSA(\\(\\lambda\\)) and "
+    + "Q(\\(\\lambda\\)) —with action values— appear in neither collection</strong>, and yet "
+    + "they are examined: the cheatsheet handed out in the final exam has a “SARSA(λ)” "
+    + "section, and problem 5 of the problem sheet asks for forward TD(\\(\\lambda\\)), "
+    + "backward TD(\\(\\lambda\\)), SARSA(0) and SARSA(\\(\\lambda\\)) to be worked out by "
+    + "hand on a four-state MDP. It is the most serious gap in the block, and that is why "
+    + "this section exists.",
+  "t4b.b11.p2":
+    "The move is the same as with \\(n\\)-step methods: swap states for state-action pairs. "
+    + "There is one trace per <strong>pair</strong>, the TD error is built with action values, "
+    + "and the update is applied to the whole \\(Q\\) table in proportion to its trace.",
+  "t4b.b11.ec1":
+    "\\[ z_t(s,a) \\;=\\; \\gamma\\lambda\\,z_{t-1}(s,a) + \\mathbb{1}(S_t=s,\\;A_t=a) \\]",
+  "t4b.b11.ec2":
+    "\\[ \\delta_t \\;\\doteq\\; R_{t+1} + \\gamma\\,Q(S_{t+1},A_{t+1}) - Q(S_t,A_t) \\]",
+  "t4b.b11.ec3":
+    "\\[ Q(s,a) \\leftarrow Q(s,a) + \\alpha\\,\\delta_t\\,z_t(s,a) \\qquad "
+    + "\\text{for \\textit{all} pairs} \\]",
+  "t4b.b11.caja":
+    "Tabular SARSA(λ)  —  adapted from the linear case of Sutton &amp; Barto §12.7\n"
+    + "                     (the book does NOT publish a tabular version; see the warning "
+    + "above)\n"
+    + "Parameters: α ∈ (0,1], λ ∈ [0,1], ε &gt; 0, γ\n"
+    + "Initialise Q(s,a) arbitrarily for all s ∈ S⁺, a ∈ A(s), with Q(terminal,·) = 0\n\n"
+    + "Loop for each episode:\n"
+    + "    z(s,a) ← 0  for all s, a\n"
+    + "    Initialise S;  choose A ~ ε-greedy(Q, S)\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Take action A, observe R and S'\n"
+    + "        Choose A' ~ ε-greedy(Q, S')      (if S' is terminal, Q(S',·) = 0)\n"
+    + "        δ ← R + γ Q(S',A') − Q(S,A)\n"
+    + "        z(S,A) ← z(S,A) + 1                        (ACCUMULATING trace)\n"
+    + "        For all s, a:\n"
+    + "            Q(s,a) ← Q(s,a) + α δ z(s,a)\n"
+    + "            z(s,a) ← γλ z(s,a)\n"
+    + "        S ← S';  A ← A'\n"
+    + "    until S is terminal",
+  "t4b.b11.p3":
+    "The book signs off with the same path as in the \\(n\\)-step SARSA figure and a fourth "
+    + "panel: with SARSA(\\(\\lambda\\)) and \\(\\lambda=0.9\\), <strong>every</strong> action "
+    + "of the episode is reinforced, with intensity decreasing backwards. One step reinforces "
+    + "one; \\(n\\) steps reinforce \\(n\\), all equally; the trace reinforces them all, "
+    + "fading with recency. And the figure caption concludes: <em>“the fading strategy is "
+    + "often the best”</em>.",
+  "t4b.b11.p4":
+    "If you want to practise with pencil and paper: problem 5 of the sheet uses "
+    + "\\(\\alpha=0.1\\), \\(\\gamma=0.95\\), \\(\\lambda=0.5\\) and an "
+    + "\\(\\varepsilon\\)-greedy policy with \\(\\varepsilon=0.5\\) in prediction and "
+    + "\\(\\varepsilon=0.05\\) in control. With those numbers and this pseudocode, the "
+    + "exercise works out.",
+  "t4b.b11.p5":
+    "About <strong>Q(\\(\\lambda\\))</strong> —the off-policy version with traces— it is "
+    + "enough to know that it exists and that its own difficulty is what to do with the trace "
+    + "when the behaviour policy takes an action the target policy would never take: the "
+    + "classic answer is to <strong>cut it to zero</strong>. The book treats it outside the "
+    + "§12.1-§12.7 stretch covered by this block.",
+
+  /* --- A5 · ecuaciones clave ---------------------------------------------- */
+  "t4b.ecuaciones.h2": "Key equations of the block",
+  "t4b.ecuaciones.cab":
+    "<th>Equation</th><th>What it says</th><th>Where it is used</th>",
+  "t4b.ecuaciones.f1":
+    "<td>\\(G_{t:t+n} \\doteq R_{t+1}+\\cdots+\\gamma^{n-1}R_{t+n}+\\gamma^{n}"
+    + "V_{t+n-1}(S_{t+n})\\)</td>"
+    + "<td>\\(n\\) real rewards plus one estimate to close</td><td>B3, module 1</td>",
+  "t4b.ecuaciones.f2":
+    "<td>\\(V_{t+n}(S_t) \\doteq V_{t+n-1}(S_t)+\\alpha[G_{t:t+n}-V_{t+n-1}(S_t)]\\)</td>"
+    + "<td>The usual rule, with the \\(n\\)-step return as target</td><td>B3, module 1</td>",
+  "t4b.ecuaciones.f3":
+    "<td>\\(G_{t:t+n}\\doteq G_t\\) if \\(t+n\\ge T\\)</td>"
+    + "<td>If the window overshoots the end, the \\(n\\)-step return "
+    + "<strong>is</strong> the actual return</td><td>B3, module 1</td>",
+  "t4b.ecuaciones.f4":
+    "<td>\\(\\max_s\\lvert\\mathbb{E}_\\pi[G_{t:t+n}]-v_\\pi(s)\\rvert\\le\\gamma^{n}"
+    + "\\max_s\\lvert V_{t+n-1}(s)-v_\\pi(s)\\rvert\\)</td>"
+    + "<td>The expected error contracts by \\(\\gamma^n\\)… except at \\(\\gamma=1\\), where "
+    + "the bound is trivial</td><td>B4</td>",
+  "t4b.ecuaciones.f5":
+    "<td>\\(G_t^{\\lambda}\\doteq(1-\\lambda)\\sum_{n\\ge1}\\lambda^{n-1}G_{t:t+n}\\)</td>"
+    + "<td>Exponential average of <strong>all</strong> the \\(n\\)-step returns</td>"
+    + "<td>B7, module 2</td>",
+  "t4b.ecuaciones.f6":
+    "<td>\\(G_t^{\\lambda}=(1-\\lambda)\\sum_{n=1}^{T-t-1}\\lambda^{n-1}G_{t:t+n}+"
+    + "\\lambda^{T-t-1}G_t\\)</td>"
+    + "<td>The same thing, with the post-termination tail split off</td><td>B7</td>",
+  "t4b.ecuaciones.f7":
+    "<td>\\(z_t(s)=\\gamma\\lambda z_{t-1}(s)+\\mathbb{1}(S_t=s)\\)</td>"
+    + "<td>Everything decays by \\(\\gamma\\lambda\\); the visited state goes up by 1</td>"
+    + "<td>B9, module 2</td>",
+  "t4b.ecuaciones.f8":
+    "<td>\\(V(s)\\leftarrow V(s)+\\alpha\\,\\delta_t\\,z_t(s)\\)</td>"
+    + "<td>The error of the moment is shared among all, in proportion to their trace</td>"
+    + "<td>B9, module 2</td>",
+  "t4b.ecuaciones.f9":
+    "<td>\\(z_t\\doteq\\gamma\\lambda z_{t-1}+\\nabla\\hat v(S_t,w_t)\\), "
+    + "\\(w_{t+1}=w_t+\\alpha\\delta_t z_t\\)</td>"
+    + "<td>The same in approximation: the tabular 1 is the <em>one-hot</em> gradient</td>"
+    + "<td>B10</td>",
+  "t4b.ecuaciones.f10":
+    "<td>\\(z_t(s,a)=\\gamma\\lambda z_{t-1}(s,a)+\\mathbb{1}(S_t=s,A_t=a)\\)</td>"
+    + "<td>One trace per state-action pair: SARSA(\\(\\lambda\\))</td><td>B11</td>",
+
+  /* --- A6 · errores frecuentes -------------------------------------------- */
+  "t4b.errores.h2": "Five confusions that cost marks",
+  "t4b.errores.cab": "<th>It gets said</th><th>And in fact</th>",
+  "t4b.errores.e1":
+    "<td>“With \\(n=10\\), the first ten updates happen as usual, just with a different "
+    + "target”</td>"
+    + "<td><strong>No</strong> update at all is made during the first \\(n-1\\) steps: "
+    + "\\(G_{0:n}\\) does not exist yet. And when the episode ends, \\(n-1\\) additional "
+    + "updates are made to drain the tail. You can count it step by step in module 1. "
+    + "<em>(S&amp;B §7.1)</em></td>",
+  "t4b.errores.e2":
+    "<td>“The error reduction property proves that an intermediate \\(n\\) is better”</td>"
+    + "<td>No. The bound is on the <strong>expectation</strong> of the return, in max norm, "
+    + "and with factor \\(\\gamma^{n}\\); in the module 1 experiment, \\(\\gamma=1\\) and the "
+    + "bound is trivial. That \\(n=4\\) wins is an <strong>empirical</strong> result. "
+    + "<em>(S&amp;B §7.1, eq. 7.3)</em></td>",
+  "t4b.errores.e3":
+    "<td>“The \\(\\lambda\\)-return weights the \\(n\\)-step returns by "
+    + "\\(\\lambda^{n}\\)”</td>"
+    + "<td>The weight is \\((1-\\lambda)\\lambda^{n-1}\\), and the post-termination tail is "
+    + "\\(\\lambda^{T-t-1}\\). The factor \\((1-\\lambda)\\) is exactly what makes the weights "
+    + "sum to 1; without it, it is not an average. <em>(S&amp;B §12.1, eqs. 12.2 and "
+    + "12.3)</em></td>",
+  "t4b.errores.e4":
+    "<td>“The eligibility trace is set to 1 in the visited state”</td>"
+    + "<td>It depends on the type. The <strong>accumulating</strong> one —the slide’s and "
+    + "this page’s— <strong>adds</strong> 1, so it can exceed 1. The <strong>replacing</strong> "
+    + "one does set it to 1. The <strong>dutch</strong> one is another thing entirely. You can "
+    + "see the difference by flipping the control in module 2. <em>(S&amp;B §12.2, eq. 12.5, "
+    + "and §12.6, eq. 12.12)</em></td>",
+  "t4b.errores.e5":
+    "<td>“The backward view is equivalent to the forward view”</td>"
+    + "<td>Only <em>virtually identical</em>, and at optimal \\(\\alpha\\) or below; with "
+    + "large \\(\\alpha\\), TD(\\(\\lambda\\)) can be unstable. Exact equality requires that "
+    + "the values <strong>not be updated</strong> during the episode (exercise 12.4). The "
+    + "exact equivalence that has been proved is between another pair of algorithms: the "
+    + "online \\(\\lambda\\)-return and <em>true online</em> TD(\\(\\lambda\\)). "
+    + "<em>(S&amp;B §12.2 and §12.5)</em></td>",
+
+  /* --- A7 · cierre --------------------------------------------------------- */
+  "t4b.cierre.h2": "What to take away",
+  "t4b.cierre.v1":
+    "Monte Carlo and TD(0) are not two rival methods: they are the two ends of a family with "
+    + "one parameter. With \\(n\\)-step methods the parameter is an integer; with the "
+    + "\\(\\lambda\\)-return, a number between 0 and 1.",
+  "t4b.cierre.v2":
+    "With \\(n=10\\) nothing is updated during the first nine steps of the episode, and when "
+    + "it ends nine updates are still pending. I have counted them step by step.",
+  "t4b.cierre.v3":
+    "The best \\(n\\) is intermediate and <strong>depends on \\(\\alpha\\)</strong>: with "
+    + "seed 2026, the best point of the sweep is \\(n=4\\) with \\(\\alpha=0.4\\), and the "
+    + "best \\(\\alpha\\) for \\(n=1\\) (0.8) is the worst possible one for \\(n=64\\).",
+  "t4b.cierre.v4":
+    "\\(\\lambda=0\\) is TD(0) and \\(\\lambda=1\\) is Monte Carlo, and I know it two ways: "
+    + "from the form of the \\(\\lambda\\)-return with the tail split off, and from the form "
+    + "of the trace.",
+  "t4b.cierre.v5":
+    "Faced with the electric shock, with large \\(\\lambda\\) the blame goes to the bell "
+    + "(frequency) and with small \\(\\lambda\\), to the light (recency). With three bells the "
+    + "tie is at \\(\\lambda \\approx 0.544\\), and with two, exactly at the golden ratio.",
+  "t4b.cierre.v6":
+    "The “+1” of the tabular trace is the gradient of linear approximation with "
+    + "<em>one-hot</em> encoding: it is not a convention, it is a special case of what comes "
+    + "in Unit 5.",
+
+  /* --- A8 · glosario ------------------------------------------------------ */
+  "t4b.glosario.h2": "Notation glossary for the block",
+  "t4b.glosario.cab": "<th>Symbol</th><th>Meaning</th><th>Where it appears</th>",
+  "t4b.glosario.f1":
+    "<td>\\(G_{t:t+n}\\)</td>"
+    + "<td>\\(n\\)-step return: \\(n\\) real rewards plus "
+    + "\\(\\gamma^{n}V_{t+n-1}(S_{t+n})\\)</td><td>B3, B5, module 1</td>",
+  "t4b.glosario.f2":
+    "<td>\\(G_t^{\\lambda}\\)</td>"
+    + "<td>\\(\\lambda\\)-return: exponential average of every \\(G_{t:t+n}\\)</td>"
+    + "<td>B7, B8</td>",
+  "t4b.glosario.f3":
+    "<td>\\(z_t(s)\\), \\(z_t(s,a)\\), \\(z_t\\)</td>"
+    + "<td>eligibility trace of a state, of a pair, or the whole vector</td>"
+    + "<td>B9, B10, B11, module 2</td>",
+  "t4b.glosario.f4":
+    "<td>\\(\\lambda\\)</td>"
+    + "<td>trace decay parameter, \\(\\lambda\\in[0,1]\\)</td><td>B7, B9, module 2</td>",
+  "t4b.glosario.f5":
+    "<td>\\(\\delta_t\\)</td>"
+    + "<td>TD error, \\(\\delta_t \\doteq R_{t+1}+\\gamma V(S_{t+1})-V(S_t)\\)</td>"
+    + "<td>B9, module 2</td>",
+  "t4b.glosario.f6":
+    "<td>\\(V(s)\\), \\(V_t(s)\\)</td>"
+    + "<td><strong>estimate</strong> of \\(v_\\pi(s)\\); lowercase \\(v_\\pi\\) is the true "
+    + "value</td><td>the whole block</td>",
+  "t4b.glosario.f7":
+    "<td>\\(T\\)</td>"
+    + "<td><strong>final time step</strong> of the episode. The terminal state is written "
+    + "“terminal”</td><td>B3, B7</td>",
+  "t4b.glosario.f8":
+    "<td>\\(\\mathcal{S}^+\\)</td>"
+    + "<td>states <strong>including</strong> the terminal one</td><td>B3, B5</td>",
+  "t4b.glosario.f9":
+    "<td>\\(\\mathbb{1}(\\cdot)\\)</td>"
+    + "<td>indicator function: 1 if it holds, 0 otherwise</td><td>B9, B11</td>",
+  "t4b.glosario.f10":
+    "<td>\\(b(a\\mid s)\\)</td><td><strong>behaviour policy</strong></td>"
+    + "<td>B5 (off-policy mention)</td>",
+  "t4b.glosario.f11":
+    "<td>\\(w\\), \\(x(s)\\), \\(\\nabla\\hat v(s,w)\\)</td>"
+    + "<td>weights, features and gradient — <strong>brought forward from Unit 5</strong></td>"
+    + "<td>B10</td>",
+  "t4b.glosario.f12":
+    "<td>\\(\\bar V_t(s)\\)</td>"
+    + "<td>expected approximate value, \\(\\bar V_t(s)\\doteq\\sum_a\\pi(a\\mid "
+    + "s)Q_t(s,a)\\)</td><td>B5 (mention)</td>",
+  "t4b.glosario.nota":
+    "Two notation warnings. <strong>First</strong>: for the behaviour policy, the course "
+    + "material uses two symbols —\\(\\mu\\) in one collection and \\(b\\) in the other—. "
+    + "This page always uses \\(b\\), the book’s and the official bibliography’s. "
+    + "<strong>Second</strong>: for the trace, the material uses \\(z\\) (Sutton &amp; Barto, "
+    + "2nd edition), which is also the symbol on the exam cheatsheet; there are textbooks and "
+    + "notes that use \\(e\\), from the 1st edition. They are the same object.",
+
+  /* --- pie ---------------------------------------------------------------- */
+  "t4b.pie.anterior": "← Unit 4 · Model-free reinforcement learning",
+  "t4b.pie.1":
+    "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
+    + "Mathematical Engineering and Artificial Intelligence · Universidad Pontificia "
+    + "Comillas · ICAI. Based on Sutton &amp; Barto, <em>Reinforcement Learning: An "
+    + "Introduction</em>, 2nd ed., chapter 7 and §12.1-§12.2.",
+  "t4b.pie.2":
+    "Every simulation is reproducible: the same seed always yields the same result.",
+
+  /* --- MÓDULO 1 · el continuo en n (assets/tema4b.js) --------------------- */
+  "t4b.m1.explicacion":
+    "This is the experiment the slide projects, with the dial fitted. A random walk of "
+    + "<strong>19 states</strong>: you start in the middle one, at each step you go left or "
+    + "right with probability \\(\\tfrac12\\), and the episode ends on exiting at either end, "
+    + "with reward \\(-1\\) on the left and \\(+1\\) on the right. All values start at "
+    + "<strong>0</strong> and there is no discounting (\\(\\gamma=1\\)). The first "
+    + "<strong>10 episodes</strong> are measured and averaged over <strong>100 "
+    + "repetitions</strong>, always with <strong>the same trajectories</strong> for every "
+    + "parameter value: if one curve sits below another, it is not because it got lucky.",
+  "t4b.m1.pregunta":
+    "The slide is titled <em>“Is there an optimal value of \\(n\\)?”</em> and does not answer "
+    + "it; the previous one asks <em>“suppose we take \\(n=10\\), what happens at the "
+    + "beginning of an episode?”</em> and moves on. Both are answered here.",
+  "t4b.m1.pregunta.dedonde": "Sutton &amp; Barto §7.1, Example 7.1.",
+  "t4b.m1.familiaLabel": "Which family of curves",
+  "t4b.m1.familiaN": "Bootstrapping steps (n)",
+  "t4b.m1.familiaLambda": "λ-return",
+  "t4b.m1.familiaAmbas": "Both, superimposed",
+  "t4b.m1.nLabel": "Bootstrapping steps (\\(n\\))",
+  "t4b.m1.nValor": "n = {n}",
+  "t4b.m1.lambdaLabel": "\\(\\lambda\\)-return",
+  "t4b.m1.lambdaValor": "λ = {lambda}",
+  "t4b.m1.alphaLabel": "Step size (\\(\\alpha\\))",
+  "t4b.m1.alphaValor": "α = {alpha}",
+  "t4b.m1.reiniciar": "Reset with the seed",
+  "t4b.m1.gamma":
+    "\\(\\gamma = 1\\) and \\(V(s)=0\\) at the start: fixed, they are part of the experiment "
+    + "statement. The only randomness is in the walks, and the page seed fixes it.",
+  "t4b.m1.mActual": "Error with the current parameters",
+  "t4b.m1.mMejorAlpha": "Best \\(\\alpha\\) for this curve",
+  "t4b.m1.mMejorGlobal": "Best point of the sweep in \\(n\\)",
+  "t4b.m1.mMejorLambda": "Best point of the sweep in \\(\\lambda\\)",
+  "t4b.m1.viz2.titulo":
+    "One episode, step by step: the direct path from the centre to the right "
+    + "(\\(T\\) = {T})",
+  "t4b.m1.viz2.episodio":
+    "The reference episode is <strong>fixed and deterministic</strong>: the path that goes "
+    + "straight from the centre and out to the right, \\(S_0=10,\\;S_1=11,\\;\\ldots,"
+    + "\\;S_9=19\\), with \\(R_1=\\cdots=R_9=0\\) and \\(R_{10}=+1\\); \\(T=10\\). It is the "
+    + "case the book describes in words in Example 7.1 to explain how many states a single "
+    + "sample of experience reaches. In the batch for seed 2026 the shortest of the 1000 "
+    + "episodes (repetition 68, episode 7) also lasts 10 steps, but <strong>it goes "
+    + "left</strong>: it is the mirror image of this one, not this one.",
+  "t4b.m1.determinista": "The timeline is deterministic: it does not depend on the seed.",
+  "t4b.m1.mPrimera": "First update",
+  "t4b.m1.mDentro": "Updates during the episode",
+  "t4b.m1.mCola": "Updates after it ends",
+  "t4b.m1.mTocados": "States that change value",
+  "t4b.m1.cierre":
+    "Choosing \\(n\\) forces you to get two numbers right at once, \\(n\\) and "
+    + "\\(\\alpha\\), and to throw away everything the other \\(n\\) contribute. The next "
+    + "block asks the obvious question: if any average of returns is valid, why pick one?",
+  "t4b.m1.viz1.vacio":
+    "Computing both sweeps: 10 values of n and 8 of λ, × 21 of α × 100 repetitions…",
+  "t4b.m1.serieN": "\\(n = {n}\\)",
+  "t4b.m1.serieLambda": "\\(\\lambda = {lambda}\\)",
+  "t4b.m1.ejeX": "Step size (α)",
+  "t4b.m1.ejeY": "Mean RMS error",
+  "t4b.m1.anotAlpha": "α = {alpha}",
+  "t4b.m1.serieOtrasN": "the other nine values of \\(n\\)",
+  "t4b.m1.serieOtrasLambda": "the other seven values of \\(\\lambda\\)",
+  "t4b.m1.recorte":
+    "The axis stops at {tope} and the curves that go beyond are clipped at the edge, just as "
+    + "in the book’s figure.",
+  "t4b.m1.recorteLambda":
+    "Above the optimal \\(\\alpha\\), TD(\\(\\lambda\\)) does not merely get worse: it can "
+    + "diverge, and that is why its curves stick to the top edge.",
+  "t4b.m1.viz1.titulo":
+    "\\(n\\)-step TD · RMS error over the 19 states after 10 episodes · average of "
+    + "<strong>100 repetitions</strong> (seed {semilla})",
+  "t4b.m1.viz1.tituloLambda":
+    "Backward TD(\\(\\lambda\\)) · RMS error over the 19 states after 10 episodes · average "
+    + "of <strong>100 repetitions</strong> (seed {semilla})",
+  "t4b.m1.viz1.tituloAmbas":
+    "\\(n\\)-step against TD(\\(\\lambda\\)), <strong>on the same batch</strong> · average of "
+    + "<strong>100 repetitions</strong> (seed {semilla})",
+  "t4b.m1.valorConRms": "{a} <span class=\"suave\">({rms})</span>",
+  "t4b.m1.mejorNTexto":
+    "\\(n={n}\\), \\(\\alpha={a}\\) <span class=\"suave\">({rms})</span>",
+  "t4b.m1.mejorLambdaTexto":
+    "\\(\\lambda={l}\\), \\(\\alpha={a}\\) <span class=\"suave\">({rms})</span>",
+  "t4b.m1.sinLambda": "—",
+  "t4b.m1.notaAmbas":
+    "Both families run <strong>on the same batch</strong>. And here it pays to be honest "
+    + "about the closing claim of the deck —<em>“with \\(\\lambda\\) we can speed up "
+    + "learning, especially in the early stages”</em>—: in <strong>this</strong> experiment "
+    + "it does not win, it <strong>ties</strong>. The best point in \\(n\\) gives {dn} and "
+    + "the best one in \\(\\lambda\\) gives {dl}, indistinguishable. What \\(\\lambda\\) does "
+    + "buy is that a <strong>single continuous number</strong> covers the whole family and "
+    + "that it can be computed online with a trace, instead of storing the last \\(n\\) "
+    + "steps.",
+  "t4b.m1.notaLambda":
+    "Same task, same axes and same batch as the sweep in \\(n\\): the only thing that changes "
+    + "is the algorithm, backward TD(\\(\\lambda\\)). The bell shape repeats, with the same "
+    + "trade-off: large \\(\\lambda\\) demands small \\(\\alpha\\). And something the \\(n\\) "
+    + "family does not show appears: with \\(\\lambda\\ge0.9\\) and \\(\\alpha\\) above the "
+    + "optimum, TD(\\(\\lambda\\)) <strong>diverges</strong> — it is the instability the book "
+    + "warns about in §12.2 and that block B9 of this page already announced.",
+  "t4b.m1.notaPequeno":
+    "With small \\(n\\) the curve is <strong>flat and high</strong>: the target depends too "
+    + "much on an estimate that is still 0, so it learns little however much you raise "
+    + "\\(\\alpha\\).",
+  "t4b.m1.notaMedio":
+    "This is the sweet spot: enough real rewards inside the target not to depend on the "
+    + "estimate, and not so many that variance takes over.",
+  "t4b.m1.notaGrande":
+    "With large \\(n\\) the curve <strong>shoots up</strong>: the target is almost the full "
+    + "return, with all of its variance, and it only tolerates very small \\(\\alpha\\). At "
+    + "\\(n=512\\) this is, for practical purposes, Monte Carlo with a constant "
+    + "\\(\\alpha\\).",
+  "t4b.m1.celdaFin": "—",
+  "t4b.m1.celdaSinTau": "τ<0",
+  "t4b.m1.celdaTitulo":
+    "t={t}: the value of the state visited at τ={tau} is updated towards the n-step return, "
+    + "which is {G}",
+  "t4b.m1.celdaTituloVacio":
+    "t={t}: there are not enough rewards yet to form the n-step return",
+  "t4b.m1.banda1": "no updates",
+  "t4b.m1.banda2": "draining the tail",
+  "t4b.m1.cronoSalto":
+    "The strip jumps: between the end of the episode (\\(t\\) = {fin}) and the first "
+    + "draining update (\\(t\\) = {primera}) the loop goes round {huecos} times without "
+    + "updating anything, because there is no pending \\(\\tau\\ge0\\) matching it yet.",
+  "t4b.m1.primeraEn": "at \\(t\\) = {t}",
+  "t4b.m1.tocadosGlosa":
+    "{k} <span class=\"suave\">— the last {k}, all at \\(\\alpha = {alpha}\\)</span>",
+  "t4b.m1.notaCronoCorto":
+    "With \\(n\\) = {n}, the first {previos} steps go by without updating anything, and when "
+    + "the episode ends {previos} updates are still pending. In total, always {T}: what "
+    + "changes is <strong>when</strong> they happen.",
+  "t4b.m1.notaCronoLargo":
+    "With \\(n\\) = {n} ≥ \\(T\\) = {T} there is <strong>not one single</strong> update while "
+    + "the episode is happening: all {T} are made at the end and every one of them uses the "
+    + "actual return. This is Monte Carlo.",
+
+  /* --- MÓDULO 2 · trazas (assets/tema4b.js) ------------------------------- */
+  "t4b.m2.explicacion":
+    "The episode from the slide, with the numbers filled in. The bell rings \\(k\\) times in "
+    + "a row, the light comes on and at the next step the shock arrives: reward \\(-1\\) and "
+    + "end of episode. All values start at 0 and there is no discounting (\\(\\gamma=1\\)), so "
+    + "<strong>the TD error is 0 at every step except the last</strong>, where it is "
+    + "\\(-1\\). That is: all the blame is apportioned in one go at the end, and it is decided "
+    + "solely by the trace each state holds at that moment. Move \\(\\lambda\\) and see who "
+    + "takes the blame.",
+  "t4b.m2.pregunta":
+    "<em>“Which event triggered the electric shock? By frequency, the bell; by recency, the "
+    + "light; traces combine the two.”</em> The slide leaves it there. Combine in what "
+    + "proportion, and who wins?",
+  "t4b.m2.pregunta.dedonde":
+    "David Silver’s example, as used in the lecture deck.",
+  "t4b.m2.aportacion":
+    "The concrete episode (how many bells, which reward, which \\(\\alpha\\)) is not on the "
+    + "slide: this page fixes it so that numbers can be put on it.",
+  "t4b.m2.lambdaLabel": "Trace decay (\\(\\lambda\\))",
+  "t4b.m2.lambdaValor": "λ = {lambda}",
+  "t4b.m2.kLabel": "Times the bell rings (\\(k\\))",
+  "t4b.m2.kValor": "k = {k}",
+  "t4b.m2.trazaLabel": "Trace type",
+  "t4b.m2.trazaAcum": "Accumulating",
+  "t4b.m2.trazaReemp": "Replacing",
+  "t4b.m2.reiniciar": "Reset",
+  "t4b.m2.parametros":
+    "\\(\\gamma\\) = 1 · \\(\\alpha\\) = 0.1 · a single, deterministic episode.",
+  "t4b.m2.viz1.titulo":
+    "Trace of each state, step by step · deterministic episode, <strong>no averaging</strong> "
+    + "(\\(\\gamma=1\\))",
+  "t4b.m2.viz2.titulo":
+    "Credit apportioned at the end of the episode, for each \\(\\lambda\\) · "
+    + "\\(\\alpha\\) = 0.1",
+  "t4b.m2.mTimbre": "\\(z\\) of the bell when the shock arrives",
+  "t4b.m2.mLuz": "\\(z\\) of the light when the shock arrives",
+  "t4b.m2.mCruce": "\\(\\lambda\\) at which they tie",
+  "t4b.m2.mCulpable": "Who takes the blame",
+  "t4b.m2.avisoTrazas":
+    "The slide uses the <strong>accumulating</strong> trace and never mentions that there are "
+    + "others. There are three: the accumulating one (\\(z\\) adds 1), the "
+    + "<strong>replacing</strong> one (\\(z\\) is set to 1; it is equation (12.12) of §12.6, "
+    + "defined only for the tabular case or for binary features) and the <em>dutch</em> one, "
+    + "which is what <em>true online</em> TD(\\(\\lambda\\)) uses (§12.5) and the one the book "
+    + "considers better grounded. This module lets you switch between the first two; the third "
+    + "is left out.",
+  "t4b.m2.cierre":
+    "A single number, \\(\\lambda\\), grades the agent’s memory between “only the latest "
+    + "counts” (\\(\\lambda=0\\), which is TD(0)) and “the whole episode counts equally” "
+    + "(\\(\\lambda=1\\) with \\(\\gamma=1\\), which is Monte Carlo). What is left is to see "
+    + "that the 1 which raises the trace is not a convention: it is a gradient.",
+  "t4b.m2.serieTimbre": "Bell — \\(z_t(\\text{bell})\\)",
+  "t4b.m2.serieLuz": "Light — \\(z_t(\\text{light})\\)",
+  "t4b.m2.timbre": "bell",
+  "t4b.m2.luz": "light",
+  "t4b.m2.ejeX": "Step of the episode, and what is observed at it",
+  "t4b.m2.ejeY": "Trace value z",
+  "t4b.m2.anotDescarga": "δ = −1 arrives here",
+  "t4b.m2.viz1.vacio": "No episode.",
+  "t4b.m2.anotLambda": "λ = {lambda}",
+  "t4b.m2.anotCruce": "tie: λ* = {cruce}",
+  "t4b.m2.ejeX2": "Trace decay (λ)",
+  "t4b.m2.ejeY2": "How much V(s) drops when the shock arrives",
+  "t4b.m2.viz2.vacio": "No data yet.",
+  "t4b.m2.vReemplazo":
+    "With the <strong>replacing</strong> trace, the bell’s is <strong>set</strong> to 1 at "
+    + "every visit instead of being added to, so when the shock arrives it is worth "
+    + "\\(\\lambda = {lambda}\\), no matter how many times it rang. Here frequency "
+    + "<strong>does not count</strong>: the light always wins, for any \\(\\lambda<1\\) and "
+    + "any \\(k\\). Choosing the trace type is not an implementation detail.",
+  "t4b.m2.vEmpate":
+    "An exact tie. This is the \\(\\lambda\\) at which the two heuristics balance out: with "
+    + "{k} bells, \\(\\lambda^{*} = {cruce}\\). Above it frequency rules; below it, recency.",
+  "t4b.m2.vTimbre":
+    "<strong>Frequency</strong> wins. With \\(\\lambda = {lambda}\\), the bell’s trace is "
+    + "\\({zB}\\) against the light’s 1: the bell loses \\({ratio}\\) times as much value. "
+    + "Ringing many times makes up for having rung earlier.",
+  "t4b.m2.vLuz":
+    "<strong>Recency</strong> wins. With \\(\\lambda = {lambda}\\) the bell’s trace has "
+    + "already faded to \\({zB}\\), below the light’s 1: having happened right before weighs "
+    + "more than having happened {k} times.",
+  "t4b.m2.mCruceNo": "none: the light wins for every λ < 1",
+  "t4b.m2.culpableEmpate": "A tie",
+  "t4b.m2.culpableTimbre": "The bell (frequency)",
+  "t4b.m2.culpableLuz": "The light (recency)",
+
+  /* --- figuras estáticas de los bloques (assets/tema4b.js) ---------------- */
+  "t4b.b2.fig.titulo":
+    "The backup diagrams of the \\(n\\)-step family (Figure 7.1)",
+  "t4b.b2.fig.col1": "one-step TD",
+  "t4b.b2.fig.col2": "2 steps",
+  "t4b.b2.fig.col3": "3 steps",
+  "t4b.b2.fig.col4": "n steps",
+  "t4b.b2.fig.col5": "∞ (Monte Carlo)",
+  "t4b.b2.fig.pie":
+    "Open circle: a state. Solid dot: the action taken. Square: the terminal state. The only "
+    + "thing that changes from one column to the next is <strong>how many real rewards</strong> "
+    + "enter before closing with an estimate; in the last one no estimate is left, and that is "
+    + "why it is Monte Carlo.",
+  "t4b.b7.fig.serie":
+    "weight of \\(G_{t:t+n}\\): \\((1-\\lambda)\\lambda^{\\,n-1}\\)",
+  "t4b.b7.fig.serieCola":
+    "tail after termination: \\(\\lambda^{\\,T-t-1}\\)",
+  "t4b.b7.fig.ejeX": "n (steps of the return being weighted)",
+  "t4b.b7.fig.ejeY": "Weight",
+  "t4b.b7.fig.anotCola": "termination at T − t = {n}",
+  "t4b.b7.fig.vacio": "The weights are computed when the page loads.",
+  "t4b.b7.fig.pie":
+    "With \\(\\lambda = 0.9\\) and an episode that has {n} steps left. The first {m} weights "
+    + "fade by \\(\\lambda\\) at each step; the last point is not one more of that series, it "
+    + "is the <strong>tail</strong>, which gathers in one go all the weight beyond "
+    + "termination and therefore sits above the curve. The {n} values sum to exactly 1.",
+
+  /* --- cuestionario del módulo 1 ----------------------------------------- */
+  "t4b.m1.quiz.0.enunciado":
+    "With \\(n=10\\), how many updates are made during the first nine steps of an episode?",
+  "t4b.m1.quiz.0.opciones": [
+    "None: \\(G_{0:10}\\) needs \\(R_{10}\\), which has not happened yet.",
+    "Nine, one per step, each with the return over however many steps are available.",
+    "One, that of the initial state, as soon as \\(R_1\\) is known.",
+    "Ten, because the \\(n\\)-step return can be truncated at any time.",
+  ],
+  "t4b.m1.quiz.0.explicacion":
+    "The \\(n\\)-step return cannot be formed until \\(R_{t+n}\\) has been seen and "
+    + "\\(V_{t+n-1}\\) computed: with \\(n=10\\), the first time that happens is at \\(t=9\\). "
+    + "Truncation does exist, but it only applies when the episode <strong>ends</strong> "
+    + "inside the window, not to bring updates forward. And to make up for the nine mute "
+    + "steps at the start, nine more updates are made once the episode is over: the total is "
+    + "still \\(T\\).",
+  "t4b.m1.quiz.1.enunciado":
+    "In the sweep, \\(\\alpha=0.8\\) is the best value for \\(n=1\\) and one of the worst for "
+    + "\\(n=64\\). Why?",
+  "t4b.m1.quiz.1.opciones": [
+    "Because with large \\(n\\) the target carries many real rewards inside, and therefore a "
+      + "lot of variance; a large step turns that variance into oscillation.",
+    "Because with large \\(n\\) the error reduction property stops holding.",
+    "Because with large \\(n\\) there are fewer updates per episode and that has to be "
+      + "compensated with a larger \\(\\alpha\\).",
+    "Because the RMS error is measured at the end of the episode and with large \\(n\\) it "
+      + "is measured earlier.",
+  ],
+  "t4b.m1.quiz.1.explicacion":
+    "With \\(n=1\\) the target is almost all estimate —which starts out at 0—, so a large "
+    + "step is needed to move at all; with \\(n=64\\) the target is almost the actual return, "
+    + "with all of its randomness, and a large step dumps that onto the estimate. The error "
+    + "reduction property always holds, it is just that with \\(\\gamma=1\\) it says nothing "
+    + "useful. And the number of updates per episode is \\(T\\) whatever \\(n\\) is: that does "
+    + "not change.",
+  "t4b.m1.quiz.2.enunciado":
+    "With \\(n=512\\) the sweep curves are almost indistinguishable from those of "
+    + "\\(n=256\\). What is going on?",
+  "t4b.m1.quiz.2.opciones": [
+    "That almost every episode ends before 256 steps, so in the vast majority of updates both "
+      + "returns are already the full actual return.",
+    "That beyond a certain \\(n\\) the algorithm stops bootstrapping and turns into dynamic "
+      + "programming.",
+    "That averaging over 100 repetitions wipes out the differences between large values of "
+      + "\\(n\\).",
+    "That with large \\(n\\) the error saturates at the value of the initialisation.",
+  ],
+  "t4b.m1.quiz.2.explicacion":
+    "The truncation convention says that if the window reaches or passes termination, the "
+    + "\\(n\\)-step return <strong>is</strong> the actual return. On this task the median "
+    + "episode length is 82 steps and only 2 out of 1000 exceed 512, so both values of \\(n\\) "
+    + "compute the same target almost always: both are already Monte Carlo with a constant "
+    + "\\(\\alpha\\). The averaging wipes out nothing —the same trajectories are used for "
+    + "every parameter— and the error does not saturate at the initialisation: with high "
+    + "\\(\\alpha\\) it is considerably worse than that.",
+
+  /* --- cuestionario del módulo 2 ----------------------------------------- */
+  "t4b.m2.quiz.0.enunciado":
+    "With \\(\\gamma=1\\), three bells and an accumulating trace, for which values of "
+    + "\\(\\lambda\\) does the bell take more blame than the light?",
+  "t4b.m2.quiz.0.opciones": [
+    "For \\(\\lambda\\) above roughly 0.544, which is where "
+      + "\\(\\lambda+\\lambda^2+\\lambda^3\\) exceeds 1.",
+    "For any \\(\\lambda>0\\), because the bell happened three times and the light once.",
+    "For \\(\\lambda\\) below 0.5, because fast decay favours whatever happened earlier.",
+    "Never: the light’s trace is 1 and no trace can exceed 1.",
+  ],
+  "t4b.m2.quiz.0.explicacion":
+    "The bell’s trace when the shock arrives is the sum of its three already-faded visits, "
+    + "\\(\\lambda+\\lambda^2+\\lambda^3\\), and the light’s is exactly 1 because it has just "
+    + "been visited. The two meet at \\(\\lambda\\approx0.544\\). Ringing three times is not "
+    + "enough if \\(\\lambda\\) is small: with \\(\\lambda=0.5\\) the bell’s trace is 0.875, "
+    + "below 1. And <strong>fast</strong> decay favours the recent, not the old. The claim "
+    + "that a trace cannot exceed 1 holds for the replacing trace, not for the accumulating "
+    + "one.",
+  "t4b.m2.quiz.1.enunciado":
+    "You switch to a replacing trace and raise \\(k\\) from 3 to 5. What happens to the credit "
+    + "the bell receives?",
+  "t4b.m2.quiz.1.opciones": [
+    "Nothing: with a replacing trace its value at the end is \\(\\lambda\\), regardless of how "
+      + "many times it rang.",
+    "It gets multiplied by 5/3, because there are five visits instead of three.",
+    "It drops, because each new visit replaces the previous one and erases its contribution.",
+    "It rises, but less than with the accumulating trace.",
+  ],
+  "t4b.m2.quiz.1.explicacion":
+    "The replacing trace does not add: it <strong>sets</strong> the value to 1 at each visit. "
+    + "The only thing that matters is how long it has been since the <strong>last</strong> "
+    + "one, and in this episode that is always one step, so it is worth \\(\\lambda\\) whether "
+    + "the bell rang once or five times. That is exactly why the choice between accumulating "
+    + "and replacing traces is not a detail: it changes which heuristic the algorithm is "
+    + "implementing.",
+  "t4b.m2.quiz.2.enunciado":
+    "With \\(\\lambda=1\\) and \\(\\gamma=1\\), TD(\\(\\lambda\\)) lowers "
+    + "\\(V(\\text{bell})\\) by 0.300, while every-visit Monte Carlo, applying its updates as "
+    + "it goes, lowers it by 0.271. What explains the difference?",
+  "t4b.m2.quiz.2.opciones": [
+    "That the equality between the forward and the backward view is only exact if the values "
+      + "are not modified during the episode; Monte Carlo here modifies them at every visit.",
+    "That TD(\\(\\lambda=1\\)) is not Monte Carlo: it is a different algorithm and always "
+      + "gives different results.",
+    "That the TD error of the last step is not exactly \\(-1\\) when \\(\\lambda=1\\).",
+    "That Monte Carlo uses the actual return and TD(1) uses a bootstrapped estimate.",
+  ],
+  "t4b.m2.quiz.2.explicacion":
+    "The two views add up to the same thing when \\(V\\) stays frozen during the episode: "
+    + "three updates of \\(-0.1\\) give \\(-0.3\\), which is exactly \\(\\alpha\\delta z\\) "
+    + "with \\(z=3\\). Monte Carlo applied on the fly uses a \\(V\\) that has already changed "
+    + "by the second and third visits, and that is why it adds up to less. TD(1) "
+    + "<strong>does</strong> implement Monte Carlo, and in fact more generally; the TD error "
+    + "of the last step is \\(-1\\) whatever \\(\\lambda\\) is; and with \\(\\lambda=1\\) no "
+    + "bootstrapped estimate is left inside the target.",
 };

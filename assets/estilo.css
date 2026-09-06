@@ -277,6 +277,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   letter-spacing: .12em; text-transform: uppercase; margin-bottom: .5rem;
 }
 .portada-tema .entradilla { font-size: 1.08rem; color: var(--texto-suave); max-width: none; line-height: 1.7; }
+/* La portada no es un modulo: el texto que va ahi (avisos, notas de semilla)
+   convive con la entradilla a caja completa, y en 68ch se veria como una
+   columna estrecha colgando debajo. Mismo criterio que .modulo.solo-estudio. */
+.portada-tema .explicacion { max-width: none; }
 
 .indice { margin: 1.5rem 0 0; }
 .indice ol {
@@ -400,7 +404,14 @@ table.datos thead th {
 table.datos tbody tr:hover { background: var(--superficie-2); }
 table.datos td.mono, table.datos th.mono { font-family: var(--mono); }
 table.datos tr.destacada { background: var(--acento-tenue); }
-.tabla-scroll { overflow-x: auto; }
+/* El `position: relative` NO es decorativo. KaTeX emite un gemelo en MathML
+   (`.katex-mathml`) posicionado en absoluto, y un ancestro con overflow solo
+   recorta descendientes absolutos si es su BLOQUE CONTENEDOR. Siendo static,
+   .tabla-scroll recortaba la tabla pero no el MathML, que se escapaba y
+   estiraba el documento: en tema4.html a 390 px daba scrollWidth 442 contra
+   clientWidth 375, es decir, desplazamiento horizontal en el movil sobre una
+   franja vacia. Invisible en pantalla y en los tests. */
+.tabla-scroll { overflow-x: auto; position: relative; }
 
 /* leyenda de series */
 .leyenda { display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .85rem; margin-top: .6rem; }
@@ -518,6 +529,41 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 :root[data-modo="clase"] .lienzo-escalable + .leyenda { font-size: 1.2rem; }
 :root[data-modo="clase"] .lienzo-escalable + .leyenda i { width: 1.4rem; height: .28rem; }
 
+/* ========================= Tema 4 ========================= */
+
+/* Cita en recuadro con su original en ingles debajo (bloque B0 de tema4.html).
+   La barra lateral va del lado de inicio, no a la izquierda fija: asi no se
+   rompe si alguna vez se sirve el sitio en un idioma de derecha a izquierda. */
+blockquote.cita {
+  margin: 1rem 0; padding: .7rem 0 .7rem 1rem;
+  border-inline-start: 3px solid var(--acento);
+  background: var(--acento-tenue); border-radius: 0 var(--radio-s) var(--radio-s) 0;
+  font-size: 1.02rem; line-height: 1.65;
+}
+blockquote.cita p { margin: 0; }
+/* El original en ingles NO se traduce: acompana a la version espanola para
+   que el alumno pueda contrastar la terminologia con el libro. */
+blockquote.cita .original {
+  display: block; margin-top: .5rem;
+  font-size: .88rem; font-style: italic; color: var(--texto-suave);
+}
+
+/* Desarrollo termino a termino del modulo 1: es una tabla de texto, no una
+   grafica, asi que va en HTML plano y no en SVG. */
+.derivacion {
+  font-family: var(--mono); font-size: .92rem; line-height: 1.9;
+  overflow-x: auto;                 /* se desplaza dentro de su caja, no la pagina */
+  padding: .6rem .2rem;
+}
+.derivacion > div { white-space: nowrap; }
+
+/* Lo que NO se puede saber sin modelo. Es el recurso expresivo central del
+   modulo 1: donde haria falta p(s',r|s,a), sale una caja gris con "?". */
+.incognita {
+  background: var(--superficie-3); color: var(--texto-suave);
+  border-radius: 3px; padding: 0 .35em; font-weight: 600;
+}
+
 /* ========================= utilidades ========================= */
 
 .visualmente-oculto {
@@ -534,4 +580,4 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 
 /* KaTeX: que no desborde y herede el color */
 .katex { color: var(--texto); }
-.katex-display { overflow-x: auto; overflow-y: hidden; padding: .25rem 0; }
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: .25rem 0; position: relative; }

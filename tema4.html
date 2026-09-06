@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="meta.titulo.tema4">Tema 4 · RL sin modelo — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 4 de Aprendizaje por Refuerzo (IMAT): aprendizaje sin modelo. De v a q, predicción de Monte Carlo, diferencia temporal y el error TD, control con SARSA y Q-learning, y el sesgo de maximización.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
+    <nav>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
+      <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+      <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
+      <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ================================================================= -->
+  <!-- A1 · portada  ·  A2 · índice                                      -->
+  <!-- ================================================================= -->
+  <div class="portada-tema">
+    <p class="kicker" data-t="t4.kicker">Tema 4 · Sutton &amp; Barto, capítulos 5 y 6</p>
+    <h1 data-t="t4.h1">Aprendizaje por refuerzo sin modelo</h1>
+    <p class="entradilla" data-t="t4.entradilla">
+      Hasta aquí, todo lo que sabías calcular dependía de \(p(s',r\mid s,a)\). A partir de
+      ahora no lo tienes. Esta página responde las preguntas que las diapositivas del tema
+      dejan abiertas: por qué sin modelo hay que estimar \(q_\pi(s,a)\) y no basta con
+      \(v_\pi(s)\), qué separa de verdad a Monte Carlo de la diferencia temporal —y no es la
+      velocidad—, qué hiperparámetros hay detrás de la figura del acantilado que se proyecta
+      en clase sin ninguno, y por qué el \(\max\) de unas estimaciones ruidosas engaña siempre
+      hacia arriba.
+    </p>
+
+    <p class="entradilla" data-t="t4.subtitulo">
+      Sigue el orden de la baraja <code>4_Tema4</code>, diapositiva a diapositiva, con el texto
+      explicativo del libro intercalado. La continuación —n pasos, TD(λ) y trazas de
+      elegibilidad— está en la segunda página.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t4.semillaLabel">Semilla</label>
+        <input type="number" id="semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <span class="suave" data-t="t4.semilla">Semilla 2026 · todo lo aleatorio de esta página se reproduce con ella</span>
+      </div>
+    </div>
+
+    <p class="explicacion nota" data-t="t4.avisoEstocastico">
+      Este tema es estocástico de principio a fin. Cada gráfica dice sobre cuántas ejecuciones
+      independientes promedia; si cambias la semilla, cambian los números, no las conclusiones.
+    </p>
+
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t4.indice.m1">De \(v\) a \(q\): lo que el modelo hacía por ti</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t4.indice.m2">Monte Carlo frente a TD(0) en el paseo aleatorio</span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t4.indice.m3">SARSA frente a Q-learning en el borde del acantilado</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t4.indice.m4">El \(\max\) engaña: sesgo de maximización</span></a></li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- A3 · mapa del tema                                                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="mapa">
+    <h2 data-t="t4.mapa.h2">Mapa del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.mapa.cab">
+            <th>Concepto</th><th>De dónde sale</th><th>A dónde lleva</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.mapa.f1">
+            <td>Sin modelo</td>
+            <td>En la mayoría de problemas reales no hay \(p(s',r\mid s,a)\), o calcularlo es más caro que muestrear</td>
+            <td>Hay que levantar las funciones de valor <strong>desde la experiencia</strong></td>
+          </tr>
+          <tr data-t="t4.mapa.f2">
+            <td>\(q\) y no \(v\)</td>
+            <td>El operador greedy sobre \(v\) necesita \(p\); sobre \(q\) no necesita nada</td>
+            <td>Todo el tema estima \(q_\pi(s,a)\) → módulo 1</td>
+          </tr>
+          <tr data-t="t4.mapa.f3">
+            <td>Monte Carlo</td>
+            <td>Promediar los retornos observados tras visitar un estado</td>
+            <td>Insesgado, sin bootstrapping, y hay que esperar al final del episodio</td>
+          </tr>
+          <tr data-t="t4.mapa.f4">
+            <td>Mantener la exploración</td>
+            <td>Con una política determinista solo se ven las acciones que elige</td>
+            <td>Arranques exploratorios, políticas ε-soft, o dos políticas (fuera de política)</td>
+          </tr>
+          <tr data-t="t4.mapa.f5">
+            <td>Bootstrapping</td>
+            <td>La ecuación de Bellman (6.4): el valor de un estado se escribe con el del siguiente</td>
+            <td>TD(0): actualizar sin esperar al final → módulo 2</td>
+          </tr>
+          <tr data-t="t4.mapa.f6">
+            <td>Error TD \(\delta_t\)</td>
+            <td>La diferencia entre lo que esperabas y lo que la experiencia + el bootstrap dicen</td>
+            <td>Es la señal que mueve todo lo demás, incluidas las trazas de la página 2</td>
+          </tr>
+          <tr data-t="t4.mapa.f7">
+            <td>GPI sobre \(Q\)</td>
+            <td>Lo que el Tema 3 ya resolvió: evaluar y mejorar, alternando</td>
+            <td>El control sin modelo es GPI con \(Q\) estimada de la experiencia</td>
+          </tr>
+          <tr data-t="t4.mapa.f8">
+            <td>SARSA</td>
+            <td>TD(0) aplicado a la quíntupla \((S_t,A_t,R_{t+1},S_{t+1},A_{t+1})\)</td>
+            <td>Dentro de política: evalúa la política que <strong>de verdad</strong> se está siguiendo</td>
+          </tr>
+          <tr data-t="t4.mapa.f9">
+            <td>Q-learning</td>
+            <td>Cambiar \(Q(S_{t+1},A_{t+1})\) por \(\max_a Q(S_{t+1},a)\)</td>
+            <td>Fuera de política: aprende \(q_*\) mientras se comporta con otra cosa → módulo 3</td>
+          </tr>
+          <tr data-t="t4.mapa.f10">
+            <td>Sesgo de maximización</td>
+            <td>Usar el mismo conjunto de estimaciones para elegir el máximo y para evaluarlo</td>
+            <td>Aprendizaje doble; y la razón de ser de Double DQN en el Tema 5 → módulo 4</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B0 · introducción propia: cuando no hay modelo                    -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b0">
+    <header>
+      <h2 data-t="t4.b0.h2">Cuando no hay modelo</h2>
+      <p class="fuente" data-t="t4.b0.fuente">Introducción propia del recurso · Sutton &amp; Barto, cap. 5 (apertura) y §5.2 · el gancho está en 4_Tema4#slide-4 y #slide-8</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b0.p1">
+      Los tres temas anteriores han tenido siempre el mismo suelo debajo: la dinámica
+      \(p(s',r\mid s,a)\). Con ella se escriben las ecuaciones de Bellman, y con ellas la
+      programación dinámica calcula \(v_\pi\), \(v_*\) y una política óptima sin interactuar
+      ni una vez con el entorno. <strong>A partir de aquí ese suelo desaparece.</strong>
+    </p>
+
+    <p class="explicacion" data-t="t4.b0.p2">
+      El libro no plantea la distinción como “con modelo / sin modelo”, sino como algo más
+      fino: <strong>distribución explícita frente a muestras</strong>. Aprender de la experiencia
+      solo necesita secuencias de estados, acciones y recompensas; la programación dinámica
+      necesita la distribución completa de todos los sucesores posibles. Y hay casos —el
+      blackjack es el ejemplo del libro— en los que el entorno se conoce <strong>por
+      completo</strong> y aun así calcular \(p\) es un ejercicio penoso y propenso a errores,
+      mientras que generar partidas de muestra es trivial.
+    </p>
+
+    <blockquote class="cita">
+      <p data-t="t4.b0.cita">
+        «Los métodos de Monte Carlo solo requieren <strong>experiencia</strong>: secuencias
+        muestrales de estados, acciones y recompensas de la interacción real o simulada con un
+        entorno.» — Sutton &amp; Barto, cap. 5, primer párrafo.
+      </p>
+      <!-- El original inglés no se traduce: en la versión inglesa es el mismo texto. -->
+      <span class="original" data-t="t4.b0.citaOrig">“Monte Carlo methods require only
+        <em>experience</em>—sample sequences of states, actions, and rewards from actual or
+        simulated interaction with an environment.”</span>
+    </blockquote>
+
+    <p class="explicacion" data-t="t4.b0.p3">
+      Y hay una segunda consecuencia, menos evidente y mucho más determinante: <strong>sin el
+      modelo, una tabla de valores de estado no sirve para recuperar una política</strong>. Con
+      modelo se mira un paso adelante —\(\pi(s)=\arg\max_a \sum_{s',r} p(s',r\mid s,a)[r+\gamma
+      v(s')]\)— y listo. Sin modelo esa expresión no se puede evaluar: falta justamente el
+      factor que no tienes. Por eso todo el tema estima <strong>valores de acción</strong>: con
+      \(q\), la política sale de un \(\arg\max\) que no necesita nada más.
+    </p>
+
+    <p class="ecuacion" data-t="t4.b0.ec">
+      \[ \pi(s) \;=\; \arg\max_a \sum_{s',r} p(s',r\mid s,a)\big[\,r+\gamma v(s')\,\big]
+         \qquad\text{frente a}\qquad \pi(s) \;\doteq\; \arg\max_a q(s,a) \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b0.p4">
+      La primera es la del Tema 3 y necesita \(p\). La segunda es la ecuación (5.1) del libro
+      y no necesita nada. Esa asimetría es la razón de que a partir de ahora todos los
+      algoritmos —MC, SARSA, Q-learning, Expected SARSA— trabajen sobre \(Q(s,a)\) y no sobre
+      \(V(s)\), salvo cuando el problema es de <strong>predicción</strong> pura, donde \(V\)
+      basta porque no hay que elegir nada.
+    </p>
+
+    <p class="explicacion" data-t="t4.b0.p5">La cadena lógica completa del tema, en seis pasos:</p>
+
+    <ul class="explicacion">
+      <li data-t="t4.b0.li1">Sin \(p\) no puedo calcular esperanzas → aprendo de muestras.</li>
+      <li data-t="t4.b0.li2">Con muestras y sin \(p\), \(v\) no me da la política → necesito \(q\).</li>
+      <li data-t="t4.b0.li3">Con \(q\) y una política determinista no veo todas las acciones → necesito exploración.</li>
+      <li data-t="t4.b0.li4">Si exploro, la política que sigo no es la que quiero evaluar → dentro de política con ε-soft, o fuera de política con muestreo de importancia.</li>
+      <li data-t="t4.b0.li5">Esperar al final del episodio es caro, y no vale para tareas continuas → bootstrapping, TD.</li>
+      <li data-t="t4.b0.li6">TD a un paso y Monte Carlo son los dos extremos de un mismo espectro → n pasos, en la página siguiente.</li>
+    </ul>
+
+    <p><a class="siguiente" href="#m1" data-t="t4.b0.continua">Continúa en el módulo 1 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · de v a q                                               -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta" data-t="t4.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t4.m1.h2">De \(v\) a \(q\): lo que el modelo hacía por ti</h2>
+      <p class="fuente" data-t="t4.m1.fuente">4_Tema4#slide-4 y #slide-8 · Sutton &amp; Barto §5.2 (<em>Monte Carlo Estimation of Action Values</em>) y §5.3, ecuación (5.1)</p>
+      <p class="fuente" data-t="t4.m1.determinista">Determinista: valores exactos, no simulados. La semilla no interviene.</p>
+    </header>
+
+    <!-- El interior lo construye assets/tema4.js (función modulo1). -->
+    <div id="m1-controles"></div>
+    <div id="m1-rejilla"></div>
+    <div id="m1-derivacion"></div>
+    <p class="explicacion" id="m1-veredicto"></p>
+    <div id="m1-contraejemplo"></div>
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1 · «Hasta ahora…»                                               -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1">
+    <header>
+      <h2 data-t="t4.b1.h2">Hasta ahora…</h2>
+      <p class="fuente" data-t="t4.b1.fuente">4_Tema4#slide-2 a #slide-7 · sin equivalente en el material de Lucía · Sutton &amp; Barto, caps. 2, 3 y 4</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b1.p1">
+      La baraja del tema empieza con seis diapositivas de repaso. No son relleno: cada una
+      aporta una pieza que el Tema 4 va a reutilizar tal cual.
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.b1.cab">
+            <th>De dónde</th><th>Qué se reutiliza</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b1.t1">
+            <td>Tema 1 (<code>#slide-2</code>)</td>
+            <td>La recompensa y el retorno, las <strong>reglas de actualización</strong> para estimarlos a partir de la experiencia, y el dilema exploración/explotación con ε-greedy. Todo eso reaparece intacto aquí.</td>
+          </tr>
+          <tr data-t="t4.b1.t2">
+            <td>Tema 2 (<code>#slide-3</code>, <code>#slide-4</code>)</td>
+            <td>El MDP, la propiedad de Markov y las <strong>dos</strong> funciones de valor. Y la observación que abre este tema: con \(q_*\) la política óptima determinista sale directamente; con \(v_*\), solo si se tiene el modelo.</td>
+          </tr>
+          <tr data-t="t4.b1.t3">
+            <td>Tema 3 (<code>#slide-5</code>)</td>
+            <td>La evaluación iterativa de la política, el operador de mejora y el hecho de que <strong>si la política no cambia al aplicarlo, es porque es óptima</strong>. La iteración de política resuelve el control cuando hay modelo.</td>
+          </tr>
+          <tr data-t="t4.b1.t4">
+            <td>Tema 3, la figura (<code>#slide-7</code>)</td>
+            <td>El triángulo de la iteración generalizada de la política: \(v\) y \(\pi\) convergiendo entre las rectas \(v = v_\pi\) y \(\pi = \text{greedy}(v)\) hacia \(v_*,\pi_*\). El esqueleto no cambia en este tema; lo único que cambia es <strong>de dónde salen los números</strong>.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion nota" data-t="t4.b1.nota">
+      Las dos figuras del repaso —el diagrama de flujo de la búsqueda de una política
+      (<code>#slide-6</code>) y el triángulo de la iteración generalizada (<code>#slide-7</code>)—
+      son imagen pura en la diapositiva: lo que se dice sobre ellas es oral. Aquí van con su glosa escrita, que
+      es lo que falta cuando se estudia por el PDF.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B2 · lo que necesitamos para el control                           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b2">
+    <header>
+      <h2 data-t="t4.b2.h2">Entonces, lo que necesitamos para el control</h2>
+      <p class="fuente" data-t="t4.b2.fuente">4_Tema4#slide-8 (rótulo literal) · Lucía lo plantea en Tema4_1_ModelFree#slide-3 · Sutton &amp; Barto §5.10 (Summary) y cap. 6 (apertura)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b2.p1">
+      La diapositiva lo reduce a dos cosas: <strong>(1)</strong> un método para estimar los
+      valores de acción de una política dada, y <strong>(2)</strong> un método para mejorar la
+      política. La segunda ya la tenemos —es el operador greedy del Tema 3, y funciona igual
+      con \(Q\) que con \(v\)—. Lo que falta, y es todo el Tema 4, es la primera: <strong>evaluar
+      sin modelo</strong>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b2.p2">
+      Dicho de otra manera: el control ya sabemos plantearlo. Lo que no sabemos es de dónde
+      sacar los números cuando no hay \(p\). La respuesta del tema es siempre la misma: de un
+      <strong>flujo de experiencia</strong>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b2.p3">
+      Conviene fijar desde el principio los <strong>dos ejes</strong> que separan los métodos,
+      porque son independientes y se confunden todo el rato:
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.b2.cab">
+            <th>Método</th><th>¿Necesita \(p\)?</th><th>¿Hace bootstrapping?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b2.f1"><td>Programación dinámica (T3)</td><td>Sí</td><td>Sí</td></tr>
+          <tr data-t="t4.b2.f2"><td>Monte Carlo</td><td>No</td><td>No</td></tr>
+          <tr data-t="t4.b2.f3"><td>Diferencia temporal</td><td>No</td><td>Sí</td></tr>
+          <tr data-t="t4.b2.f4"><td>Búsqueda exhaustiva</td><td>Sí</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion" data-t="t4.b2.p4">
+      Que los dos ejes sean independientes lo dice el libro con todas las letras al cerrar el
+      capítulo 5: Monte Carlo se diferencia de la programación dinámica en <strong>dos</strong>
+      cosas, opera sobre experiencia muestral y no hace bootstrapping, <em>«y esas dos
+      diferencias no están fuertemente ligadas, se pueden separar»</em>. El capítulo 6 es
+      exactamente eso: aprender de la experiencia <strong>y además</strong> hacer bootstrapping.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B3 · predicción de Monte Carlo                                    -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b3">
+    <header>
+      <h2 data-t="t4.b3.h2">Predicción de Monte Carlo</h2>
+      <p class="fuente" data-t="t4.b3.fuente">4_Tema4#slide-10 y #slide-11 · material de Lucía: Tema4_1_ModelFree#slide-4 · Sutton &amp; Barto §5.1, caja <em>First-visit MC prediction</em></p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b3.p1">
+      La idea cabe en una frase: <strong>si \(v_\pi(s)\) es la esperanza del retorno desde
+      \(s\), estímala promediando los retornos que de verdad has observado tras visitar
+      \(s\)</strong>. No hace falta nada más: ni \(p\), ni ecuaciones, ni resolver ningún
+      sistema. Hace falta experiencia, y hace falta que los episodios <strong>terminen</strong>.
+    </p>
+
+    <p class="ecuacion" data-t="t4.b3.ec">
+      \[ v_\pi(s) \;\doteq\; \mathbb{E}_\pi\!\left[\,G_t \mid S_t = s\,\right]
+         \qquad\Longrightarrow\qquad V(s) \;\leftarrow\; \text{media}\big(\text{Retornos}(s)\big) \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b3.p2">
+      Cada aparición de \(s\) en un episodio es una <strong>visita</strong>. El método de
+      <strong>primera visita</strong> promedia los retornos que siguen a la primera visita de
+      cada episodio; el de <strong>cada visita</strong> promedia los de todas. Los dos convergen
+      a \(v_\pi(s)\) cuando el número de visitas tiende a infinito. El de primera visita es más
+      fácil de analizar —sus retornos son independientes e idénticamente distribuidos, el
+      estimador es <strong>insesgado</strong> y su error típico cae como \(1/\sqrt{n}\)—; el de
+      cada visita converge también, pero sus retornos están correlacionados dentro del mismo
+      episodio y el libro se limita a decir que converge cuadráticamente, remitiendo a Singh y
+      Sutton (1996).
+    </p>
+
+    <pre class="codigo" data-t="t4.b3.caja">Predicción MC de primera visita, para estimar V ≈ v_π
+
+Entrada: la política π que se quiere evaluar
+Inicializar:
+    V(s) ∈ R, arbitrariamente, para todo s ∈ S
+    Retornos(s) ← lista vacía, para todo s ∈ S
+Repetir para siempre (para cada episodio):
+    Generar un episodio siguiendo π:  S_0, A_0, R_1, S_1, A_1, R_2, …, S_{T−1}, A_{T−1}, R_T
+    G ← 0
+    Para cada paso del episodio, t = T−1, T−2, …, 0:
+        G ← γG + R_{t+1}
+        Salvo que S_t aparezca en S_0, S_1, …, S_{t−1}:
+            Añadir G a Retornos(S_t)
+            V(S_t) ← media(Retornos(S_t))</pre>
+
+    <p class="explicacion" data-t="t4.b3.p3">
+      Dos propiedades que se preguntan mucho. La primera: <strong>las estimaciones de cada
+      estado son independientes</strong>. La de un estado no se construye sobre la de ningún
+      otro, al contrario de lo que pasa en programación dinámica. Monte Carlo <strong>no hace
+      bootstrapping</strong>. La segunda, que es consecuencia de la primera: el coste de estimar
+      el valor de <strong>un</strong> estado no depende del número de estados. Si solo te
+      interesan diez estados de un millón, puedes generar episodios que empiecen ahí y
+      olvidarte del resto.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B4 · la traza del gridworld de juguete                            -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b4">
+    <header>
+      <h2 data-t="t4.b4.h2">Cómo evolucionan los valores: la traza del gridworld de juguete</h2>
+      <p class="fuente" data-t="t4.b4.fuente">4_Tema4#slide-12 · el mismo gridworld 3×3 del Tema 2 (2_Tema2_wclp#slide-6 a #slide-8) · Sutton &amp; Barto §5.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b4.p1">
+      La diapositiva del tema proyecta un episodio completo sobre el gridworld 3×3 del Tema 2
+      y anuncia <em>«cómo evolucionan los valores de estado»</em>. <strong>Los valores no llegan
+      a mostrarse</strong>, y tampoco se dice cuánto vale \(\gamma\) ni si el método es de
+      primera o de cada visita. Aquí está la cuenta entera.
+    </p>
+
+    <pre class="codigo" data-t="t4.b4.episodio">S_0 = 1,  A_0 = d(erecha),  R_1 = −1
+S_1 = 2,  A_1 = a(bajo),    R_2 = −1
+S_2 = 5,  A_2 = d(erecha),  R_3 = −1
+S_3 = 6,  A_3 = a(bajo),    R_4 = −1
+S_4 = T</pre>
+
+    <p class="explicacion nota" data-t="t4.b4.erratum">
+      <strong>Errata del material.</strong> La diapositiva escribe \(A_3 = r\) (derecha), pero
+      en el dibujo la traza <strong>baja</strong> del estado 6 al terminal, que está justo
+      debajo. Con esta geometría, ir a la derecha desde 6 rebota contra la pared y deja al
+      agente en 6: el episodio no terminaría. La acción correcta es <strong>abajo</strong>, y es
+      la que se usa aquí. Las otras tres sí coinciden con el dibujo.
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos">
+        <thead>
+          <tr data-t="t4.b4.cab">
+            <th>\(t\)</th><th>\(S_t\)</th><th>\(R_{t+1}\)</th><th>\(G_t\) con \(\gamma=1\)</th><th>\(V(S_t)\) tras el episodio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b4.f1"><td>3</td><td>6</td><td>−1</td><td><strong>−1</strong></td><td>−1</td></tr>
+          <tr data-t="t4.b4.f2"><td>2</td><td>5</td><td>−1</td><td><strong>−2</strong></td><td>−2</td></tr>
+          <tr data-t="t4.b4.f3"><td>1</td><td>2</td><td>−1</td><td><strong>−3</strong></td><td>−3</td></tr>
+          <tr data-t="t4.b4.f4"><td>0</td><td>1</td><td>−1</td><td><strong>−4</strong></td><td>−4</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Figura estática: la rejilla 3×3 con la traza 1 → 2 → 5 → 6 → T y los G_t. -->
+    <div id="b4-traza"></div>
+
+    <p class="explicacion" data-t="t4.b4.p2">
+      El bucle va <strong>hacia atrás</strong>, de \(t=T-1\) a \(t=0\), acumulando \(G
+      \leftarrow \gamma G + R_{t+1}\); por eso el primer retorno que se calcula es el del último
+      estado visitado. Con \(\gamma = 1\) y \(r=-1\) en cada paso, \(G_t\) es simplemente
+      <strong>menos el número de pasos que quedaban hasta terminar</strong>. Los cuatro estados
+      aparecen una sola vez en el episodio, así que <strong>primera visita y cada visita dan
+      exactamente lo mismo</strong> —motivo por el cual la diapositiva puede permitirse no decir
+      cuál usa—.
+    </p>
+
+    <p class="explicacion" data-t="t4.b4.p3">
+      Y ahí está la limitación en una línea: después de un episodio se sabe algo de
+      <strong>cuatro</strong> de los ocho estados, y nada de los otros cuatro. Con \(\gamma=1\),
+      los valores óptimos de esta rejilla son \(v_*(s) = -d(s)\), donde \(d(s)\) es la distancia
+      mínima al terminal: \(-4,\,-3,\,-2\) en la fila de arriba, \(-3,\,-2,\,-1\) en la de en
+      medio y \(-2,\,-1,\,0\) en la de abajo. La estimación de \(V(1)=-4\) que da este único
+      episodio coincide con \(v_*(1)\) por pura suerte: el episodio siguió, sin saberlo, un
+      camino mínimo.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B5 · limitaciones, exploración y políticas ε-soft                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b5">
+    <header>
+      <h2 data-t="t4.b5.h2">Limitaciones, exploración y políticas ε-soft</h2>
+      <p class="fuente" data-t="t4.b5.fuente">4_Tema4#slide-13 y #slide-14 · material de Lucía: Tema4_1_ModelFree#slide-5 a #slide-10 (arranques exploratorios y GLIE, que Álvaro no cubre) · Sutton &amp; Barto §5.2, §5.3 y §5.4</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b5.p1">
+      Las limitaciones que la diapositiva enumera son cuatro: <strong>solo vale para MDP
+      episódicos</strong>, porque hace falta que el episodio acabe para conocer \(G_t\); el
+      estimador es insesgado pero de <strong>varianza alta</strong>, así que el aprendizaje es
+      lento; con políticas deterministas hay pares estado-acción que <strong>nunca se
+      visitan</strong>, y sin visitas no hay nada que promediar; y todo esto se agrava al
+      estimar valores de <strong>acción</strong>, que es justo lo que el tema necesita.
+    </p>
+
+    <p class="explicacion" data-t="t4.b5.p2">
+      El problema de fondo tiene nombre en el libro: <strong>mantener la exploración</strong>.
+      Si \(\pi\) es determinista, siguiendo \(\pi\) solo se observan retornos de
+      <strong>una</strong> acción por estado, y las estimaciones de las demás no mejoran nunca.
+      Hay tres salidas, y el capítulo 5 las recorre en este orden:
+    </p>
+
+    <ol class="explicacion">
+      <li data-t="t4.b5.li1"><strong>Arranques exploratorios</strong> (<em>exploring starts</em>): exigir que cada episodio empiece en un par \((s,a)\) elegido de forma que <strong>todos</strong> tengan probabilidad no nula. Garantiza visitar todos los pares, pero es una hipótesis irreal en cuanto se aprende de la interacción real: las condiciones iniciales rara vez son tan complacientes.</li>
+      <li data-t="t4.b5.li2"><strong>Políticas ε-soft</strong>, dentro de política: exigir \(\pi(a\mid s) \ge \varepsilon/|A(s)|\) para todo estado y toda acción. Las ε-greedy son el caso de esta familia más cercano a la greedy. Se explora siempre un poco, y se aprende sobre la política que de verdad se está siguiendo.</li>
+      <li data-t="t4.b5.li3"><strong>Dos políticas</strong>, fuera de política: una que genera el comportamiento y otra que se aprende. Es el bloque B10.</li>
+    </ol>
+
+    <pre class="codigo" data-t="t4.b5.caja">Control MC de primera visita dentro de política (para políticas ε-soft), estima π ≈ π_*
+
+Parámetro del algoritmo: ε &gt; 0 pequeño
+Inicializar:
+    π ← una política ε-soft cualquiera
+    Q(s,a) ∈ R, arbitrariamente, para todo s ∈ S, a ∈ A(s)
+    Retornos(s,a) ← lista vacía, para todo s ∈ S, a ∈ A(s)
+Repetir para siempre (para cada episodio):
+    Generar un episodio siguiendo π:  S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T
+    G ← 0
+    Para cada paso del episodio, t = T−1, T−2, …, 0:
+        G ← γG + R_{t+1}
+        Salvo que el par S_t, A_t aparezca en S_0,A_0, …, S_{t−1},A_{t−1}:
+            Añadir G a Retornos(S_t, A_t)
+            Q(S_t, A_t) ← media(Retornos(S_t, A_t))
+            A* ← argmax_a Q(S_t, a)      (empates deshechos arbitrariamente)
+            Para todo a ∈ A(S_t):
+                π(a|S_t) ← 1 − ε + ε/|A(S_t)|   si a = A*
+                π(a|S_t) ← ε/|A(S_t)|           si a ≠ A*</pre>
+
+    <div class="aviso" data-t="t4.b5.erratum">
+      <strong>Discrepancia entre las dos colecciones, y esta vez importa.</strong> La
+      diapositiva de clase dice que el teorema de mejora de la política se extiende a las ε-soft
+      y que eso da <em>«garantías de convergencia a una política óptima»</em>
+      (<code>4_Tema4#slide-14</code>). La otra colección responde lo contrario a la misma
+      pregunta: <em>«<strong>No</strong>, porque seguimos manteniendo exploración… pero podemos
+      encontrar la <strong>mejor política dentro de las ε-soft</strong>»</em>
+      (<code>Tema4_1_ModelFree#slide-10</code>, material de Lucía). <strong>La segunda es la
+      correcta</strong>: el libro demuestra que se alcanza el óptimo <strong>entre las políticas
+      ε-soft</strong>, no \(\pi_*\), salvo que \(\varepsilon\to 0\) (§5.4, p. 125). Con
+      \(\varepsilon\) fijo, la política a la que se llega sigue tomando acciones aleatorias una
+      fracción \(\varepsilon\) del tiempo, y eso tiene un coste que se verá con los ojos en el
+      módulo 3.
+    </div>
+
+    <p class="explicacion nota" data-t="t4.b5.nota">
+      Dos avisos. Primero: el nombre <strong>GLIE</strong> (<em>greedy in the limit with
+      infinite exploration</em>), que se usa en clase
+      (<code>Tema4_1_ModelFree#slide-10</code>), <strong>no aparece en Sutton &amp;
+      Barto</strong>: viene de Singh et al. (2000) y de las diapositivas de David Silver. El
+      libro enuncia la condición equivalente sin ponerle nombre, en §6.4: converge <em>«siempre
+      que todos los pares estado-acción se visiten infinitas veces y la política converja en el
+      límite a la greedy, lo que puede conseguirse, por ejemplo, con políticas ε-greedy tomando
+      \(\varepsilon = 1/t\)»</em>. Segundo: <strong>Monte Carlo con arranques exploratorios no
+      tiene demostración de convergencia</strong>. El libro lo dice literalmente y añade que es
+      <em>«una de las preguntas teóricas abiertas más fundamentales del aprendizaje por
+      refuerzo»</em> (§5.3, p. 121). Si alguien te lo cuenta como un teorema, no lo es.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B6 · predicción con TD                                            -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b6">
+    <header>
+      <h2 data-t="t4.b6.h2">Predicción con diferencia temporal</h2>
+      <p class="fuente" data-t="t4.b6.fuente">4_Tema4#slide-15 a #slide-18 · material de Lucía: Tema4_2_ModelFree#slide-4 a #slide-6 · Sutton &amp; Barto §6.1, ecuaciones (6.1), (6.2) y (6.5)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b6.p1">
+      Monte Carlo obliga a esperar al final del episodio: hasta que no acaba, no se conoce
+      \(G_t\) y no hay nada que promediar. La diapositiva plantea la salida como una pregunta al
+      aula —<em>«¿y si usamos nuestra estimación del estado siguiente para actualizar la del
+      estado actual? ¿y si hacemos bootstrap?»</em>— y la respuesta ya estaba escrita en el
+      Tema 2:
+    </p>
+
+    <p class="ecuacion" data-t="t4.b6.ec1">
+      \[ v_\pi(s) \;\doteq\; \mathbb{E}_\pi[\,G_t \mid S_t=s\,] \tag{6.3} \]
+      \[ = \mathbb{E}_\pi[\,R_{t+1} + \gamma G_{t+1} \mid S_t=s\,] \tag{de (3.9)} \]
+      \[ = \mathbb{E}_\pi[\,R_{t+1} + \gamma\, v_\pi(S_{t+1}) \mid S_t=s\,] \tag{6.4} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b6.p2">
+      Monte Carlo usa una estimación de <strong>(6.3)</strong> como objetivo: sustituye la
+      esperanza por un retorno muestreado. La programación dinámica usa una estimación de
+      <strong>(6.4)</strong>: las esperanzas las calcula exactas con el modelo, pero
+      \(v_\pi(S_{t+1})\) no lo conoce y usa \(V(S_{t+1})\) en su lugar. <strong>TD aproxima por
+      las dos razones a la vez</strong>: muestrea la esperanza <em>y</em> hace bootstrapping
+      sobre su propia estimación. Es la frase que resume el capítulo entero.
+    </p>
+
+    <p class="ecuacion" data-t="t4.b6.ec2">
+      \[ \text{MC de paso constante:}\qquad V(S_t) \;\leftarrow\; V(S_t) + \alpha\big[\,G_t - V(S_t)\,\big] \tag{6.1} \]
+      \[ \text{TD(0):}\qquad V(S_t) \;\leftarrow\; V(S_t) + \alpha\big[\,R_{t+1} + \gamma V(S_{t+1}) - V(S_t)\,\big] \tag{6.2} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b6.p3">
+      Debajo de las dos está el patrón que ya apareció en el Tema 1 y que no va a dejar de
+      aparecer: <strong>Nueva estimación ← Estimación anterior + PasoDeAprendizaje · [Objetivo −
+      Estimación anterior]</strong>. Lo único que distingue a un algoritmo de otro en todo este
+      tema es <strong>de dónde sale el objetivo</strong>. En MC el objetivo es \(G_t\), que exige
+      terminar el episodio. En TD(0) es \(R_{t+1} + \gamma V(S_{t+1})\), que está disponible
+      <strong>un paso después</strong>.
+    </p>
+
+    <pre class="codigo" data-t="t4.b6.caja">TD(0) tabular, para estimar v_π
+
+Entrada: la política π que se quiere evaluar
+Parámetro del algoritmo: paso de aprendizaje α ∈ (0,1]
+Inicializar V(s) para todo s ∈ S⁺, arbitrariamente salvo que V(terminal) = 0
+Repetir para cada episodio:
+    Inicializar S
+    Repetir para cada paso del episodio:
+        A ← acción dada por π para S
+        Ejecutar A, observar R y S'
+        V(S) ← V(S) + α [ R + γV(S') − V(S) ]
+        S ← S'
+    hasta que S sea terminal</pre>
+
+    <p class="explicacion" data-t="t4.b6.p4">
+      El corchete tiene nombre propio y va a aparecer en todo lo que queda de asignatura,
+      incluidas las trazas de elegibilidad y el gradiente de política:
+    </p>
+
+    <p class="ecuacion">
+      \[ \delta_t \;\doteq\; R_{t+1} + \gamma V(S_{t+1}) - V(S_t) \tag{6.5} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b6.p5">
+      Se lee como <strong>la diferencia entre lo que esperabas obtener desde \(S_t\) —eso es
+      \(V(S_t)\)— y lo que la experiencia recién observada más el bootstrap dicen que deberías
+      esperar</strong>. Un detalle que se pregunta: \(\delta_t\) es el error de \(V(S_t)\), pero
+      <strong>no está disponible hasta el instante \(t+1\)</strong>, porque depende de
+      \(R_{t+1}\) y de \(S_{t+1}\).
+    </p>
+
+    <p class="explicacion nota" data-t="t4.b6.nota">
+      Sumando los errores TD de un episodio se recupera exactamente el error de Monte Carlo:
+      \(G_t - V(S_t) = \sum_{k=t}^{T-1}\gamma^{k-t}\delta_k\) (ecuación 6.6). <strong>La
+      identidad solo es exacta si \(V\) no cambia durante el episodio</strong>, y TD(0) sí lo
+      cambia; con \(\alpha\) pequeño se cumple de forma aproximada. Es la bisagra con la vista
+      hacia adelante y hacia atrás de la segunda página.
+    </p>
+
+    <p class="explicacion nota" data-t="t4.b6.notacion">
+      Aquí se escribe \(V\) en mayúscula, no \(v\). Es deliberado: \(v_\pi\) es la función de
+      valor <strong>verdadera</strong> y \(V\) es el array de <strong>estimaciones</strong>. El
+      material de la asignatura las mezcla; el libro no, y este tema entero trata justamente de
+      la diferencia entre las dos.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B7 · Monte Carlo frente a TD → módulo 2                           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b7">
+    <header>
+      <h2 data-t="t4.b7.h2">Monte Carlo frente a TD</h2>
+      <p class="fuente" data-t="t4.b7.fuente">4_Tema4#slide-19 a #slide-21 · material de Lucía: Tema4_2_ModelFree#slide-7, #slide-8 y #slide-11 (el paseo aleatorio con sus cifras, que Álvaro no tiene) · Sutton &amp; Barto §6.2, Example 6.1, Figura 6.1, Example 6.2 y §6.3</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b7.p1">
+      El ejemplo con el que la diapositiva plantea el contraste es <strong>volver a casa en
+      coche</strong> (<em>Driving Home</em>). Sales de la oficina un viernes a las seis y vas
+      actualizando tu predicción del tiempo total de viaje a medida que pasan cosas. Las
+      recompensas son los minutos de cada tramo; el valor de un estado es el tiempo
+      <strong>esperado</strong> que queda; y como aquí solo se predice, se usan números positivos
+      y \(\gamma = 1\).
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos">
+        <thead>
+          <tr data-t="t4.b7.cab">
+            <th>Estado</th><th>Tiempo transcurrido (min)</th><th>Tiempo previsto restante</th><th>Tiempo total previsto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b7.f1"><td>salgo de la oficina, viernes a las 6</td><td>0</td><td>30</td><td>30</td></tr>
+          <tr data-t="t4.b7.f2"><td>llego al coche, está lloviendo</td><td>5</td><td>35</td><td>40</td></tr>
+          <tr data-t="t4.b7.f3"><td>salgo de la autopista</td><td>20</td><td>15</td><td>35</td></tr>
+          <tr data-t="t4.b7.f4"><td>carretera secundaria, detrás de un camión</td><td>30</td><td>10</td><td>40</td></tr>
+          <tr data-t="t4.b7.f5"><td>entro en mi calle</td><td>40</td><td>3</td><td>43</td></tr>
+          <tr data-t="t4.b7.f6"><td>llego a casa</td><td>43</td><td>0</td><td>43</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion" data-t="t4.b7.p2">
+      Con Monte Carlo (y \(\alpha=1\)) <strong>todas</strong> las correcciones apuntan al mismo
+      sitio: al resultado final, 43. Con TD, cada estimación se desplaza hacia <strong>la que le
+      sigue inmediatamente</strong>: al llegar al coche bajo la lluvia ya sabes que 30 minutos
+      era optimista, y puedes corregir la predicción inicial sin esperar a llegar a casa. La
+      pregunta del libro lo dice mejor que ninguna explicación: <em>«¿tienes que esperar a llegar
+      a casa para subir tu estimación del estado inicial?»</em>
+    </p>
+
+    <!-- Figura estática: los dos paneles de la Figura 6.1 (S&B p. 145). Datos fijos. -->
+    <div id="b7-figura"></div>
+
+    <p class="explicacion" data-t="t4.b7.p3">
+      El resumen que se proyecta en clase, ordenado y con dos matices que la diapositiva no
+      pone:
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.b7.cab2">
+            <th></th><th>Monte Carlo</th><th>TD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b7.g1"><td>Objetivo</td><td>\(G_t\): el retorno realmente observado</td><td>\(R_{t+1}+\gamma V(S_{t+1})\): una muestra más el bootstrap</td></tr>
+          <tr data-t="t4.b7.g2"><td>¿Cuándo se puede actualizar?</td><td>Al terminar el episodio</td><td>Un paso después</td></tr>
+          <tr data-t="t4.b7.g3"><td>¿Vale para tareas continuas?</td><td>No</td><td>Sí</td></tr>
+          <tr data-t="t4.b7.g4"><td>Sesgo</td><td>Ninguno con <strong>primera visita</strong>. El estimador de <strong>cada visita</strong> —que es el que usa el módulo 2— <strong>sí</strong> es sesgado en muestra finita, aunque el sesgo tiende a cero al crecer el número de episodios</td><td>Sí: el objetivo usa una estimación</td></tr>
+          <tr data-t="t4.b7.g5"><td>Varianza</td><td>Alta: el retorno depende de toda la trayectoria</td><td>Baja: el objetivo depende de una sola transición</td></tr>
+          <tr data-t="t4.b7.g6"><td>Propiedad de Markov</td><td>No la aprovecha</td><td>La aprovecha: en el fondo estima el modelo del proceso</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aviso" data-t="t4.b7.erratum">
+      La diapositiva escribe dos veces <strong>«propiedad MDP»</strong> donde debe decir
+      <strong>«propiedad de Markov»</strong> (<code>4_Tema4#slide-21</code>); la otra colección
+      lo escribe bien (<code>Tema4_2_ModelFree#slide-8</code>) y además da la razón, que es la
+      única formulación de las dos colecciones que la da: TD <em>«en oculto trata de estimar
+      \(p\)»</em>.
+    </div>
+
+    <p class="explicacion" data-t="t4.b7.p4">
+      Y una advertencia sobre la afirmación “TD converge más rápido”. El libro es explícito:
+      <em>«nadie ha sido capaz de demostrar matemáticamente que un método converja más rápido que
+      el otro. De hecho, ni siquiera está claro cuál es la forma más apropiada de plantear
+      formalmente la pregunta»</em> (§6.2, p. 146). Lo que sí hay es <strong>evidencia
+      empírica</strong>: en tareas estocásticas, TD suele llegar antes. Eso es lo que se puede
+      comprobar en el módulo siguiente, y es también todo lo que se puede afirmar.
+    </p>
+
+    <p><a class="siguiente" href="#m2" data-t="t4.b7.continua">Continúa en el módulo 2 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · MC frente a TD(0) en el paseo aleatorio                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta" data-t="t4.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t4.m2.h2">Monte Carlo frente a TD(0) en el paseo aleatorio</h2>
+      <p class="fuente" data-t="t4.m2.fuente">4_Tema4#slide-19 a #slide-21 · material de Lucía: Tema4_2_ModelFree#slide-8 y #slide-11 · Sutton &amp; Barto §6.2, Example 6.2 (p. 147, la gráfica va dentro del recuadro del ejemplo y no lleva número de figura), §6.3, Figura 6.2 y Example 6.4 (p. 149)</p>
+      <p class="fuente" id="m2-semilla"></p>
+    </header>
+
+    <!-- El interior lo construye assets/tema4.js (función modulo2). -->
+    <div id="m2-controles"></div>
+    <div id="m2-valores"></div>
+    <div id="m2-rms"></div>
+    <div id="m2-metricas"></div>
+    <div id="m2-predictor"></div>
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B8 · los tres diagramas de backup y la visión unificada           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b8">
+    <header>
+      <h2 data-t="t4.b8.h2">Los tres diagramas de backup, y la visión unificada</h2>
+      <p class="fuente" data-t="t4.b8.fuente">4_Tema4#slide-22 a #slide-25 · material de Lucía: Tema4_2_ModelFree#slide-9 y #slide-10 (los tres en una sola diapositiva) · Sutton &amp; Barto §5.1 (p. 117), §6.1 (p. 143), §3.5 (p. 81) y §8.11 (la figura de la visión unificada)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b8.p1">
+      Los tres métodos que ya conoces se distinguen a la vista si se dibuja <strong>qué parte
+      del árbol de futuros usa cada actualización</strong>.
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.b8.cab">
+            <th>Método</th><th>Regla</th><th>Qué recorre el diagrama</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.b8.f1"><td>Monte Carlo</td><td>\(V(S_t) \leftarrow V(S_t) + \alpha\,[\,G_t - V(S_t)\,]\)</td><td><strong>Una</strong> rama, desde \(S_t\) <strong>hasta el terminal</strong></td></tr>
+          <tr data-t="t4.b8.f2"><td>TD(0)</td><td>\(V(S_t) \leftarrow V(S_t) + \alpha\,[\,R_{t+1}+\gamma V(S_{t+1}) - V(S_t)\,]\)</td><td><strong>Una</strong> rama, <strong>un solo paso</strong></td></tr>
+          <tr data-t="t4.b8.f3"><td>Programación dinámica</td><td>\(V(S_t) \leftarrow \mathbb{E}_\pi[\,R_{t+1}+\gamma V(S_{t+1})\,]\)</td><td><strong>Todas</strong> las ramas, <strong>un solo nivel</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Figura estática: los tres diagramas de backup (arbolBackup). -->
+    <div id="b8-backups"></div>
+
+    <p class="explicacion" data-t="t4.b8.p2">
+      La diapositiva siguiente proyecta la “visión unificada”: un cuadrado con dos ejes y cuatro
+      esquinas. <strong>Ninguna de las dos colecciones explica los ejes</strong>, y son justamente
+      lo que hay que llevarse:
+    </p>
+
+    <ol class="explicacion">
+      <li data-t="t4.b8.li1">El eje horizontal, <strong>anchura de la actualización</strong>, mide cuántos de los sucesores posibles entran en el objetivo. A la izquierda, uno muestreado (actualización <strong>muestral</strong>); a la derecha, todos, ponderados por \(p\) (actualización <strong>esperada</strong>). Es el eje del <strong>modelo</strong>.</li>
+      <li data-t="t4.b8.li2">El eje vertical, <strong>profundidad de la actualización</strong>, mide cuántos pasos se miran antes de cortar con una estimación. Arriba, uno (bootstrapping puro); abajo, hasta el final del episodio (sin bootstrapping). Es el eje del <strong>retorno</strong>.</li>
+    </ol>
+
+    <p class="explicacion" data-t="t4.b8.p3">
+      Las cuatro esquinas son entonces: <strong>TD</strong> (una rama, un paso),
+      <strong>programación dinámica</strong> (todas las ramas, un paso), <strong>Monte
+      Carlo</strong> (una rama, hasta el final) y <strong>búsqueda exhaustiva</strong> (todas las
+      ramas, hasta el final). Y el interior del cuadrado no está vacío: el eje vertical se
+      recorre con los métodos a \(n\) pasos y con TD(λ), que son la segunda página de este tema.
+    </p>
+
+    <!-- Figura estática: el cuadrado de la visión unificada con sus dos ejes. -->
+    <div id="b8-cuadrado"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B9 · control sin modelo: GPI sobre Q                              -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b9">
+    <header>
+      <h2 data-t="t4.b9.h2">Control sin modelo: GPI, pero sobre \(Q\)</h2>
+      <p class="fuente" data-t="t4.b9.fuente">4_Tema4#slide-26 a #slide-28 · material de Lucía: Tema4_1_ModelFree#slide-6 y #slide-7 (Monte Carlo ES y las dos hipótesis irreales, que Álvaro no cubre) · Sutton &amp; Barto §5.3, ecuación (5.1)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b9.p1">
+      El esquema del control no cambia respecto al Tema 3: <strong>iteración generalizada de la
+      política</strong>. Se alterna evaluación y mejora, y se converge cuando las dos dejan de
+      mover nada. Lo único que cambia —y es todo lo que cambia— es que la evaluación ya no
+      resuelve un sistema de ecuaciones, sino que <strong>promedia retornos</strong>, y que lo
+      que se evalúa es \(Q\), no \(V\).
+    </p>
+
+    <p class="ecuacion">
+      \[ \pi_0 \xrightarrow{\;E\;} q_{\pi_0} \xrightarrow{\;I\;} \pi_1 \xrightarrow{\;E\;} q_{\pi_1}
+         \xrightarrow{\;I\;} \pi_2 \xrightarrow{\;E\;} \cdots \xrightarrow{\;I\;} \pi_* \xrightarrow{\;E\;} q_* \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b9.p2">
+      La mejora es la ecuación (5.1), \(\pi(s) \doteq \arg\max_a q(s,a)\), y la sostiene el
+      <strong>mismo teorema de mejora de la política del Tema 3</strong>, sin ninguna variante:
+      \(q_{\pi_k}(s,\pi_{k+1}(s)) = \max_a q_{\pi_k}(s,a) \ge q_{\pi_k}(s,\pi_k(s)) \ge
+      v_{\pi_k}(s)\). No hay teoría nueva; hay un objeto nuevo.
+    </p>
+
+    <p class="explicacion" data-t="t4.b9.p3">
+      Con Monte Carlo lo natural es aplicar la mejora <strong>después de un solo
+      episodio</strong>, sin esperar a que la evaluación converja. No es obligatorio, pero es lo
+      que se hace, y es exactamente la misma idea de truncar la evaluación que en el Tema 3
+      llevó de la iteración de política a la iteración de valor.
+    </p>
+
+    <p class="explicacion" data-t="t4.b9.p4">
+      Para que este esquema tenga garantías hacen falta <strong>dos hipótesis poco
+      realistas</strong>: <strong>(1)</strong> que los episodios tengan arranques exploratorios y
+      <strong>(2)</strong> que la evaluación se haga con infinitos episodios. La segunda se
+      elimina igual que en programación dinámica: no completando la evaluación antes de mejorar.
+      La primera es la que obliga a elegir entre políticas ε-soft (bloque B5) y métodos fuera de
+      política (bloque B10).
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B10 · dentro y fuera de política · muestreo de importancia        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b10">
+    <header>
+      <h2 data-t="t4.b10.h2">Dentro y fuera de política, y el muestreo de importancia</h2>
+      <p class="fuente" data-t="t4.b10.fuente">4_Tema4#slide-29 y #slide-30 · material de Lucía: Tema4_1_ModelFree#slide-11 a #slide-13 (los símbolos π y b, la cobertura y el pseudocódigo fuera de política) · Sutton &amp; Barto §5.5, ecuaciones (5.3), (5.5) y (5.6), y §5.6</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b10.p1">
+      Hay dos formas de resolver la tensión entre “quiero aprender sobre la política óptima” y
+      “necesito explorar”. <strong>Dentro de política</strong> (<em>on-policy</em>) se aprende
+      sobre la misma política que genera la experiencia, y se acepta que esa política tenga que
+      ser un poco exploratoria para siempre. <strong>Fuera de política</strong>
+      (<em>off-policy</em>) se usan dos: la <strong>política objetivo</strong> \(\pi\), que es la
+      que se quiere aprender, y la <strong>política de comportamiento</strong> \(b\), que es la
+      que se ejecuta y la que explora.
+    </p>
+
+    <p class="explicacion nota" data-t="t4.b10.notacion">
+      Aquí las dos colecciones usan <strong>símbolos distintos</strong> para lo mismo. En clase
+      se escribe <strong>μ</strong> para la política de comportamiento
+      (<code>4_Tema4#slide-29</code>); en la otra colección, <strong>b</strong>
+      (<code>Tema4_1_ModelFree#slide-11</code>). Esta página usa <strong>\(b\)</strong>, que es la
+      de Sutton &amp; Barto 2.ª edición y la que aparece en el libro de referencia de la
+      asignatura. Si en la diapositiva ves μ, es lo mismo.
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p2">
+      Los métodos fuera de política son <strong>más generales</strong> —los de dentro de política
+      son el caso particular \(\pi = b\)— y también <strong>más ruidosos</strong>: mayor varianza
+      y convergencia más lenta. A cambio, permiten aprender de experiencia ajena: de un registro
+      histórico, de otro agente, o de una política antigua. Es la puerta por la que entrará la
+      repetición de experiencia del Tema 5.
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p3">
+      Para que esto funcione hace falta una condición, y es la única: <strong>cobertura</strong>.
+      Toda acción que \(\pi\) pueda tomar tiene que ser posible también bajo \(b\):
+      \(\pi(a\mid s) > 0 \Rightarrow b(a\mid s) > 0\). De ahí se sigue que \(b\) tiene que ser
+      <strong>estocástica</strong> en los estados donde no coincida con \(\pi\). La diapositiva de
+      clase plantea la pregunta “¿cómo deben ser \(\pi\) y \(b\)?” y no la responde: <strong>la
+      respuesta es exactamente ésa</strong>, ni más ni menos. En particular \(\pi\) sí puede ser
+      determinista, y de hecho suele serlo (la greedy respecto a \(Q\)).
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p4">
+      El problema técnico es que los retornos observados vienen de \(b\) y hacen falta esperanzas
+      bajo \(\pi\). Se corrige pesando cada retorno por la <strong>razón de muestreo de
+      importancia</strong>: el cociente entre la probabilidad de la trayectoria bajo \(\pi\) y
+      bajo \(b\).
+    </p>
+
+    <p class="ecuacion">
+      \[ \rho_{t:T-1} \;\doteq\;
+         \frac{\prod_{k=t}^{T-1} \pi(A_k\mid S_k)\, p(S_{k+1}\mid S_k,A_k)}
+              {\prod_{k=t}^{T-1} b(A_k\mid S_k)\, p(S_{k+1}\mid S_k,A_k)}
+         \;=\; \prod_{k=t}^{T-1} \frac{\pi(A_k\mid S_k)}{b(A_k\mid S_k)} \tag{5.3} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p5">
+      Mira lo que acaba de pasar: las probabilidades de transición \(p\) aparecen
+      <strong>idénticas en el numerador y en el denominador y se cancelan</strong>. La razón de
+      importancia depende solo de las <strong>dos políticas</strong> y de la secuencia de acciones
+      observada, no del MDP. Ése es el motivo por el que el método es sin modelo, y es la razón
+      por la que la diapositiva puede decir que el muestreo de importancia <em>«permite pasar de
+      una política a otra sin depender del modelo de dinámicas»</em>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p6">
+      Con los retornos ya pesados hay dos maneras de promediarlos, y sus propiedades son
+      opuestas:
+    </p>
+
+    <p class="ecuacion" data-t="t4.b10.ec2">
+      \[ \text{ordinario:}\quad V(s) \doteq \frac{\sum_{t\in\mathcal{T}(s)} \rho_{t:T(t)-1}\,G_t}{|\mathcal{T}(s)|}
+         \tag{5.5} \]
+      \[ \text{ponderado:}\quad V(s) \doteq \frac{\sum_{t\in\mathcal{T}(s)} \rho_{t:T(t)-1}\,G_t}{\sum_{t\in\mathcal{T}(s)} \rho_{t:T(t)-1}}
+         \tag{5.6} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p7">
+      El <strong>ordinario es insesgado</strong> y el <strong>ponderado es sesgado</strong>
+      (aunque el sesgo tiende a cero). Pero la varianza del ordinario <strong>no está
+      acotada</strong>, porque las razones tampoco lo están, mientras que en el ponderado el peso
+      máximo de un solo retorno es 1. En la práctica <strong>se prefiere el ponderado</strong>,
+      con diferencia. Ojo con el orden de esa frase: la confusión típica es al revés, creer que
+      el ponderado gana por ser insesgado, cuando gana <strong>a pesar</strong> de ser sesgado. Y
+      una nota fina: el ponderado vale <strong>cero si el denominador es cero</strong>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p8">
+      En el pseudocódigo del control MC fuera de política aparece la línea
+      \(W \leftarrow W \cdot \tfrac{1}{b(A_t\mid S_t)}\), y al lado, con una flecha y un signo de
+      interrogación, la forma general \(W \leftarrow W \cdot \tfrac{\pi(A_t\mid S_t)}{b(A_t\mid
+      S_t)}\). <strong>¿Por qué desaparece el numerador?</strong> Porque en ese algoritmo la
+      política objetivo es la <strong>greedy determinista</strong> respecto a \(Q\), y la línea
+      inmediatamente anterior dice <em>«si \(A_t \neq \pi(S_t)\), salir del bucle interno»</em>.
+      Es decir: cuando se llega a esa línea, la acción tomada <strong>es</strong> la que \(\pi\)
+      habría tomado, luego \(\pi(A_t\mid S_t)=1\) y el numerador se cae solo. No es una
+      simplificación: es una consecuencia.
+    </p>
+
+    <p class="explicacion" data-t="t4.b10.p9">
+      El símbolo \(C(s,a)\) que aparece en la misma caja es la <strong>suma acumulada de los
+      pesos</strong>, y es lo que convierte la media ponderada en incremental: sin él habría que
+      guardar todos los retornos y todas las razones.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B11 · SARSA                                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b11">
+    <header>
+      <h2 data-t="t4.b11.h2">SARSA: TD(0) sobre la quíntupla</h2>
+      <p class="fuente" data-t="t4.b11.fuente">4_Tema4#slide-31 a #slide-33 · material de Lucía: Tema4_2_ModelFree#slide-12 a #slide-15 (la quíntupla, las condiciones de convergencia y la lectura de la curva) · Sutton &amp; Barto §6.4, ecuación (6.7), Example 6.5</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b11.p1">
+      El paso de la predicción al control es literalmente cambiar \(V(s)\) por \(Q(s,a)\). El
+      libro lo dice sin ceremonia: formalmente los dos casos son idénticos —los dos son cadenas
+      de Markov con proceso de recompensa— y los teoremas de convergencia de TD(0) para valores
+      de estado valen igual para valores de acción. La regla es la misma con otro objeto:
+    </p>
+
+    <p class="ecuacion">
+      \[ Q(S_t,A_t) \;\leftarrow\; Q(S_t,A_t) + \alpha\big[\,R_{t+1} + \gamma\,Q(S_{t+1},A_{t+1}) - Q(S_t,A_t)\,\big] \tag{6.7} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b11.p2">
+      La actualización usa <strong>los cinco elementos</strong> de la transición de un par
+      estado-acción al siguiente: \((S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1})\). De esa quíntupla sale
+      el nombre. Y hay un detalle que se olvida al implementarlo: <strong>si \(S_{t+1}\) es
+      terminal, entonces \(Q(S_{t+1},A_{t+1})\) vale cero por definición</strong>.
+    </p>
+
+    <pre class="codigo" data-t="t4.b11.caja">SARSA (control TD dentro de política), para estimar Q ≈ q_*
+
+Parámetros del algoritmo: paso de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño
+Inicializar Q(s,a) para todo s ∈ S⁺, a ∈ A(s), arbitrariamente salvo que Q(terminal,·) = 0
+Repetir para cada episodio:
+    Inicializar S
+    Elegir A desde S con una política derivada de Q (por ejemplo, ε-greedy)
+    Repetir para cada paso del episodio:
+        Ejecutar A, observar R y S'
+        Elegir A' desde S' con una política derivada de Q (por ejemplo, ε-greedy)
+        Q(S,A) ← Q(S,A) + α [ R + γQ(S',A') − Q(S,A) ]
+        S ← S';  A ← A'
+    hasta que S sea terminal</pre>
+
+    <p class="explicacion" data-t="t4.b11.p3">
+      SARSA converge con probabilidad 1 a una política óptima y a \(q_*\) siempre que se cumplan
+      tres cosas: las condiciones habituales sobre \(\alpha\), que <strong>todos</strong> los
+      pares estado-acción se visiten infinitas veces, y que la política converja en el límite a
+      la greedy —lo que se consigue, por ejemplo, con \(\varepsilon = 1/t\)—. Las tres, no dos.
+    </p>
+
+    <p class="explicacion" data-t="t4.b11.p4">
+      El ejemplo con el que se proyecta el rendimiento de SARSA es el <strong>Windy
+      Gridworld</strong>: una rejilla de 7 filas por 10 columnas con una corriente ascendente que
+      empuja al agente \(0,0,0,1,1,1,2,2,1,0\) celdas hacia arriba según la columna en la que
+      esté, <strong>además</strong> del efecto de su propia acción. Cuatro acciones, \(r=-1\) por
+      paso, sin descuento.
+    </p>
+
+    <!-- Figura estática: la rejilla 7×10 con S, G, la fila de vientos y un camino de 15 pasos. -->
+    <div id="b11-windy"></div>
+
+    <p class="explicacion nota" data-t="t4.b11.hiper">
+      La gráfica que se proyecta —episodios completados frente a pasos de tiempo— <strong>no trae
+      ni un solo hiperparámetro</strong>: ni \(\alpha\), ni \(\varepsilon\), ni \(\gamma\), ni la
+      recompensa por paso, ni cuántas ejecuciones se promedian. Los del libro son:
+      \(\varepsilon = 0{,}1\), \(\alpha = 0{,}5\), \(Q\) inicial a cero, \(r=-1\) por paso,
+      <strong>8 000 pasos de tiempo</strong> y <strong>una sola ejecución</strong>. El resultado:
+      hacia el final la política greedy ya era óptima desde hacía rato, pero la exploración
+      ε-greedy mantenía la longitud media del episodio en unos <strong>17 pasos</strong>, dos por
+      encima del mínimo de <strong>15</strong>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b11.p5">
+      El mínimo de 15 pasos no es un dato del que haya que fiarse: se comprueba. Con esa
+      geometría y esos vientos, una búsqueda en anchura desde \(S\) hasta \(G\) da exactamente
+      <strong>15</strong>, que es lo que dice el libro. Es la forma de confirmar que la fila de
+      vientos leída de la figura es la correcta.
+    </p>
+
+    <p class="explicacion" data-t="t4.b11.p6">
+      Dos cosas que decir sobre esa curva y que no están escritas en ninguna diapositiva de la
+      colección de referencia. La primera: la <strong>pendiente</strong> es la velocidad de
+      resolución de episodios, así que lo que hay que mirar no es la altura, es cuándo despega.
+      La segunda, más importante: <strong>a priori no se puede saber si has llegado al
+      óptimo</strong>, ni siquiera cuando has terminado de entrenar. En la práctica no se busca
+      el óptimo global, se busca un agente que funcione bien y sea robusto.
+    </p>
+
+    <p class="explicacion" data-t="t4.b11.p7">
+      Y un apunte que justifica todo el capítulo 6: <strong>en este entorno Monte Carlo no se
+      puede usar con comodidad</strong>, porque la terminación no está garantizada para todas las
+      políticas. Si en algún momento se llega a una política que deja al agente quieto, el
+      episodio no termina nunca y MC no tiene nada que promediar. SARSA no tiene ese problema
+      porque aprende <strong>durante</strong> el episodio y abandona enseguida esas políticas.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B12 · Q-learning → módulo 3                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b12">
+    <header>
+      <h2 data-t="t4.b12.h2">Q-learning: aprender \(q_*\) mientras te comportas de otra manera</h2>
+      <p class="fuente" data-t="t4.b12.fuente">4_Tema4#slide-34 y #slide-35 · material de Lucía: Tema4_2_ModelFree#slide-16 y #slide-17 · Sutton &amp; Barto §6.5, ecuación (6.8)</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b12.p1">
+      La diapositiva de clase hace algo que no hace ninguna otra de las dos colecciones:
+      <strong>deriva el objetivo paso a paso</strong>. Empieza por la regla de SARSA, se pregunta
+      qué pasa si la acción siguiente la elige la política <strong>greedy</strong> en lugar de la
+      de comportamiento, y llega al \(\max\):
+    </p>
+
+    <p class="ecuacion">
+      \[ R_{t+1} + \gamma\,Q(S_{t+1}, A') \;=\; R_{t+1} + \gamma\,Q\Big(S_{t+1}, \arg\max_{a'} Q(S_{t+1},a')\Big)
+         \;=\; R_{t+1} + \gamma \max_{a'} Q(S_{t+1},a') \]
+    </p>
+
+    <div class="aviso" data-t="t4.b12.erratum">
+      En la diapositiva el último paso está escrito \(= R_{t+1} + \max_{a'} \gamma
+      Q(S_{t+1},a')\), con \(\gamma\) <strong>dentro</strong> del máximo, y dos líneas más abajo
+      vuelve a escribirse \(\gamma \max_a\), fuera. Las dos son iguales porque \(\gamma \ge 0\) y
+      el máximo de un escalar positivo por algo es ese escalar por el máximo; pero la forma
+      estándar —y la de todos los libros— es con \(\gamma\) <strong>fuera</strong>, y es la que se
+      usa aquí.
+    </div>
+
+    <p class="ecuacion">
+      \[ Q(S_t,A_t) \;\leftarrow\; Q(S_t,A_t) + \alpha\Big[\,R_{t+1} + \gamma \max_a Q(S_{t+1},a) - Q(S_t,A_t)\,\Big] \tag{6.8} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b12.p2">
+      La política de comportamiento es <strong>ε-greedy respecto a \(Q\)</strong>; la política
+      objetivo es la <strong>greedy respecto a \(Q\)</strong>. Son distintas, y por eso Q-learning
+      es <strong>fuera de política</strong>. Ojo a la razón: no es fuera de política por usar
+      ε-greedy —SARSA también la usa y es dentro de política—, sino porque <strong>su objetivo
+      evalúa la política greedy</strong> mientras se comporta con otra.
+    </p>
+
+    <p class="explicacion" data-t="t4.b12.p3">
+      La consecuencia es fuerte: \(Q\) aproxima \(q_*\) <strong>independientemente de la política
+      que se esté siguiendo</strong>. La política solo decide qué pares se visitan y se
+      actualizan; y lo único que hace falta para converger es que <strong>todos</strong> se sigan
+      actualizando (más las condiciones habituales sobre \(\alpha\), que la diapositiva de clase
+      omite para Q-learning aunque las escribe dos diapositivas antes para SARSA).
+    </p>
+
+    <pre class="codigo" data-t="t4.b12.caja">Q-learning (control TD fuera de política), para estimar π ≈ π_*
+
+Parámetros del algoritmo: paso de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño
+Inicializar Q(s,a) para todo s ∈ S⁺, a ∈ A(s), arbitrariamente salvo que Q(terminal,·) = 0
+Repetir para cada episodio:
+    Inicializar S
+    Repetir para cada paso del episodio:
+        Elegir A desde S con una política derivada de Q (por ejemplo, ε-greedy)
+        Ejecutar A, observar R y S'
+        Q(S,A) ← Q(S,A) + α [ R + γ max_a Q(S',a) − Q(S,A) ]
+        S ← S'
+    hasta que S sea terminal</pre>
+
+    <p class="explicacion" data-t="t4.b12.p4">
+      Compara las dos cajas. La diferencia entera es <strong>dónde se elige la acción
+      siguiente</strong>: en SARSA se elige <strong>antes</strong> de la actualización y <strong>se
+      usa</strong> en ella; en Q-learning se elige <strong>después</strong>, y la actualización usa
+      \(\max_a\). Todo lo demás es idéntico. De esa línea salen las dos curvas del módulo
+      siguiente.
+    </p>
+
+    <p class="explicacion" data-t="t4.b12.p5">
+      Una lectura que ayuda a fijar el objetivo: en SARSA, el objetivo es una muestra de la
+      <strong>ecuación de Bellman para \(q_\pi\)</strong>; en Q-learning, de la <strong>ecuación
+      de optimalidad de Bellman para \(q_*\)</strong>. Son los dos objetos del Tema 2, ahora
+      estimados desde la experiencia.
+    </p>
+
+    <p><a class="siguiente" href="#m3" data-t="t4.b12.continua">Continúa en el módulo 3 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 3 · SARSA frente a Q-learning en el acantilado             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta" data-t="t4.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t4.m3.h2">SARSA frente a Q-learning en el borde del acantilado</h2>
+      <p class="fuente" data-t="t4.m3.fuente">4_Tema4#slide-36 · material de Lucía: Tema4_2_ModelFree#slide-18 · Sutton &amp; Barto §6.4, §6.5 y Example 6.6 (p. 154, la gráfica va dentro del recuadro del ejemplo y no lleva número de figura)</p>
+      <p class="fuente" id="m3-semilla"></p>
+    </header>
+
+    <!-- El interior lo construye assets/tema4.js (función modulo3). -->
+    <div id="m3-controles"></div>
+    <div id="m3-rejillas"></div>
+    <div id="m3-recompensas"></div>
+    <div id="m3-metricas"></div>
+    <p class="explicacion" id="m3-veredicto"></p>
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B13 · Expected SARSA (bloque sin módulo)                          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b13">
+    <header>
+      <h2 data-t="t4.b13.h2">Expected SARSA</h2>
+      <p class="fuente" data-t="t4.b13.fuente"><strong>Solo en el material de Lucía</strong>: Tema4_2_ModelFree#slide-23 y #slide-24. La baraja de referencia (4_Tema4) no lo cubre · Sutton &amp; Barto §6.6, ecuación (6.9), Figura 6.3 y Figura 6.4</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b13.p1">
+      Entre SARSA y Q-learning cabe un tercero. SARSA usa \(Q(S_{t+1},A_{t+1})\), donde
+      \(A_{t+1}\) es una acción <strong>muestreada</strong>; Q-learning usa el \(\max\). Expected
+      SARSA usa la <strong>esperanza</strong> bajo la política:
+    </p>
+
+    <p class="ecuacion">
+      \[ Q(S_t,A_t) \leftarrow Q(S_t,A_t) + \alpha\Big[\,R_{t+1} + \gamma\,\mathbb{E}_\pi\big[Q(S_{t+1},A_{t+1})\mid S_{t+1}\big] - Q(S_t,A_t)\,\Big]
+         \;=\; \cdots + \alpha\Big[\,R_{t+1} + \gamma\sum_a \pi(a\mid S_{t+1})\,Q(S_{t+1},a) - Q(S_t,A_t)\,\Big] \tag{6.9} \]
+    </p>
+
+    <p class="explicacion" data-t="t4.b13.p2">
+      Se mueve <strong>de forma determinista</strong> en la misma dirección en la que SARSA se
+      mueve <strong>en esperanza</strong>: de ahí el nombre. Cuesta más por paso —hay que recorrer
+      todas las acciones— pero a cambio <strong>elimina la varianza que introduce el sorteo de
+      \(A_{t+1}\)</strong>. Con la misma cantidad de experiencia, suele ir algo mejor que SARSA.
+    </p>
+
+    <p class="explicacion" data-t="t4.b13.p3">
+      Y hay una lectura que cierra el capítulo entero: en el ejemplo del acantilado, Expected
+      SARSA se usa <strong>dentro de política</strong>, pero en general puede comportarse con una
+      política distinta de la objetivo, y entonces es un método <strong>fuera de política</strong>.
+      En particular: <strong>si \(\pi\) es la política greedy y el comportamiento es exploratorio,
+      Expected SARSA es exactamente Q-learning</strong>. Expected SARSA subsume y generaliza a
+      Q-learning.
+    </p>
+
+    <div class="aviso" data-t="t4.b13.honestidad">
+      La diapositiva de clase remata con <em>«mejora consistentemente a SARSA»</em> y <strong>no
+      muestra ninguna figura ni experimento que lo respalde</strong>. La evidencia existe: es la
+      <strong>Figura 6.3</strong> del libro, un barrido de \(\alpha\) de 0,1 a 1,0 sobre el
+      acantilado con los tres métodos. Aquí no se reproduce, y por un motivo honesto: esa figura
+      promedia <strong>50 000 ejecuciones</strong> para el rendimiento a corto plazo y
+      <strong>100 000 episodios</strong> para el asintótico, y una versión con veinte ejecuciones
+      no es esa figura ni se le puede poner ese nombre. Lo que sí se puede dar es su conclusión,
+      que es concreta y comprobable en el módulo 3 moviendo \(\alpha\): en el acantilado todas las
+      transiciones son deterministas y toda la aleatoriedad viene de la política, así que
+      <strong>Expected SARSA puede poner \(\alpha = 1\) sin degradarse</strong>, mientras que
+      <strong>SARSA solo va bien a largo plazo con \(\alpha\) pequeño</strong>, y ahí su
+      rendimiento a corto plazo es malo.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B14 · sesgo de maximización → módulo 4                            -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b14">
+    <header>
+      <h2 data-t="t4.b14.h2">Cuando el \(\max\) engaña</h2>
+      <p class="fuente" data-t="t4.b14.fuente">4_Tema4#slide-37 y #slide-38 (el rótulo y el pseudocódigo; <strong>el sesgo no se define en ninguna parte de esta baraja</strong>) · material de Lucía: Tema4_2_ModelFree#slide-19 y #slide-20 (la única explicación escrita del sesgo en todo el material) · Sutton &amp; Barto §6.7, Example 6.7, ecuación (6.10) y Figura 6.5</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b14.p1">
+      Todos los algoritmos de control que se han visto hasta aquí toman un <strong>máximo sobre
+      valores estimados</strong> para construir su política objetivo. Y ahí hay una trampa que no
+      es obvia: <strong>el máximo de unas estimaciones se usa implícitamente como estimación del
+      máximo</strong>, y esas dos cosas no son lo mismo.
+    </p>
+
+    <p class="explicacion" data-t="t4.b14.p2">
+      El caso límite lo deja claro. Imagina un estado con muchas acciones cuyos valores
+      <strong>verdaderos</strong> son todos exactamente cero, pero cuyas estimaciones \(Q(s,a)\)
+      son inciertas y están repartidas por encima y por debajo de cero. El máximo de los valores
+      verdaderos es <strong>0</strong>. El máximo de las estimaciones es <strong>positivo</strong>,
+      casi seguro. Es un <strong>sesgo positivo</strong>, y tiene nombre: <strong>sesgo de
+      maximización</strong>.
+    </p>
+
+    <p class="explicacion" data-t="t4.b14.p3">
+      La causa es concreta y merece una frase entera: <strong>se usa el mismo conjunto de
+      estimaciones para dos cosas distintas</strong> —para <strong>elegir</strong> cuál es la
+      acción máxima y para <strong>evaluar</strong> cuánto vale—. El error de estimación que hace
+      que una acción parezca la mejor es el mismo error que después se copia como su valor.
+    </p>
+
+    <p class="explicacion" data-t="t4.b14.p4">
+      La solución es separar las dos funciones. Se mantienen <strong>dos</strong> estimaciones
+      independientes, \(Q_1\) y \(Q_2\). Una decide cuál es la acción maximizadora,
+      \(A^* = \arg\max_a Q_1(a)\); la otra da su valor, \(Q_2(A^*)\). Esa estimación
+      <strong>sí</strong> es insesgada: \(\mathbb{E}[Q_2(A^*)] = q(A^*)\). Se aprenden las dos y
+      en cada paso se actualiza <strong>solo una</strong>, sorteada con probabilidad \(0{,}5\): el
+      aprendizaje doble <strong>duplica la memoria pero no el cómputo por paso</strong>.
+    </p>
+
+    <p class="ecuacion">
+      \[ Q_1(S_t,A_t) \leftarrow Q_1(S_t,A_t) + \alpha\Big[\,R_{t+1} + \gamma\,Q_2\big(S_{t+1},\arg\max_a Q_1(S_{t+1},a)\big) - Q_1(S_t,A_t)\,\Big] \tag{6.10} \]
+    </p>
+
+    <pre class="codigo" data-t="t4.b14.caja">Q-learning doble, para estimar Q_1 ≈ Q_2 ≈ q_*
+
+Parámetros del algoritmo: paso de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño
+Inicializar Q_1(s,a) y Q_2(s,a), para todo s ∈ S⁺, a ∈ A(s), con Q(terminal,·) = 0
+Repetir para cada episodio:
+    Inicializar S
+    Repetir para cada paso del episodio:
+        Elegir A desde S con la política ε-greedy en Q_1 + Q_2
+        Ejecutar A, observar R y S'
+        Con probabilidad 0,5:
+            Q_1(S,A) ← Q_1(S,A) + α ( R + γ Q_2(S', argmax_a Q_1(S',a)) − Q_1(S,A) )
+        si no:
+            Q_2(S,A) ← Q_2(S,A) + α ( R + γ Q_1(S', argmax_a Q_2(S',a)) − Q_2(S,A) )
+        S ← S'
+    hasta que S sea terminal</pre>
+
+    <p class="explicacion" data-t="t4.b14.p5">
+      Dos cosas que se implementan mal a menudo. Primera: la política de comportamiento es
+      ε-greedy sobre la <strong>suma</strong> (o la media) de las dos tablas, no sobre una de
+      ellas. Segunda: la moneda decide <strong>cuál de las dos tablas se actualiza</strong>, no
+      cuál se usa para el \(\arg\max\); la que se actualiza es la que aporta el \(\arg\max\), y
+      <strong>la otra</strong> aporta el valor. Si se cruzan mal, el algoritmo deja de corregir el
+      sesgo y no se nota en las curvas hasta que es tarde.
+    </p>
+
+    <p class="explicacion" data-t="t4.b14.p6">
+      La diapositiva de clase cierra el tema con la figura del experimento y el rótulo <em>«¡el
+      aprendizaje doble funciona!»</em>. Que funciona se ve; <strong>por qué</strong> funciona, y
+      <strong>cuánto</strong> depende del número de acciones y del ruido, es lo que se manipula en
+      el módulo siguiente.
+    </p>
+
+    <p><a class="siguiente" href="#m4" data-t="t4.b14.continua">Continúa en el módulo 4 →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 4 · el máximo engaña                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta" data-t="t4.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t4.m4.h2">El \(\max\) engaña: sesgo de maximización y aprendizaje doble</h2>
+      <p class="fuente" data-t="t4.m4.fuente">4_Tema4#slide-37 y #slide-38 · material de Lucía: Tema4_2_ModelFree#slide-19 y #slide-20 · Sutton &amp; Barto §6.7, Example 6.7, ecuación (6.10) y Figura 6.5 (p. 157)</p>
+      <p class="fuente" id="m4-semilla"></p>
+    </header>
+
+    <!-- El interior lo construye assets/tema4.js (función modulo4). -->
+    <div id="m4-controles"></div>
+    <div id="m4-diagrama"></div>
+    <div id="m4-sesgo"></div>
+    <div id="m4-experimento"></div>
+    <div id="m4-metricas"></div>
+    <p class="explicacion" id="m4-veredicto"></p>
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B15 · cierre y continuación                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b15">
+    <header>
+      <h2 data-t="t4.b15.h2">Lo que queda: entre TD(0) y Monte Carlo</h2>
+      <p class="fuente" data-t="t4.b15.fuente">4_Tema4_2#slide-2 y #slide-3 · Sutton &amp; Barto, caps. 7 y 12</p>
+    </header>
+
+    <p class="explicacion" data-t="t4.b15.p1">
+      Queda un cabo suelto, y es el que abre la segunda mitad del tema. TD(0) hace bootstrapping
+      <strong>a un paso</strong>: trae todo el futuro a través de una única estimación. Monte
+      Carlo no hace bootstrapping en absoluto: espera hasta el final. Entre esos dos extremos hay
+      un continuo entero —mirar dos pasos, cuatro, \(n\)— y también la manera de
+      <strong>promediarlos todos a la vez</strong>, que es TD(λ).
+    </p>
+
+    <p class="explicacion" data-t="t4.b15.p2">
+      Ese continuo, el retorno a \(n\) pasos, SARSA a \(n\) pasos, el retorno λ y las trazas de
+      elegibilidad están en la segunda página de este tema.
+    </p>
+
+    <p><a class="siguiente" href="tema4b.html" data-t="t4.b15.enlace">Continuar: Tema 4 (continuación) · Fórmulas intermedias entre Monte Carlo y TD a un paso →</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A5 · ecuaciones clave                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="ecuaciones">
+    <h2 data-t="t4.ecuaciones.h2">Ecuaciones clave del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.ecuaciones.cab">
+            <th>Ecuación</th><th>Qué dice</th><th>Dónde se usa en esta página</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.ecuaciones.f1">
+            <td>\(\pi(s) \doteq \arg\max_a q(s,a)\) — (5.1)</td>
+            <td>Con valores de acción, la política sale sin necesitar el modelo</td>
+            <td>B0, B9, <strong>módulo 1</strong></td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f2">
+            <td>\(v_\pi(s) \doteq \mathbb{E}_\pi[G_t\mid S_t=s]\) — (6.3)</td>
+            <td>El valor es la esperanza del retorno: promédialo</td>
+            <td>B3, B6</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f3">
+            <td>\(v_\pi(s) = \mathbb{E}_\pi[R_{t+1}+\gamma v_\pi(S_{t+1})\mid S_t=s]\) — (6.4)</td>
+            <td>El valor de un estado se escribe con el del siguiente: se puede hacer bootstrapping</td>
+            <td>B6</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f4">
+            <td>\(V(S_t) \leftarrow V(S_t) + \alpha[G_t - V(S_t)]\) — (6.1)</td>
+            <td>Monte Carlo de paso constante: el objetivo es el retorno observado</td>
+            <td>B6, <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f5">
+            <td>\(V(S_t) \leftarrow V(S_t) + \alpha[R_{t+1}+\gamma V(S_{t+1}) - V(S_t)]\) — (6.2)</td>
+            <td>TD(0): el objetivo está disponible un paso después</td>
+            <td>B6, <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f6">
+            <td>\(\delta_t \doteq R_{t+1} + \gamma V(S_{t+1}) - V(S_t)\) — (6.5)</td>
+            <td>El error TD: la señal que mueve todas las actualizaciones</td>
+            <td>B6, y toda la página 2</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f7">
+            <td>\(G_t - V(S_t) = \sum_{k=t}^{T-1}\gamma^{k-t}\delta_k\) — (6.6)</td>
+            <td>El error de MC es la suma descontada de los errores TD, si \(V\) no cambia</td>
+            <td>B6</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f8">
+            <td>\(\rho_{t:T-1} = \prod_k \frac{\pi(A_k\mid S_k)}{b(A_k\mid S_k)}\) — (5.3)</td>
+            <td>La razón de importancia: la dinámica se cancela, solo quedan las políticas</td>
+            <td>B10</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f9">
+            <td>\(Q(S_t,A_t) \leftarrow Q(S_t,A_t) + \alpha[R_{t+1}+\gamma Q(S_{t+1},A_{t+1}) - Q(S_t,A_t)]\) — (6.7)</td>
+            <td>SARSA: evalúa la acción que de verdad se va a tomar</td>
+            <td>B11, <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f10">
+            <td>\(Q(S_t,A_t) \leftarrow Q(S_t,A_t) + \alpha[R_{t+1}+\gamma \max_a Q(S_{t+1},a) - Q(S_t,A_t)]\) — (6.8)</td>
+            <td>Q-learning: evalúa la greedy, se comporte como se comporte</td>
+            <td>B12, <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f11">
+            <td>\(Q(S_t,A_t) \leftarrow Q(S_t,A_t) + \alpha[R_{t+1}+\gamma \sum_a \pi(a\mid S_{t+1})Q(S_{t+1},a) - Q(S_t,A_t)]\) — (6.9)</td>
+            <td>Expected SARSA: la esperanza en vez de la muestra o el máximo</td>
+            <td>B13</td>
+          </tr>
+          <tr data-t="t4.ecuaciones.f12">
+            <td>\(Q_1(S_t,A_t) \leftarrow Q_1(S_t,A_t) + \alpha[R_{t+1}+\gamma Q_2(S_{t+1},\arg\max_a Q_1(S_{t+1},a)) - Q_1(S_t,A_t)]\) — (6.10)</td>
+            <td>Aprendizaje doble: una tabla elige, la otra evalúa</td>
+            <td>B14, <strong>módulo 4</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A6 · errores frecuentes                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="errores">
+    <!-- El guion anuncia «Siete» y a continuación lista DIEZ filas (y su propia
+         autocomprobación §C9 dice «diez errores frecuentes»). Se conservan las
+         diez y se corrige el número del título. Reportado. -->
+    <h2 data-t="t4.errores.h2">Diez confusiones que cuestan puntos</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.errores.cab">
+            <th>Lo que se suele decir</th><th>Lo correcto</th><th>Dónde se comprueba</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.err.1">
+            <td>“Monte Carlo sirve porque no hay modelo”</td>
+            <td>Media verdad. MC es útil <strong>incluso con el modelo completo</strong>, cuando calcular \(p\) es penoso: el blackjack del libro es el ejemplo. La distinción real es <strong>distribución explícita frente a muestras</strong></td>
+            <td>B0</td>
+          </tr>
+          <tr data-t="t4.err.2">
+            <td>“Sin modelo no se puede hacer bootstrapping”</td>
+            <td>Falso. TD hace bootstrapping sin modelo: ésa es la tesis del capítulo 6. Modelo y bootstrapping son <strong>dos ejes independientes</strong></td>
+            <td>B2, B8</td>
+          </tr>
+          <tr data-t="t4.err.3">
+            <td>“TD converge más rápido que MC (está demostrado)”</td>
+            <td>Falso. El libro dice literalmente que <em>nadie ha podido demostrar</em> que uno converja más rápido que el otro. Es una observación <strong>empírica</strong></td>
+            <td>B7, <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t4.err.4">
+            <td>“MC es insesgado y TD sesgado, luego MC es mejor”</td>
+            <td>El contraste no es ése. TD converge a la estimación de <strong>equivalencia cierta</strong>, que es una propiedad deseable, no un defecto: es la respuesta exactamente correcta para el modelo de máxima verosimilitud del proceso</td>
+            <td><strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t4.err.5">
+            <td>“El control MC dentro de política con ε-soft converge a la política óptima”</td>
+            <td>Converge a la <strong>mejor política entre las ε-soft</strong>, no a \(\pi_*\), salvo que \(\varepsilon\to0\). El material de clase dice lo contrario en un sitio y lo correcto en otro</td>
+            <td>B5</td>
+          </tr>
+          <tr data-t="t4.err.6">
+            <td>“El muestreo de importancia corrige la diferencia de dinámica entre las dos políticas”</td>
+            <td>No: la dinámica <strong>se cancela</strong>. \(\rho\) depende solo de las dos políticas y de la secuencia de acciones</td>
+            <td>B10</td>
+          </tr>
+          <tr data-t="t4.err.7">
+            <td>“El muestreo de importancia ponderado es mejor porque es insesgado”</td>
+            <td>Al revés: el <strong>ordinario</strong> es insesgado y el <strong>ponderado</strong> es sesgado. El ponderado gana <strong>por varianza</strong></td>
+            <td>B10</td>
+          </tr>
+          <tr data-t="t4.err.8">
+            <td>“Q-learning es fuera de política porque usa ε-greedy”</td>
+            <td>No. Es fuera de política porque su <strong>objetivo</strong> usa \(\max_a Q\), es decir, evalúa la política greedy mientras se comporta con otra. SARSA también usa ε-greedy y es dentro de política</td>
+            <td>B12, <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t4.err.9">
+            <td>“Expected SARSA es dentro de política”</td>
+            <td>Depende. Si la política objetivo es distinta de la de comportamiento, es fuera de política; y si la objetivo es la greedy, <strong>es exactamente Q-learning</strong></td>
+            <td>B13</td>
+          </tr>
+          <tr data-t="t4.err.10">
+            <td>“Monte Carlo con arranques exploratorios converge, está demostrado”</td>
+            <td>Falso. El libro lo llama <em>una de las preguntas teóricas abiertas más fundamentales del aprendizaje por refuerzo</em></td>
+            <td>B5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A7 · cierre                                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="cierre">
+    <h2 data-t="t4.cierre.h2">Qué hay que llevarse</h2>
+    <ul class="explicacion">
+      <li data-t="t4.cierre.li1"><strong>Sin modelo, una tabla de valores de estado no determina ninguna política.</strong> En el módulo 1 hay dos entornos con \(v_\pi\) <strong>idéntica en los nueve estados</strong> y políticas greedy distintas. Por eso todo el tema estima \(q\).</li>
+      <li data-t="t4.cierre.li2"><strong>Lo único que distingue a MC de TD es de dónde sale el objetivo</strong>, y de ahí salen todas las demás diferencias: cuándo se puede actualizar, cuánto sesgo hay y cuánta varianza.</li>
+      <li data-t="t4.cierre.li3"><strong>TD suele ganar, pero no está demostrado que gane.</strong> En el módulo 2 lo ves con las \(\alpha\) del libro: TD baja el error más rápido con todos los valores, y con \(\alpha\) grande vuelve a subir después.</li>
+      <li data-t="t4.cierre.li4"><strong>Batch MC minimiza el error sobre los datos; batch TD acierta el modelo.</strong> Con los ocho episodios del ejemplo del predictor, \(V(A)=0\) y \(V(A)=3/4\) son las dos respuestas, y solo una de ellas cree en la propiedad de Markov.</li>
+      <li data-t="t4.cierre.li5"><strong>SARSA aprende el camino que le conviene a la política que está siguiendo; Q-learning, el que le convendría a la política greedy que no está siguiendo.</strong> En el acantilado eso son 17 pasos frente a 13, y \(-27\) frente a \(-50\) de rendimiento real.</li>
+      <li data-t="t4.cierre.li6"><strong>Con \(\varepsilon = 0\) los dos algoritmos dan lo mismo</strong> (\(-13\), camino de 13 pasos): la diferencia entre SARSA y Q-learning <strong>la crea la exploración</strong>, no el álgebra.</li>
+      <li data-t="t4.cierre.li7"><strong>El \(\max\) de unas estimaciones ruidosas está sesgado hacia arriba, siempre.</strong> Con diez acciones de valor verdadero \(-0{,}1\) y ruido de desviación 1, el máximo estimado vale en media \(+1{,}44\). El aprendizaje doble lo arregla separando quién elige de quién evalúa.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A8 · glosario de notación                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="glosario">
+    <h2 data-t="t4.glosario.h2">Glosario de notación del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t4.glosario.cab">
+            <th>Símbolo</th><th>Significado</th><th>Dónde aparece</th><th>Nota</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t4.glosario.f1">
+            <td>\(v_\pi(s)\), \(q_\pi(s,a)\)</td>
+            <td>valores <strong>verdaderos</strong> bajo \(\pi\)</td>
+            <td>todo el tema</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f2">
+            <td>\(v_*\), \(q_*\)</td>
+            <td>valores óptimos</td>
+            <td>B0, B9</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f3">
+            <td>\(V(s)\), \(Q(s,a)\)</td>
+            <td>arrays de <strong>estimaciones</strong></td>
+            <td>todo el tema</td>
+            <td><strong>Mayúscula = estimación.</strong> <code>notacion.md</code> recoge \(Q(s,a)\) pero no \(V(s)\): se propone añadirlo</td>
+          </tr>
+          <tr data-t="t4.glosario.f4">
+            <td>\(G_t\)</td>
+            <td>retorno desde \(t\)</td>
+            <td>B3, B4, B6</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f5">
+            <td>\(\gamma\)</td>
+            <td>descuento</td>
+            <td>todo el tema</td>
+            <td>En esta página \(\gamma = 1\) en los cuatro módulos</td>
+          </tr>
+          <tr data-t="t4.glosario.f6">
+            <td>\(\alpha\)</td>
+            <td>paso de aprendizaje</td>
+            <td>B6, módulos 2 y 3</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f7">
+            <td>\(\varepsilon\)</td>
+            <td>tasa de exploración</td>
+            <td>B5, módulos 3 y 4</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f8">
+            <td>\(\delta_t\)</td>
+            <td>error TD, \(R_{t+1}+\gamma V(S_{t+1})-V(S_t)\)</td>
+            <td>B6</td>
+            <td><code>notacion.md</code> lo escribe con \(v\) minúscula; <strong>aquí y en el libro va con \(V\) mayúscula</strong>, porque es una estimación</td>
+          </tr>
+          <tr data-t="t4.glosario.f9">
+            <td>\(\pi\)</td>
+            <td>política <strong>objetivo</strong></td>
+            <td>B10, B12</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f10">
+            <td>\(b(a\mid s)\)</td>
+            <td>política de <strong>comportamiento</strong></td>
+            <td>B10</td>
+            <td><strong>La diapositiva de clase escribe μ</strong> (<code>4_Tema4#slide-29</code>). Se usa \(b\), que es la del libro</td>
+          </tr>
+          <tr data-t="t4.glosario.f11">
+            <td>\(\rho_{t:T-1}\)</td>
+            <td>razón de muestreo de importancia</td>
+            <td>B10</td>
+            <td><strong>No aparece escrita en ninguna diapositiva de ninguna de las dos colecciones</strong></td>
+          </tr>
+          <tr data-t="t4.glosario.f12">
+            <td>\(C(s,a)\)</td>
+            <td>suma acumulada de pesos (MC fuera de política ponderado)</td>
+            <td>B10</td>
+            <td>Aparece en el pseudocódigo de clase sin explicarse</td>
+          </tr>
+          <tr data-t="t4.glosario.f13">
+            <td>\(Q_1\), \(Q_2\)</td>
+            <td>las dos tablas del aprendizaje doble</td>
+            <td>B14, módulo 4</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f14">
+            <td>\(\mathcal{S}\), \(\mathcal{S}^+\)</td>
+            <td>estados no terminales / incluido el terminal</td>
+            <td>pseudocódigos</td>
+            <td>Falta en <code>notacion.md</code></td>
+          </tr>
+          <tr data-t="t4.glosario.f15">
+            <td>\(T\)</td>
+            <td><strong>instante final</strong> del episodio</td>
+            <td>pseudocódigos</td>
+            <td><code>notacion.md</code> dice «estado terminal»; <strong>en este tema \(T\) es un índice temporal</strong>. El estado terminal se escribe <code>terminal</code>, y <code>T</code> solo se usa como etiqueta de celda en la rejilla 3×3</td>
+          </tr>
+          <tr data-t="t4.glosario.f16">
+            <td>\(A^*\)</td>
+            <td>acción maximizadora</td>
+            <td>B5, B14</td>
+            <td>—</td>
+          </tr>
+          <tr data-t="t4.glosario.f17">
+            <td>\(|A(s)|\)</td>
+            <td>número de acciones disponibles en \(s\)</td>
+            <td>B5</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema3.html" data-t="t4.pie.anterior">← Tema 3 · Programación dinámica</a>
+    </p>
+    <p>
+      <a class="siguiente" href="tema4b.html" data-t="t4.pie.siguiente">Tema 4 (continuación) · Fórmulas intermedias →</a>
+    </p>
+    <p data-t="t4.pie.1">
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulos 5 y 6.
+    </p>
+    <p class="suave" data-t="t4.pie.2">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema4.js"></script>
+</body>
+</html>

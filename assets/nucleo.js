@@ -962,6 +962,123 @@ export function arbolBackup(estadoRaiz, ramas, opciones = {}) {
   return svg;
 }
 
+/**
+ * Diagrama de backup en CADENA: la columna vertebral de un episodio, hacia
+ * abajo, con un punto de acción entre cada par de estados.
+ *
+ * Existe porque `arbolBackup` dibuja un árbol de profundidad fija (raíz →
+ * acción → hojas) y lo que separa a Monte Carlo de TD(0) no es un árbol más
+ * ancho ni más profundo: es que **MC baja hasta el terminal y TD(0) da un solo
+ * paso**. Con `arbolBackup` los dos salían idénticos, que es justo lo contrario
+ * de lo que la figura tiene que enseñar (4_Tema4#slide-22 a #slide-25).
+ *
+ * Los tres diagramas del tema salen de aquí:
+ *
+ *   MC     → { pasos: 3, truncar: true, terminal: true }   profundo hasta el final
+ *   TD(0)  → { pasos: 1 }                                  un paso
+ *   DP     → { pasos: 1, ramas: 3 }                        un paso, todas las ramas
+ *
+ * @param {object} opciones
+ * @param {number} opciones.pasos      Transiciones dibujadas (≥ 1).
+ * @param {number} opciones.ramas      Sucesores del PRIMER paso. >1 es el caso DP:
+ *                                     se conocen todas las ramas porque hay modelo.
+ * @param {boolean} opciones.truncar   Dibuja «⋮» antes del ÚLTIMO nivel: el
+ *                                     episodio sigue y no cabe.
+ * @param {boolean} opciones.terminal  Cierra en un cuadrado (convenio del libro
+ *                                     para el estado terminal).
+ * @param {string|null} opciones.titulo
+ * @param {string[]|null} opciones.etiquetas Rótulo de cada nivel, de arriba abajo.
+ *                                     Solo se usan mientras la cadena no ramifica.
+ * @returns {SVGElement}
+ */
+export function cadenaBackup({
+  pasos = 1, ramas = 1, truncar = false, terminal = false,
+  titulo = null, etiquetas = null, ancho = 220,
+} = {}) {
+  const colorTexto = tono("--texto");
+  const colorSuave = tono("--texto-suave");
+  const colorLinea = tono("--borde-fuerte");
+  const colorAcento = tono("--acento");
+
+  const salto = 62;          // alto de un paso completo: estado → acción → estado
+  const hueco = truncar ? 30 : 0;
+  const yPrimero = 30;
+  const alto = yPrimero + pasos * salto + hueco + 26;
+  const svg = lienzo(ancho, alto);
+  const x = ancho / 2;
+
+  if (titulo) {
+    svg.appendChild(el("text", {
+      x: 8, y: 14, "font-size": 11, "font-weight": 650, fill: colorSuave,
+    }, titulo));
+  }
+
+  const linea = (x1, y1, x2, y2, discontinua) => svg.appendChild(el("line", {
+    x1, y1, x2, y2, stroke: colorLinea, "stroke-width": 1.4,
+    ...(discontinua ? { "stroke-dasharray": "3 4" } : {}),
+  }));
+
+  const estado = (cx, cy, texto, raiz) => {
+    svg.appendChild(el("circle", {
+      cx, cy, r: raiz ? 15 : 12,
+      fill: raiz ? tono("--acento-tenue") : tono("--superficie"),
+      stroke: raiz ? colorAcento : colorLinea, "stroke-width": raiz ? 2 : 1.6,
+    }));
+    if (texto) {
+      svg.appendChild(textoSvg({
+        x: cx, y: cy + 5, "text-anchor": "middle",
+        "font-size": raiz ? 13 : 12, "font-weight": raiz ? 700 : 600,
+        fill: raiz ? colorAcento : colorTexto,
+      }, texto));
+    }
+  };
+
+  let y = yPrimero;
+  estado(x, y, etiquetas ? etiquetas[0] : "", true);
+
+  for (let paso = 0; paso < pasos; paso++) {
+    const ultimo = paso === pasos - 1;
+
+    /* El corte va JUSTO ANTES del último nivel: la lectura es «da pasos, sigue
+       dando pasos, y acaba en el terminal», no «acaba y luego sigue». */
+    const saltoTruncado = ultimo && truncar;
+    if (saltoTruncado) {
+      svg.appendChild(textoSvg({
+        x, y: y + 26, "text-anchor": "middle", "font-size": 17,
+        "font-weight": 700, fill: colorSuave,
+      }, "⋮"));
+      y += hueco;
+    }
+
+    const yAccion = y + salto / 2;
+    const ySiguiente = y + salto;
+
+    linea(x, y + (paso === 0 ? 15 : 12), x, yAccion - 5, saltoTruncado);
+    svg.appendChild(el("circle", { cx: x, cy: yAccion, r: 5, fill: colorTexto }));
+
+    /* Sucesores: uno en la vertical, o `ramas` en abanico si hay modelo. Solo
+       ramifica el primer paso — dibujar el árbol entero no cabe y tampoco añade
+       nada: la idea que hay que ver es «ancho frente a profundo». */
+    const n = paso === 0 ? ramas : 1;
+    const separacion = 46;
+    for (let i = 0; i < n; i++) {
+      const cx = x + (i - (n - 1) / 2) * separacion;
+      linea(x, yAccion + 5, cx, ySiguiente - 12);
+      if (ultimo && terminal) {
+        svg.appendChild(el("rect", {
+          x: cx - 10, y: ySiguiente - 10, width: 20, height: 20,
+          fill: tono("--superficie-3"), stroke: colorLinea, "stroke-width": 1.6,
+        }));
+      } else {
+        estado(cx, ySiguiente, n === 1 && etiquetas ? etiquetas[paso + 1] || "" : "", false);
+      }
+    }
+    y = ySiguiente;
+  }
+
+  return svg;
+}
+
 /* ----------------------------------------------------------------------- *
  * 8. Autocomprobación
  * ----------------------------------------------------------------------- */

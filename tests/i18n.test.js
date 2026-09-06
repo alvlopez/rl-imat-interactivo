@@ -16,7 +16,10 @@ import { t, tLista, clavesDe, fijarIdiomaParaPruebas, IDIOMAS } from "../assets/
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const HTML = ["index.html", "tema1.html", "tema2.html", "tema3.html"];
+/* Toda pagina nueva tiene que entrar AQUI. En el Tema 3 se nos paso y sus 289
+   claves no se comprobaron hasta que alguien lo noto a mano. */
+const HTML = ["index.html", "tema1.html", "tema2.html", "tema3.html",
+              "tema4.html", "tema4b.html"];
 const JS = readdirSync(join(RAIZ, "assets"))
   .filter((f) => f.endsWith(".js") && f !== "en.js" && f !== "i18n.js")
   .map((f) => join("assets", f));
