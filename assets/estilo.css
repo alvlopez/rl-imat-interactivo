@@ -415,7 +415,10 @@ table.datos tr.destacada { background: var(--acento-tenue); }
 
 /* leyenda de series */
 .leyenda { display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: .85rem; margin-top: .6rem; }
-.leyenda span { display: inline-flex; align-items: center; gap: .4rem; }
+/* Hijo DIRECTO a proposito: con `.leyenda span` el flex alcanzaba tambien
+   los <span> internos de KaTeX y le rompia los subindices, asi que un
+   \(v_\pi\) de leyenda se leia «v pi» en linea. */
+.leyenda > span { display: inline-flex; align-items: center; gap: .4rem; }
 .leyenda i { width: .85rem; height: .2rem; border-radius: 1px; flex: none; }
 
 /* marcadores numéricos grandes */
