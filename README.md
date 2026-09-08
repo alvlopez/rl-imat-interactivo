@@ -43,6 +43,13 @@ diapositiva deje abierto, sobra.
 | `4_Tema4_2#slide-4` | «Supón \(n=10\): ¿qué pasa al principio de un episodio?» | T4 (cont.) · módulo 1 |
 | `4_Tema4_2#slide-17` | «Con λ podemos acelerar el aprendizaje» — sin ninguna curva que lo respalde | T4 (cont.) · módulo 1 |
 | `4_Tema4_2#slide-14` | ¿La culpa se la lleva el timbre o la luz? **La diapositiva lo deja ahí** | T4 (cont.) · módulo 2 |
+| `5_Tema_5_1#slide-8` | \(J(w) = \mathbb E_\pi[\cdot]\) **sin decir bajo qué distribución**, que es lo que decide qué estados se sacrifican | T5 · módulo 1 |
+| `5_Tema_5_1#slide-9`, `#slide-11` | «¿Qué alternativas tenemos para construir esa señal?» y «¿hay algún tipo de aproximación?» — las dos **sin responder en pantalla** | T5 · módulo 2 |
+| `5_Tema_5_1#slide-23`, `#slide-24` | Las dos figuras de *tile coding*, con **cero caracteres de explicación** | T5 · módulo 2 |
+| `5_Tema_5_1#slide-13`, `#slide-14` | «Converge al óptimo global» y «a un punto cercano» — sin demostración y sin cuantificar «cercano» | T5 · módulo 3 |
+| `5_Tema_5_1#slide-15` | La figura de Baird divergiendo, con **67 caracteres de texto**: ni qué MDP es, ni que es fuera de política, ni por qué | T5 · módulo 4 |
+| `5_Tema_5_1#slide-19`, `#slide-20` | La caja del libro **sin un hiperparámetro y sin entorno**, y la diapositiva-ejercicio en blanco | T5 · módulo 5 |
+| `5_Tema_5_1#slide-16`, `#slide-21` | Veintiuna casillas de convergencia **como hechos**, con los tres inductores al lado y sin conectarlos | T5 · módulo 6 |
 
 ---
 

@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="meta.titulo.tema5">Tema 5 · Aproximación de la función de valor — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 5 de Aprendizaje por Refuerzo (IMAT): aproximación de la función de valor. El objetivo VE ponderado por mu, la representación del estado de one-hot a tile coding, a dónde convergen Monte Carlo y TD(0), cuándo divergen los pesos, control con SARSA semi-gradiente en Mountain Car y las dos tablas de convergencia casilla por casilla.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
+    <nav>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
+      <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+      <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
+      <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
+      <a href="tema5.html" data-t="nav.tema5">Tema 5 · Aproximación de funciones</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ================================================================= -->
+  <!-- A1 · portada  ·  A2 · índice                                      -->
+  <!-- ================================================================= -->
+  <div class="portada-tema">
+    <p class="kicker" data-t="t5.kicker">Tema 5 · Sutton &amp; Barto, capítulos 9, 10 y 11 (y §16.5)</p>
+    <h1 data-t="t5.h1">Aproximación de la función de valor</h1>
+    <p class="entradilla" data-t="t5.entradilla">
+      Mil estados y diez pesos: a partir de aquí no hay una casilla por estado, y <strong>acertar en
+      un estado obliga a fallar en otro</strong>. Esta página responde las preguntas que las
+      diapositivas del tema dejan abiertas: qué se está minimizando exactamente cuando ya no
+      se puede acertar en todos, qué es \(x(s)\) y qué cambia al pasar de <em>one-hot</em> a
+      <em>tile coding</em>, a dónde converge Monte Carlo y a dónde converge TD —que no es al mismo
+      sitio—, por qué pueden <strong>divergir</strong> los pesos y qué justifica cada casilla de las dos
+      tablas de convergencia que se proyectan como hechos.
+    </p>
+
+    <p class="entradilla" data-t="t5.subtitulo">
+      Cubre la baraja <code>5_Tema_5_1</code> completa, de la primera diapositiva a la última, DQN
+      incluido. <strong>El orden está reagrupado respecto a clase</strong>: mira el primer bloque para ver
+      qué se ha movido y por qué.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t5.semillaLabel">Semilla</label>
+        <input type="number" id="semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <span class="suave" data-t="t5.semilla">Semilla 2026 · todo lo aleatorio de esta página se reproduce con ella</span>
+      </div>
+    </div>
+
+    <p class="explicacion nota" data-t="t5.avisoEntornos">
+      Los dos entornos de esta página —el <strong>paseo aleatorio de 1000 estados</strong> y <strong>Mountain
+      Car</strong>— son del libro, <strong>no de clase</strong>: en las diapositivas del tema no hay ningún entorno
+      ni ningún ejemplo numérico. Se introducen aquí porque sin un problema concreto no se
+      puede ver qué hace la aproximación.
+    </p>
+
+    <p class="explicacion nota" data-t="t5.avisoEstocastico">
+      Donde hay simulación, cada gráfica dice sobre cuántas ejecuciones independientes
+      promedia. Los puntos a los que converge cada método, en cambio, <strong>no se simulan: se
+      calculan exactamente</strong>, así que no dependen de la semilla.
+    </p>
+
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t5.indice.m1">El objetivo que la baraja no escribe: \(\overline{VE}\) y \(\mu\)</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t5.indice.m2">Qué es \(x(s)\): de <em>one-hot</em> a <em>tile coding</em></span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t5.indice.m3">MC y TD(0) lineales: a dónde converge cada uno</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t5.indice.m4">Cuándo divergen los pesos: el ejemplo \(w\to 2w\)</span></a></li>
+        <li><a href="#m5"><span class="num">5</span> <span data-t="t5.indice.m5">Control: SARSA semi-gradiente en Mountain Car</span></a></li>
+        <li><a href="#m6"><span class="num">6</span> <span data-t="t5.indice.m6">Las dos tablas de convergencia, casilla por casilla</span></a></li>
+      </ol>
+    </nav>
+    <p class="suave" data-t="t5.indice.nota">
+      Seis paradas manipulables. Las <strong>trazas de elegibilidad con aproximación</strong> —lo que el
+      examen pide junto a \(x(s,a)\)— no son una parada aparte: se explican y se resuelven en el
+      bloque de apuntes que va detrás del control, y se pueden encender desde el módulo 5.
+    </p>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- A3 · mapa del tema                                                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="mapa">
+    <h2 data-t="t5.mapa.h2">Mapa del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.mapa.cab">
+            <th>Concepto</th><th>De dónde sale</th><th>A dónde lleva</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.mapa.f1">
+            <td>Por qué aproximar</td>
+            <td>No es solo que la tabla no quepa: es el <strong>tiempo y los datos</strong> para rellenarla, y que casi ningún estado se repite</td>
+            <td>\(\hat v(s,w)\) con \(d \ll |\mathcal S|\)</td>
+          </tr>
+          <tr data-t="t5.mapa.f2">
+            <td>Generalizar</td>
+            <td>Cambiar <strong>un</strong> peso cambia el valor <strong>de muchos</strong> estados</td>
+            <td>Es la ventaja y el problema a la vez</td>
+          </tr>
+          <tr data-t="t5.mapa.f3">
+            <td>\(\overline{VE}\) y \(\mu\)</td>
+            <td>Si no se puede acertar en todos, hay que decir <strong>qué estados importan</strong></td>
+            <td>El objetivo ponderado → <strong>módulo 1</strong></td>
+          </tr>
+          <tr data-t="t5.mapa.f4">
+            <td>Gradiente</td>
+            <td>Bajar por \(-\nabla_w \overline{VE}\), un ejemplo a la vez</td>
+            <td>La regla \(w \leftarrow w + \alpha[U_t - \hat v]\nabla\hat v\)</td>
+          </tr>
+          <tr data-t="t5.mapa.f5">
+            <td>Semi-gradiente</td>
+            <td>Con <em>bootstrapping</em> el objetivo <strong>también</strong> depende de \(w\), y ese trozo del gradiente se tira</td>
+            <td>No es descenso del gradiente de nada → B4</td>
+          </tr>
+          <tr data-t="t5.mapa.f6">
+            <td>\(x(s)\)</td>
+            <td>Cómo se convierte un estado en números</td>
+            <td><em>one-hot</em>, agregación, <em>tile coding</em> → <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t5.mapa.f7">
+            <td>El caso tabular</td>
+            <td>Es aproximación lineal con \(x(s)\) <em>one-hot</em>: \(\min_w \overline{VE} = 0\)</td>
+            <td>No hay aproximación que reparta → <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t5.mapa.f8">
+            <td>MC y TD(0)</td>
+            <td>Los dos objetivos \(U_t\): el retorno y el retorno con <em>bootstrap</em></td>
+            <td>Convergen a <strong>puntos distintos</strong> → <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t5.mapa.f9">
+            <td>Los tres inductores</td>
+            <td>Aproximación + <em>bootstrapping</em> + fuera de política</td>
+            <td>Con los tres a la vez los pesos pueden irse a infinito → <strong>módulos 4 y 6</strong></td>
+          </tr>
+          <tr data-t="t5.mapa.f10">
+            <td>Control</td>
+            <td>\(v \to q\), \(\hat q(s,a,w) = w^\top x(s,a)\), SARSA y Q-learning</td>
+            <td>Mountain Car → <strong>módulo 5</strong>, y de ahí a DQN → B16</td>
+          </tr>
+          <tr data-t="t5.mapa.f11">
+            <td>Trazas de elegibilidad</td>
+            <td>El «1» de la traza tabular <strong>es</strong> el gradiente con <em>one-hot</em></td>
+            <td>\(z_t\) tiene dimensión \(d\), no \(|\mathcal S|\times|\mathcal A|\) → <strong>B14b</strong> y el control de traza del <strong>módulo 5</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B0 · el orden de esta página no es el de la baraja                -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b0">
+    <header>
+      <h2 data-t="t5.b0.h2">Antes de empezar: qué se ha movido de sitio</h2>
+      <p class="fuente" data-t="t5.b0.fuente">Reagrupación del orden de <code>5_Tema_5_1</code>; el contenido es el mismo</p>
+    </header>
+
+    <p class="explicacion" data-t="t5.b0.texto">
+      Esta página cubre las 37 diapositivas del tema, pero <strong>no en el orden en que se
+      proyectan</strong>. Se ha movido una sola cosa, y por una razón: en clase, <em>tile coding</em>
+      (<code>#slide-23</code> y <code>#slide-24</code>) va <strong>detrás</strong> del control, porque lo que lo justifica es la
+      tarea de la práctica 3 de <code>#slide-22</code>. Aquí sube al bloque de la representación del
+      estado, junto a la aproximación lineal y al caso tabular, porque es <strong>la respuesta a dos
+      preguntas que quedan abiertas arriba</strong>: «¿qué alternativas tenemos para construir la
+      señal de estado?» (<code>#slide-9</code>) y «¿hay algún tipo de aproximación en el caso tabular?»
+      (<code>#slide-11</code>). Con <em>tile coding</em> al final, esas dos preguntas se quedan catorce
+      diapositivas sin responder.
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.b0.cab">
+            <th>Bloque de esta página</th><th>Diapositivas de clase</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b0.f1"><td>Por qué aproximar; qué se aproxima y con qué</td><td><code>#slide-3</code> a <code>#slide-6</code></td></tr>
+          <tr data-t="t5.b0.f2"><td>El objetivo: \(\overline{VE}\) y \(\mu\) → <strong>módulo 1</strong></td><td><code>#slide-4</code> (y <code>Tema5_1_Aproximacion#slide-7</code>, de Lucía)</td></tr>
+          <tr data-t="t5.b0.f3"><td>Descenso del gradiente y semi-gradiente</td><td><code>#slide-7</code>, <code>#slide-8</code></td></tr>
+          <tr data-t="t5.b0.f4"><td>Representación del estado; lineal; caso tabular; <em>tile coding</em> → <strong>módulo 2</strong></td><td><code>#slide-9</code> a <code>#slide-11</code> <strong>y <code>#slide-22</code> a <code>#slide-24</code></strong> ← <em>movidas</em></td></tr>
+          <tr data-t="t5.b0.f5"><td>Predicción con MC y TD(0); a dónde converge cada uno → <strong>módulo 3</strong></td><td><code>#slide-12</code> a <code>#slide-14</code></td></tr>
+          <tr data-t="t5.b0.f6"><td>Cuándo divergen los pesos → <strong>módulo 4</strong></td><td><code>#slide-15</code></td></tr>
+          <tr data-t="t5.b0.f7"><td>Los inductores y las dos tablas → <strong>módulo 6</strong></td><td><code>#slide-16</code> y <code>#slide-21</code></td></tr>
+          <tr data-t="t5.b0.f8"><td>Control: \(v\to q\), SARSA, Q-learning → <strong>módulo 5</strong></td><td><code>#slide-17</code> a <code>#slide-21</code></td></tr>
+          <tr data-t="t5.b0.f9"><td><em>Batch RL</em> y mínimos cuadrados</td><td><code>#slide-25</code> a <code>#slide-29</code></td></tr>
+          <tr data-t="t5.b0.f10"><td>DQN</td><td><code>#slide-30</code> a <code>#slide-36</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="aviso" data-t="t5.b0.aviso">
+      Si sigues las diapositivas en clase y esta página en casa, esta tabla es la
+      correspondencia. Nada se ha quitado y nada se ha añadido al alcance: solo se han subido
+      dos diapositivas de sitio.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1 · RL a gran escala                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1">
+    <header>
+      <h2 data-t="t5.b1.h2">Cuando el problema es grande</h2>
+      <p class="fuente" data-t="t5.b1.fuente"><code>5_Tema_5_1#slide-3</code> · Sutton &amp; Barto, introducción de la parte II y §9.1</p>
+    </header>
+    <p class="explicacion" data-t="t5.b1.texto">
+      La diapositiva pone los ejemplos: ajedrez, Go, conducción autónoma, finanzas. El libro
+      añade el argumento que suele faltar: <strong>el problema de un espacio de estados grande no es
+      solo la memoria</strong> que ocupa la tabla, sino <strong>el tiempo y los datos que hacen falta para
+      rellenarla con precisión</strong>. En muchas tareas, casi todos los estados que el agente se
+      encuentra <strong>no los ha visto nunca antes</strong>, y una tabla no tiene nada que decir sobre un
+      estado nuevo. Aproximar no es una concesión a la memoria: es la única forma de decir algo
+      sobre lo que no se ha visto.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B2 · qué se aproxima, y con qué                                   -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b2">
+    <header>
+      <h2 data-t="t5.b2.h2">Qué se aproxima, y con qué</h2>
+      <p class="fuente" data-t="t5.b2.fuente"><code>5_Tema_5_1#slide-4</code>, <code>#slide-5</code>, <code>#slide-6</code> · Sutton &amp; Barto, §9.1 y §9.7</p>
+    </header>
+    <p class="explicacion" data-t="t5.b2.texto">
+      Se sustituye la tabla por una <strong>forma funcional con parámetros</strong>: \(\hat v(s,w)\) o
+      \(\hat q(s,a,w)\), con \(w \in \mathbb R^d\) y <strong>\(d\) mucho menor que el número de
+      estados</strong>. Tres arquitecturas posibles, que son las de <code>#slide-5</code>: una que recibe \(s\) y
+      devuelve \(\hat v(s,w)\); otra que recibe el par \((s,a)\) y devuelve
+      \(\hat q(s,a,w)\); y una tercera que recibe \(s\) y devuelve <strong>una salida por acción</strong>,
+      \(\hat q(s,a_1,w)\dots\hat q(s,a_{|\mathcal A|},w)\) —que es exactamente la de DQN, y es la
+      que hace que el \(\max_a\) cueste una sola pasada—.
+    </p>
+    <p class="explicacion" data-t="t5.b2.texto2">
+      El curso se centra en <strong>aproximadores diferenciables</strong> (<code>#slide-6</code>), y el libro explica
+      por qué no vale cualquier método de aprendizaje supervisado: hay que aprender <strong>en
+      línea</strong>, con datos que llegan de uno en uno, y con <strong>objetivos no estacionarios</strong> —el
+      objetivo cambia porque los propios pesos cambian, y porque la política mejora—. Un método
+      que no tolere esa no estacionariedad no sirve aquí.
+    </p>
+    <p class="ecuacion" data-t="t5.b2.ecuacion">
+      \[ \hat v(s,w) \approx v_\pi(s) \qquad\text{o}\qquad \hat q(s,a,w) \approx q_\pi(s,a), \qquad w \in \mathbb R^d,\; d \ll |\mathcal S| \]
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B3 · el objetivo: VE y mu → módulo 1                              -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b3">
+    <header>
+      <h2 data-t="t5.b3.h2">El objetivo: \(\overline{VE}\) y \(\mu\)</h2>
+      <p class="fuente" data-t="t5.b3.fuente"><code>5_Tema_5_1#slide-4</code> · el objetivo ponderado solo está en Lucía, <code>Tema5_1_Aproximacion#slide-7</code> · Sutton &amp; Barto, §9.2, ecuaciones (9.1) a (9.3)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b3.texto">
+      En el caso tabular no hacía falta ninguna medida de calidad: los valores aprendidos
+      podían acabar siendo <strong>exactamente</strong> los verdaderos, y estaban desacoplados —actualizar un
+      estado no afectaba a ningún otro—. Con aproximación de verdad, actualizar un estado afecta
+      a muchos, y <strong>como hay muchos más estados que pesos, hacer más preciso un estado
+      significa inevitablemente hacer menos precisos otros</strong>. Estamos obligados, entonces, a
+      decir <strong>qué estados nos importan más</strong>.
+    </p>
+    <p class="explicacion" data-t="t5.b3.texto2">
+      Eso es \(\mu(s)\): una distribución sobre los estados, \(\mu(s)\ge 0\) y
+      \(\sum_s \mu(s) = 1\), que casi siempre se toma como <strong>la fracción del tiempo que se pasa
+      en \(s\)</strong>. Con ella se escribe el objetivo del tema, el <strong>error cuadrático medio de
+      valor</strong>. La baraja de Álvaro escribe \(J(w) = \mathbb E_\pi[(v_\pi(S) - \hat v(S,w))^2]\)
+      y no dice bajo qué distribución se toma esa esperanza: <strong>es la misma cosa cuando la
+      esperanza se toma bajo \(\mu\)</strong>, y es Lucía quien lo escribe explícitamente.
+    </p>
+    <p class="ecuacion" data-t="t5.b3.ecuacion">
+      \[ \overline{VE}(w) \;\doteq\; \sum_{s\in\mathcal S} \mu(s)\big[v_\pi(s) - \hat v(s,w)\big]^2 \]
+    </p>
+    <p class="explicacion" data-t="t5.b3.texto3">
+      Para tareas episódicas, \(\mu\) se calcula contando visitas: si \(h(s)\) es la
+      probabilidad de que un episodio empiece en \(s\), el número esperado de visitas a \(s\)
+      por episodio cumple \(\eta(s) = h(s) + \sum_{\bar s}\eta(\bar s)\sum_a \pi(a\mid\bar
+      s)p(s\mid\bar s,a)\), y \(\mu(s) = \eta(s)/\sum_{s'}\eta(s')\). En el módulo 1 se resuelve
+      ese sistema para el paseo de 1000 estados y se ve la forma de \(\mu\): un triángulo con el
+      pico en el estado de inicio.
+    </p>
+    <div class="aviso" data-t="t5.b3.aviso">
+      El propio libro admite que <strong>no está claro que \(\overline{VE}\) sea el objetivo
+      correcto</strong>: lo que se quiere al final es una política mejor, y la función de valor que
+      mejor sirve para eso no es necesariamente la que minimiza \(\overline{VE}\). No hay
+      todavía una alternativa mejor definida, y por eso se usa esta.
+    </div>
+    <p><a class="siguiente" href="#m1" data-t="t5.b3.modulo">→ módulo 1: mueve el número de grupos y mira qué le pasa a \(\sqrt{\overline{VE}}\) y a la escalera de valores.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · el objetivo: VE y mu                                   -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta" data-t="t5.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t5.m1.h2">El objetivo: qué estados importan</h2>
+      <p class="fuente" data-t="t5.m1.fuente"><code>5_Tema_5_1#slide-4</code>, <code>#slide-8</code>, <code>#slide-11</code> · el objetivo ponderado, solo en Lucía: <code>Tema5_1_Aproximacion#slide-7</code> · Sutton &amp; Barto, §9.2 y Example 9.1</p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo1). -->
+    <div id="m1-controles"></div>
+    <div id="m1-viz1"></div>
+    <div id="m1-viz2"></div>
+    <div id="m1-metricas"></div>
+    <div id="m1-ficha"></div>
+    <p class="explicacion" id="m1-lectura"></p>
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B4 · descenso del gradiente, y el término que se tira             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b4">
+    <header>
+      <h2 data-t="t5.b4.h2">Descenso del gradiente, y por qué esto es solo <em>semi</em>-gradiente</h2>
+      <p class="fuente" data-t="t5.b4.fuente"><code>5_Tema_5_1#slide-7</code>, <code>#slide-8</code> · Sutton &amp; Barto, §9.3, ecuaciones (9.4) a (9.7)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b4.texto">
+      Si el valor verdadero estuviera disponible, cada estado visitado sería un ejemplo de
+      aprendizaje supervisado \(S_t \mapsto v_\pi(S_t)\) y bastaría con bajar por el gradiente
+      del error cuadrático de ese ejemplo. Al derivar \([v_\pi(S_t)-\hat v(S_t,w_t)]^2\) sale un
+      2 que se cancela con el \(\tfrac12\), y queda la regla que se usa en todo el tema.
+    </p>
+    <p class="ecuacion" data-t="t5.b4.ecuacion">
+      \[ w_{t+1} \doteq w_t - \tfrac12\,\alpha\,\nabla\big[v_\pi(S_t)-\hat v(S_t,w_t)\big]^2
+        \;=\; w_t + \alpha\big[v_\pi(S_t)-\hat v(S_t,w_t)\big]\nabla\hat v(S_t,w_t) \]
+    </p>
+    <p class="explicacion" data-t="t5.b4.texto2">
+      Como no se conoce \(v_\pi\), se pone en su lugar un <strong>objetivo</strong> \(U_t\), y la regla vale
+      para cualquiera de ellos: \(U_t = G_t\) da Monte Carlo, \(U_t = R_{t+1} + \gamma\hat
+      v(S_{t+1},w_t)\) da TD(0). Si \(U_t\) es un estimador <strong>no sesgado</strong> de \(v_\pi(S_t)\),
+      \(w_t\) converge a un óptimo local con las condiciones habituales de \(\alpha\).
+    </p>
+    <p class="ecuacion" data-t="t5.b4.ecuacion2">
+      \[ w_{t+1} \;\doteq\; w_t + \alpha\big[U_t - \hat v(S_t,w_t)\big]\,\nabla\hat v(S_t,w_t) \]
+    </p>
+    <p class="explicacion" data-t="t5.b4.texto3">
+      Con un objetivo que hace <em>bootstrapping</em> —el de TD, el de \(n\) pasos, el de DP— <strong>el
+      objetivo depende del propio \(w_t\)</strong>, y ahí se rompe el paso de la primera fórmula a la
+      segunda, que suponía un objetivo independiente de \(w\). La actualización tiene en cuenta
+      el efecto de cambiar \(w\) sobre <strong>la estimación</strong>, pero <strong>ignora su efecto sobre el
+      objetivo</strong>: incluye solo <strong>una parte del gradiente</strong>. Por eso se llaman <strong>métodos
+      semi-gradiente</strong>, y por eso <strong>no son el gradiente de ninguna función objetivo</strong>: no se
+      pueden apoyar en los resultados clásicos de convergencia del descenso estocástico.
+    </p>
+    <p class="explicacion" data-t="t5.b4.texto4">
+      La contrapartida es la de siempre: los métodos semi-gradiente no convergen tan
+      robustamente, pero <strong>convergen con fiabilidad en los casos importantes</strong> —el lineal, entre
+      ellos—, <strong>aprenden mucho más rápido</strong> y permiten aprender en línea sin esperar al final
+      del episodio. En la baraja de Álvaro la palabra «semi-gradiente» solo aparece dentro del
+      título en inglés de la caja de <code>#slide-19</code> y en la anotación manuscrita de clase; el
+      concepto está desarrollado en Lucía, <code>Tema5_1_Aproximacion#slide-14</code>.
+    </p>
+    <div class="aviso" data-t="t5.b4.erratum">
+      Dos precisiones sobre <code>#slide-7</code>: \(J(w)\) es una <strong>función escalar de un vector</strong>, no una
+      «función vectorial»; y el \(\tfrac12\) del \(\Delta w = -\tfrac12\alpha\nabla_w J(w)\) no
+      pertenece al descenso del gradiente en general —está solo para cancelar el 2 de derivar un
+      <strong>cuadrado</strong>—, así que aparece una diapositiva antes de que haya ningún
+      cuadrado que cancelar.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B5 · representación del estado: las cuatro preguntas              -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b5">
+    <header>
+      <h2 data-t="t5.b5.h2">¿Qué es el estado? Las cuatro preguntas de clase, respondidas</h2>
+      <p class="fuente" data-t="t5.b5.fuente"><code>5_Tema_5_1#slide-9</code> (las respuestas están manuscritas en <code>5_Tema_5_1_completo#slide-9</code>) · Sutton &amp; Barto, §9.5</p>
+    </header>
+    <p class="explicacion" data-t="t5.b5.texto">
+      La diapositiva lanza cuatro preguntas y no responde ninguna en pantalla. Se responden en
+      clase, a mano. Son estas:
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.b5.cab">
+            <th>Pregunta (literal de <code>#slide-9</code>)</th><th>Respuesta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b5.p1">
+            <td>«¿Qué es el estado?»</td>
+            <td>Una señal que transmite <strong>toda la información que hace falta</strong> para actuar de forma óptima en el entorno; no es el entorno, es lo que el agente recibe de él</td>
+          </tr>
+          <tr data-t="t5.b5.p2">
+            <td>«¿Qué tiene que cumplir una señal que nos trasmita información sobre el estado?»</td>
+            <td>La <strong>propiedad de Markov</strong>: que el futuro dependa del presente y no del camino por el que se ha llegado</td>
+          </tr>
+          <tr data-t="t5.b5.p3">
+            <td>«¿Qué alternativas tenemos para “construir” esa señal?»</td>
+            <td>Elegir características, y a veces <strong>apilar muestras</strong> del pasado —es lo que hace DQN con cuatro fotogramas—. Las alternativas concretas son el bloque siguiente: <em>one-hot</em>, agregación, <em>coarse coding</em>, <em>tile coding</em></td>
+          </tr>
+          <tr data-t="t5.b5.p4">
+            <td>«¿Cómo vamos a llamarla? (Ejemplos)»</td>
+            <td><strong>Observación.</strong> Es el nombre que se usa desde aquí hasta <code>#slide-32</code>, donde el modelo de DQN empieza con «observación del estado»</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5.b5.aviso">
+      El original escribe «trasmita», sin la n, y la misma errata está en Lucía,
+      <code>Tema5_1_Aproximacion#slide-17</code>. Nada importante; se anota para que nadie piense que la
+      transcripción está mal.
+    </div>
+    <p class="explicacion" data-t="t5.b5.texto2">
+      El libro añade un matiz que conviene tener a mano: la aproximación de funciones <strong>hace el
+      RL aplicable a problemas parcialmente observables</strong>, pero lo que <strong>no</strong> puede hacer es
+      aumentar la representación del estado con memoria del pasado. Apilar cuatro fotogramas,
+      como en DQN, es exactamente eso: <strong>ampliar la señal a mano</strong> para que se parezca más a un
+      estado de Markov.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B6 · aproximación lineal                                          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b6">
+    <header>
+      <h2 data-t="t5.b6.h2">Aproximación lineal: \(\hat v = w^\top x(s)\) y \(\nabla\hat v = x(s)\)</h2>
+      <p class="fuente" data-t="t5.b6.fuente"><code>5_Tema_5_1#slide-10</code> · la regla que la diapositiva anuncia y no escribe está manuscrita en <code>5_Tema_5_1_completo#slide-10</code> y proyectada en Lucía, <code>Tema5_1_Aproximacion#slide-16</code> · Sutton &amp; Barto, §9.4, ecuación (9.8)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b6.texto">
+      A cada estado se le asocia un <strong>vector de características</strong> \(x(s) = (x_1(s),\dots,
+      x_d(s))^\top\), con tantas componentes como pesos, y el valor aproximado es el producto
+      escalar. Cada \(x_i\) es una función \(x_i:\mathcal S\to\mathbb R\); en el caso lineal las
+      características son <strong>funciones base</strong>, porque forman una base lineal del conjunto de
+      funciones aproximables.
+    </p>
+    <p class="ecuacion" data-t="t5.b6.ecuacion">
+      \[ \hat v(s,w) \doteq w^\top x(s) = \sum_{i=1}^{d} w_i\,x_i(s), \qquad \nabla\hat v(s,w) = x(s) \]
+    </p>
+    <p class="explicacion" data-t="t5.b6.texto2">
+      Que el gradiente sea <strong>el propio vector de características</strong> es lo que hace tan simple
+      el caso lineal, y es el paso que <code>#slide-10</code> deja en blanco. Sustituyéndolo en la regla
+      genérica queda la regla que se usa en todo el tema:
+    </p>
+    <p class="ecuacion" data-t="t5.b6.ecuacion2">
+      \[ w_{t+1} \;\doteq\; w_t + \alpha\big[U_t - \hat v(S_t,w_t)\big]\,x(S_t) \]
+    </p>
+    <p class="explicacion" data-t="t5.b6.texto3">
+      En el caso lineal <strong>hay un solo óptimo</strong> (o, en casos degenerados, un conjunto de óptimos
+      igual de buenos), así que cualquier método con garantía de converger a un óptimo <strong>local</strong>
+      queda automáticamente garantizado a converger al <strong>global</strong>. Es la razón por la que casi
+      todos los resultados de convergencia útiles del RL son para aproximación lineal o más
+      simple, y es la razón por la que la columna «Lineal» de las tablas de <code>#slide-16</code> tiene
+      tantos «SÍ».
+    </p>
+    <div class="aviso" data-t="t5.b6.erratum">
+      <code>#slide-10</code> termina con la viñeta «Regla de actualización de pesos:» y <strong>debajo no hay
+      nada</strong>: la fórmula se escribe a mano en clase. Es
+      \(\Delta w = \alpha\big(v_\pi(s) - x(s)^\top w\big)\,x(s)\), y es el resultado central del
+      bloque lineal.
+    </div>
+    <div class="aviso" data-t="t5.b6.aviso2">
+      Límite que hay que decir aquí y no más tarde: la forma lineal <strong>no puede representar
+      interacciones entre características</strong>. El ejemplo del libro es el péndulo: una velocidad
+      angular alta es buena o mala <strong>según el ángulo</strong>, y una función de valor lineal con una
+      característica para el ángulo y otra para la velocidad no puede expresar eso. Es
+      exactamente el argumento que justifica que los mosaicos de <em>tile coding</em> sean
+      <strong>conjuntivos</strong> —rectángulos en el plano— y no franjas independientes.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B7 · el caso tabular es aproximación lineal con one-hot → módulo 2 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b7">
+    <header>
+      <h2 data-t="t5.b7.h2">El caso tabular, por dentro</h2>
+      <p class="fuente" data-t="t5.b7.fuente"><code>5_Tema_5_1#slide-11</code> (la respuesta a su pregunta está manuscrita en <code>5_Tema_5_1_completo#slide-11</code>) · Sutton &amp; Barto, Exercise 9.1 y §9.3 (agregación de estados)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b7.texto">
+      Tómese \(x(s) = e_s\), el vector con un 1 en la posición de \(s\) y ceros en el resto
+      —<em>one-hot</em>—. Entonces \(\hat v(s,w) = w_s\), \(\nabla\hat v(s,w) = e_s\), y la regla lineal
+      se convierte en \(w_s \leftarrow w_s + \alpha[U_t - w_s]\): <strong>literalmente la actualización
+      tabular</strong> de los temas 3 y 4. El caso tabular no es otra cosa: es aproximación lineal con
+      \(d = |\mathcal S|\).
+    </p>
+    <p class="explicacion" data-t="t5.b7.texto2">
+      <code>#slide-11</code> pregunta: «¿Consideras que hay algún tipo de aproximación?». <strong>No la hay</strong>:
+      con <em>one-hot</em> los pesos pueden reproducir \(v_\pi\) exactamente, así que
+      \(\min_w \overline{VE} = 0\) y no hay ningún error que repartir entre estados. La
+      aproximación aparece en el momento en que <strong>se agrupan estados</strong> —que es la respuesta que
+      se da en clase—: eso es la <strong>agregación de estados</strong>, un peso por grupo, y es el primer
+      aproximador de verdad del tema.
+    </p>
+    <p class="ecuacion" data-t="t5.b7.ecuacion">
+      \[ x(s) = e_s \;\Longrightarrow\; \hat v(s,w) = w_s,\quad \nabla\hat v(s,w) = e_s,\quad w_s \leftarrow w_s + \alpha\big[U_t - w_s\big] \]
+    </p>
+    <p class="explicacion" data-t="t5.b7.texto3">
+      La agregación de estados es un caso particular de la regla general en el que el gradiente
+      vale <strong>1 en la componente del grupo de \(S_t\) y 0 en las demás</strong>. Es decir: es
+      <em>one-hot</em>, pero <strong>sobre grupos</strong> en lugar de sobre estados.
+    </p>
+    <div class="aviso" data-t="t5.b7.enlaceT4">
+      Este argumento ya salió en el tema 4, contado del revés: al presentar las trazas de
+      elegibilidad, <code>4_Tema4_2#slide-16</code> dice que <strong>ese 1 no es un valor arbitrario, es el
+      gradiente de la función de valor en el caso de aproximación lineal con codificación
+      <em>one-hot</em> de los estados</strong>. Es la misma frase, leída en la otra dirección. Está en la
+      <a href="tema4b.html#m2">segunda página del tema 4</a>.
+    </div>
+    <p><a class="siguiente" href="#m2" data-t="t5.b7.modulo">→ módulo 2: cambia la representación y mira qué componentes de \(x(s)\) se encienden y a qué estados salpica una sola actualización.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B8 · tile coding → módulo 2                                       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b8">
+    <header>
+      <h2 data-t="t5.b8.h2"><em>Tile coding</em>: mosaicos solapados</h2>
+      <p class="fuente" data-t="t5.b8.fuente"><code>5_Tema_5_1#slide-23</code>, <code>#slide-24</code> (dos figuras del libro, sin una palabra de texto) y la tarea de <code>#slide-22</code> · el texto que las explica está en Lucía, <code>Tema5_1_Aproximacion#slide-21</code>, <code>#slide-23</code>, <code>#slide-25</code> · Sutton &amp; Barto, §9.5.3 y §9.5.4, figuras 9.9, 9.10 y 9.11</p>
+    </header>
+    <div class="aviso" data-t="t5.b8.tarea">
+      Estas dos figuras están en clase <strong>sin texto</strong>, y lo que las justifica es la tarea de
+      <code>#slide-22</code>: <strong>«Leer sección 9.5.4 (<em>tile coding</em>) del Sutton &amp; Barto»</strong> y <strong>«realizar los
+      ejercicios con el código que os vamos a entregar la semana que viene»</strong>, para la
+      <strong>práctica 3</strong>. Al subirlas de sitio en esta página sube con ellas la tarea: lo que viene
+      a continuación es el resumen de §9.5.4, no un sustituto de leerla.
+    </div>
+    <p class="explicacion" data-t="t5.b8.texto">
+      Antes de los mosaicos, la idea general: la <strong>codificación gruesa</strong> (<em>coarse coding</em>) usa
+      características <strong>binarias</strong> asociadas a <strong>campos receptivos solapados</strong>. Dado un estado,
+      las características que valen 1 dicen dentro de qué campos cae, y eso codifica su
+      posición. Cuánto generaliza una actualización de \(s\) a \(s'\) depende de <strong>cuántos
+      campos receptivos comparten</strong>. El tamaño y la forma de los campos controlan la
+      generalización inicial; <strong>la precisión final —la discriminación más fina posible— la
+      controla más el número total de características</strong>, no su anchura.
+    </p>
+    <p class="explicacion" data-t="t5.b8.texto2">
+      <em>Tile coding</em> es la forma de codificación gruesa para espacios continuos
+      multidimensionales que resulta práctica de calcular. Los campos receptivos se agrupan en
+      <strong>particiones</strong> del espacio de estados: cada partición se llama un <strong>mosaicado</strong>
+      (<em>tiling</em>) y cada elemento de la partición, un <strong>mosaico</strong> (<em>tile</em>). Con \(m\) mosaicados
+      desplazados entre sí, cada estado cae en <strong>exactamente un mosaico de cada mosaicado</strong>, así
+      que hay <strong>exactamente \(m\) características activas</strong>, siempre, para cualquier estado.
+    </p>
+    <div class="aviso" data-t="t5.b8.aviso1">
+      <strong>Con un solo mosaicado no hay codificación gruesa: hay agregación de estados.</strong> La
+      generalización sería total dentro del mosaico e <strong>inexistente</strong> fuera. Todo lo que aporta
+      <em>tile coding</em> viene de <strong>solapar varios mosaicados desplazados</strong>.
+    </div>
+    <p class="explicacion" data-t="t5.b8.texto3">
+      Que el número de características activas sea siempre el mismo permite fijar \(\alpha\) de
+      forma intuitiva. Con <strong>\(\alpha = 1/m\)</strong> se consigue <strong>aprendizaje exacto en un solo
+      ensayo</strong>: si se entrena el ejemplo \(s\mapsto u\), sea cual fuera la estimación previa, la
+      nueva es <strong>exactamente \(u\)</strong>. Normalmente se quiere ir más despacio, para dejar sitio a
+      la generalización y al ruido de los objetivos: con \(\alpha = 1/(10m)\) la estimación del
+      estado entrenado se mueve <strong>exactamente una décima parte</strong> del camino hacia el objetivo, y
+      los estados vecinos se mueven menos, en proporción al número de mosaicos que comparten.
+    </p>
+    <p class="ecuacion" data-t="t5.b8.ecuacion">
+      \[ \alpha \;\doteq\; \big(\tau\,\mathbb E[x^\top x]\big)^{-1} \;\stackrel{\text{tile coding}}{=}\; \frac{1}{\tau\,m} \]
+    </p>
+    <p class="explicacion" data-t="t5.b8.texto4">
+      La primera igualdad es la regla general del libro para métodos lineales, con \(\tau\) = el
+      número de experiencias con <strong>el mismo</strong> vector de características en las que se quiere
+      aprender. La segunda vale porque con <em>tile coding</em> las características son binarias y hay
+      exactamente \(m\) activas, luego \(x^\top x = m\) <strong>es constante</strong>. De ahí salen el
+      \(1/m\) y el \(1/(10m)\) de arriba, con \(\tau=1\) y \(\tau=10\). Y de ahí sale también
+      que las figuras del libro escriban \(\alpha\) como \(0{,}5/8\) o rotulen el eje
+      «\(\alpha\times\) número de mosaicados (8)»: <strong>están normalizando por \(m\)</strong>.
+    </p>
+    <p class="explicacion" data-t="t5.b8.texto5">
+      Los mosaicados se desplazan entre sí una fracción del ancho de mosaico. Si \(\ell\) es el
+      ancho y \(m\) el número de mosaicados, <strong>\(\ell/m\)</strong> es la unidad fundamental: dentro de
+      un cuadrado de lado \(\ell/m\) todos los estados activan los mismos mosaicos y tienen el
+      mismo valor aproximado. Si todos los mosaicados se desplazan por igual en cada dimensión
+      —vector de desplazamiento \((1,1)\)— la generalización sale con <strong>artefactos diagonales</strong>
+      y varía mucho de un punto a otro; ésa es la mitad superior de la figura de <code>#slide-24</code>. Con
+      desplazamientos <strong>asimétricos</strong> la generalización sale más esférica y homogénea: es la
+      mitad inferior. La receta del libro para un espacio de dimensión \(k\) es usar los
+      <strong>primeros enteros impares</strong> \((1,3,5,\dots,2k-1)\) con \(m\) igual a una potencia de 2
+      mayor o igual que \(4k\); para \(k=2\), eso es \(m=8\) y el vector \((1,3)\), que es
+      exactamente lo que usa Mountain Car en el módulo 5.
+    </p>
+    <p class="explicacion" data-t="t5.b8.texto6">
+      Dos cosas más que la figura no dice. Una: la <strong>ventaja de cálculo</strong>. Como las
+      características son 0 o 1, el producto escalar no cuesta \(d\) multiplicaciones: se
+      calculan los índices de las \(m \ll d\) características activas y se suman \(m\) pesos.
+      Dos: el <strong>hashing</strong>, un colapso pseudoaleatorio y consistente de un mosaicado grande en un
+      conjunto pequeño de mosaicos; produce mosaicos formados por trozos dispersos, pero sigue
+      siendo una partición, y reduce la memoria mucho con poca pérdida. Es lo que libera a <em>tile
+      coding</em> de la maldición de la dimensionalidad: la memoria no tiene que ser exponencial en
+      el número de dimensiones, solo tiene que ajustarse a lo que la tarea pide de verdad.
+    </p>
+    <p><a class="siguiente" href="#m2" data-t="t5.b8.modulo">→ módulo 2, segunda mitad: sube el número de mosaicados y mira cómo cambia el perfil de generalización.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · qué es x(s): de one-hot a tile coding                  -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta" data-t="t5.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t5.m2.h2">Qué es \(x(s)\)</h2>
+      <p class="fuente" data-t="t5.m2.fuente"><code>5_Tema_5_1#slide-9</code>, <code>#slide-11</code>, <code>#slide-22</code> a <code>#slide-24</code> · el texto de las dos figuras, solo en Lucía: <code>Tema5_1_Aproximacion#slide-21</code>, <code>#slide-23</code>, <code>#slide-25</code> · Sutton &amp; Barto, Exercise 9.1, §9.5.3 y §9.5.4, figuras 9.9 a 9.11</p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo2). -->
+    <div id="m2-controles"></div>
+    <div id="m2-viz1"></div>
+    <div id="m2-viz2"></div>
+    <div id="m2-metricas"></div>
+    <div id="m2-regla"></div>
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B9 · predicción: MC y TD(0) con aproximación lineal → módulo 3    -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b9">
+    <header>
+      <h2 data-t="t5.b9.h2">Las dos reglas de la práctica: MC y TD(0)</h2>
+      <p class="fuente" data-t="t5.b9.fuente"><code>5_Tema_5_1#slide-12</code>, <code>#slide-13</code>, <code>#slide-14</code> (las dos reglas se escriben a mano en <code>5_Tema_5_1_completo#slide-12</code>, <code>#slide-13</code>, <code>#slide-14</code>) · las cajas de pseudocódigo están en Lucía, <code>Tema5_1_Aproximacion#slide-13</code>, <code>#slide-14</code> · Sutton &amp; Barto, §9.3</p>
+    </header>
+    <p class="explicacion" data-t="t5.b9.texto">
+      <code>#slide-12</code> avisa de lo que cambia: hasta aquí las fórmulas contenían el valor real al que
+      hay que aproximarse, pero <strong>RL no es aprendizaje supervisado</strong> —solo se dispone de la
+      recompensa—. Así que en \(U_t\) se pone lo que sí se tiene. Con Monte Carlo, el retorno
+      observado; con TD(0), la recompensa más el valor estimado del estado siguiente.
+    </p>
+    <p class="ecuacion" data-t="t5.b9.ecuacion">
+      \[ \text{MC gradiente:}\quad \Delta w = \alpha\big[G_t - x(S_t)^\top w\big]\,x(S_t) \]
+      \[ \text{TD(0) semi-gradiente:}\quad \Delta w = \alpha\big[R_{t+1} + \gamma\,x(S_{t+1})^\top w - x(S_t)^\top w\big]\,x(S_t) \]
+    </p>
+    <p class="explicacion" data-t="t5.b9.texto2">
+      Las listas de muestras de entrenamiento de <code>#slide-13</code> y <code>#slide-14</code> son exactamente esto,
+      escrito como pares entrada-objetivo: \(\langle S_0,G_0\rangle,\dots,\langle
+      S_{T-1},G_{T-1}\rangle\) para MC, y \(\langle S_0, R_1+\gamma\hat v(S_1,w)\rangle,\dots,
+      \langle S_{T-1},R_T\rangle\) para TD(0). Fíjate en el <strong>último par de la lista de TD</strong>: no
+      lleva <em>bootstrapping</em>. La razón es que <strong>\(\hat v(\text{terminal},w) = 0\) por
+      definición</strong>, algo que la caja del libro exige explícitamente y que la baraja no dice en
+      ninguna parte.
+    </p>
+    <p class="ecuacion" data-t="t5.b9.ecuacion2">
+      \[ \hat v(\text{terminal},w) \;=\; 0 \quad\text{siempre, para todo } w \]
+    </p>
+    <p class="explicacion" data-t="t5.b9.texto3">
+      <code>#slide-13</code> dice que MC <strong>converge al óptimo global</strong> en el caso lineal, y es cierto: el
+      retorno es un estimador <strong>no sesgado</strong> de \(v_\pi(S_t)\), la regla es descenso del
+      gradiente de verdad, y en el caso lineal el óptimo local <strong>es</strong> el global. <code>#slide-14</code> dice
+      que TD(0) <strong>converge a un punto cercano al óptimo global</strong>; eso es una simplificación
+      didáctica de algo más preciso, y es el bloque siguiente.
+    </p>
+    <div class="aviso" data-t="t5.b9.erratum">
+      La lista de muestras de MC de <code>#slide-13</code> acaba en \(\langle S_T, G_T\rangle\): \(S_T\) es
+      terminal, no se actualiza, y \(G_T\) no está definido. Debe acabar en \(\langle S_{T-1},
+      G_{T-1}\rangle\), como sí hace la de TD. Y arranca en \(S_1\), mientras la caja del libro
+      recorre \(t = 0,1,\dots,T-1\).
+    </div>
+    <p><a class="siguiente" href="#m3" data-t="t5.b9.modulo">→ módulo 3: las dos reglas sobre el mismo entorno, con los mismos episodios y la misma semilla.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B10 · a dónde converge cada uno → módulo 3                        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b10">
+    <header>
+      <h2 data-t="t5.b10.h2">El punto fijo TD y la cota \(1/(1-\gamma)\)</h2>
+      <p class="fuente" data-t="t5.b10.fuente"><code>5_Tema_5_1#slide-13</code>, <code>#slide-14</code> · Sutton &amp; Barto, §9.4, ecuaciones (9.11), (9.12) y (9.14)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b10.texto">
+      «Cercano» tiene una medida exacta, y no está en la baraja. En el caso lineal continuo, la
+      actualización de TD(0) en esperanza se escribe con dos objetos: una matriz \(A\) y un
+      vector \(b\). TD(0) lineal <strong>converge al punto donde \(b - Aw = 0\)</strong>, que se llama
+      <strong>punto fijo TD</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5.b10.ecuacion">
+      \[ A \doteq \mathbb E\big[x_t(x_t - \gamma x_{t+1})^\top\big], \qquad b \doteq \mathbb E\big[R_{t+1}\,x_t\big], \qquad w_{TD} \doteq A^{-1}b \]
+    </p>
+    <p class="explicacion" data-t="t5.b10.texto2">
+      <strong>Ese punto no es el óptimo global de \(\overline{VE}\)</strong>, y el libro acota cuánto peor
+      puede ser: el error asintótico de TD <strong>no pasa de \(1/(1-\gamma)\) veces el error mínimo
+      posible</strong>, que es el que alcanza Monte Carlo en el límite.
+    </p>
+    <p class="ecuacion" data-t="t5.b10.ecuacion2">
+      \[ \overline{VE}(w_{TD}) \;\le\; \frac{1}{1-\gamma}\,\min_w \overline{VE}(w) \]
+    </p>
+    <div class="aviso" data-t="t5.b10.aviso">
+      Con \(\gamma\) cerca de 1 ese factor de expansión es enorme, así que <strong>la pérdida
+      potencial de calidad asintótica de TD es grande</strong>. La otra cara es la de siempre: TD tiene
+      muchísima menos varianza y aprende más rápido. Cuál gana depende del problema, de la
+      aproximación y de cuánto tiempo se aprenda. <strong>La cota está enunciada para tareas
+      continuas</strong>; para tareas episódicas el libro dice que es «ligeramente distinta pero
+      relacionada», y por eso el módulo 3 la muestra como referencia y no como test.
+    </div>
+    <p class="explicacion" data-t="t5.b10.texto3">
+      Tres cosas más que el libro añade y que sirven para leer las tablas del módulo 6: la
+      misma cota vale para <strong>DP semi-gradiente</strong> cuando las actualizaciones siguen la
+      distribución dentro de política; vale, con una cota análoga, para <strong>SARSA(0)
+      semi-gradiente</strong> —con política constante—; y es <strong>crítico</strong> que las actualizaciones sigan
+      la distribución dentro de política: <strong>con otras distribuciones, los métodos con
+      <em>bootstrapping</em> y aproximación pueden divergir a infinito</strong>. Ése es el bloque siguiente.
+    </p>
+    <p><a class="siguiente" href="#m3" data-t="t5.b10.modulo">→ módulo 3: los dos puntos de convergencia se calculan exactos y se dibujan como dos líneas horizontales sobre las curvas de aprendizaje.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 3 · MC y TD(0) lineales: a dónde converge cada uno         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta" data-t="t5.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t5.m3.h2">A dónde converge cada uno</h2>
+      <p class="fuente" data-t="t5.m3.fuente"><code>5_Tema_5_1#slide-12</code> a <code>#slide-14</code> · Sutton &amp; Barto, §9.3 y §9.4, ecuaciones (9.12) y (9.14); Example 9.1, figura 9.1; Example 9.2, figura 9.2</p>
+      <p class="fuente" id="m3-semilla"></p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo3), con cálculo en assets/aproximacion-worker.js. -->
+    <div id="m3-controles"></div>
+    <div id="m3-viz1"></div>
+    <div id="m3-viz2"></div>
+    <div id="m3-metricas"></div>
+    <p class="explicacion" id="m3-lectura"></p>
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B11 · cuándo divergen los pesos → módulo 4                        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b11">
+    <header>
+      <h2 data-t="t5.b11.h2">Los pesos pueden irse a infinito</h2>
+      <p class="fuente" data-t="t5.b11.fuente"><code>5_Tema_5_1#slide-15</code> · Sutton &amp; Barto, §11.2: el ejemplo \(w\to 2w\) (p. 282) y el contraejemplo de Baird (figuras 11.1 y 11.2)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b11.texto">
+      <code>#slide-15</code> proyecta una figura del libro con los pesos disparándose y <strong>una línea de
+      texto</strong>: «Evolución de los pesos en el contraejemplo de Baird (predicción TD)». No dice
+      qué MDP es el de Baird, ni que el entrenamiento es <strong>fuera de política</strong>, ni por qué
+      divergen los pesos. Es la afirmación más fuerte del tema apoyada en la figura más muda,
+      así que empezamos por el ejemplo más pequeño que existe, que sí se sigue a mano.
+    </p>
+    <p class="explicacion" data-t="t5.b11.texto2">
+      Dos estados y <strong>un solo peso</strong>. El primer estado tiene valor estimado \(w\) y el segundo
+      \(2w\) —es decir, características escalares \(x=1\) y \(x=2\)—. Del primero sale <strong>una
+      única acción</strong>, que lleva determinísticamente al segundo con <strong>recompensa 0</strong>. El error TD
+      de esa transición es \(\delta = 0 + \gamma\cdot 2w - w = (2\gamma-1)w\), y la actualización
+      semi-gradiente deja:
+    </p>
+    <p class="ecuacion" data-t="t5.b11.ecuacion">
+      \[ w_{t+1} \;=\; w_t + \alpha\,\delta_t\,\nabla\hat v(S_t,w_t) \;=\; w_t + \alpha(2\gamma-1)w_t\cdot 1 \;=\; \big(1 + \alpha(2\gamma-1)\big)\,w_t \]
+    </p>
+    <p class="explicacion" data-t="t5.b11.texto3">
+      Si ese factor pasa de 1, el sistema es inestable y \(w\) se va a \(+\infty\) o a
+      \(-\infty\) según su valor inicial. Y pasa de 1 <strong>exactamente cuando \(\gamma > 0{,}5\)</strong>.
+      Lo importante: <strong>la estabilidad no depende del tamaño de paso</strong>, mientras \(\alpha > 0\).
+      Un \(\alpha\) más pequeño cambia <strong>la velocidad</strong> a la que \(w\) se va a infinito, no
+      <strong>si</strong> se va.
+    </p>
+    <p class="explicacion" data-t="t5.b11.texto4">
+      La clave del ejemplo es que <strong>esa transición ocurre repetidamente sin que \(w\) se
+      actualice en las demás transiciones</strong>. Eso es posible fuera de política, porque la política
+      de comportamiento puede elegir, en esas otras transiciones, acciones que la política
+      objetivo nunca elegiría: para ellas la razón de importancia es cero y no se actualiza
+      nada. Dentro de política, esa razón vale siempre uno. Como lo dice el libro: <strong>al final,
+      al gaitero hay que pagarle</strong>. Dentro de política, la promesa de recompensa futura hay que
+      cumplirla y el sistema se mantiene a raya; fuera de política se puede prometer y luego,
+      tras tomar una acción que la política objetivo nunca tomaría, olvidar y perdonar.
+    </p>
+    <p class="explicacion" data-t="t5.b11.texto5">
+      El contraejemplo de <strong>Baird</strong> es este mismo mecanismo, completo y sin trucos. Un MDP
+      episódico de <strong>siete estados y dos acciones</strong>; la acción de trazo discontinuo lleva a uno
+      de los seis estados superiores <strong>con igual probabilidad</strong>, la de trazo continuo lleva al
+      séptimo. La política de comportamiento elige la discontinua <strong>6 de cada 7 veces</strong>, de modo
+      que la distribución del estado siguiente es <strong>uniforme</strong>; la política objetivo elige
+      <strong>siempre</strong> la continua, y su distribución está concentrada en el séptimo estado. <strong>La
+      recompensa es cero en todas las transiciones</strong>, \(\gamma = 0{,}99\), y hay <strong>ocho pesos
+      para siete estados no terminales</strong>, con características linealmente independientes: el
+      valor verdadero es \(v_\pi(s)=0\) para todo \(s\) y <strong>se puede representar exactamente</strong>
+      con \(w=0\). Todo favorable. Y aun así, con \(\alpha = 0{,}01\) y \(w_0 =
+      (1,1,1,1,1,1,10,1)^\top\), <strong>los pesos divergen</strong>.
+    </p>
+    <p class="explicacion" data-t="t5.b11.texto6">
+      Dos cosas que suelen sorprender. <strong>No es cuestión del tamaño de paso</strong>: la inestabilidad
+      ocurre para cualquier \(\alpha>0\), por pequeño que sea. Y <strong>no es cuestión de muestreo ni
+      de asincronía</strong>: con actualizaciones de <strong>DP</strong> semi-gradiente —que barren todos los
+      estados, sin nada de azar, exactamente como una barrida clásica de programación
+      dinámica— el sistema sigue siendo inestable. Lo que lo arregla no es el algoritmo: es <strong>la
+      distribución</strong>. Si en el contraejemplo de Baird se cambia solo la distribución de las
+      actualizaciones, de uniforme a la distribución dentro de política, la convergencia queda
+      garantizada con el error acotado por la cota del bloque anterior.
+    </p>
+    <div class="aviso" data-t="t5.b11.aviso">
+      Ni resolver exactamente por mínimos cuadrados en cada paso lo arregla. El Example 11.1
+      del libro extiende el ejemplo \(w\to 2w\) con un estado terminal y calcula en cada
+      iteración el \(w\) que <strong>minimiza \(\overline{VE}\) exactamente</strong>; la sucesión resultante
+      es \(w_{k+1} = \tfrac{6-4\varepsilon}{5}\,\gamma\,w_k\), que <strong>diverge</strong> cuando
+      \(\gamma > 5/(6-4\varepsilon)\) y \(w_0 \ne 0\). Tenlo a mano cuando lleguemos a <em>batch
+      RL</em> y a los mínimos cuadrados: <strong>no son la cura de la inestabilidad</strong>.
+    </div>
+    <div class="aviso" data-t="t5.b11.erratum">
+      La figura de <code>#slide-15</code> es la figura 11.2 del libro y rotula el eje «Parameter values,
+      \(\theta_k(i)\)»: usa <strong>\(\theta\)</strong> para los pesos, cuando toda la baraja usa \(w\) y en
+      este curso \(\theta\) son los parámetros de <strong>la política</strong> (tema 6). Aquí todo va con
+      \(w\). El mismo cambio, sin avisar, está en <code>#slide-34</code> con \(\theta\) y \(\theta^-\) de
+      DQN. Y la figura proyectada <strong>no incluye el MDP de Baird</strong>: solo la gráfica de la
+      divergencia, que es lo que la hace difícil de leer.
+    </div>
+    <p><a class="siguiente" href="#m4" data-t="t5.b11.modulo">→ módulo 4: mueve \(\gamma\) por encima y por debajo de 0,5, y después mueve \(\alpha\) para comprobar que no cambia nada.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 4 · cuándo divergen los pesos: el ejemplo w → 2w           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta" data-t="t5.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t5.m4.h2">Cuándo divergen los pesos</h2>
+      <p class="fuente" data-t="t5.m4.fuente"><code>5_Tema_5_1#slide-15</code> · Sutton &amp; Barto, §11.2, el ejemplo \(w\to 2w\) (p. 282) y el contraejemplo de Baird, figuras 11.1 y 11.2</p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo4). -->
+    <div id="m4-controles"></div>
+    <div id="m4-viz1"></div>
+    <div id="m4-viz2"></div>
+    <div id="m4-formula"></div>
+    <div id="m4-traza"></div>
+    <div id="m4-metricas"></div>
+    <div id="m4-tablaAlpha"></div>
+    <div id="m4-baird"></div>
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B12 · los tres inductores de inestabilidad y las dos tablas → m6  -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b12">
+    <header>
+      <h2 data-t="t5.b12.h2">Los tres inductores de inestabilidad</h2>
+      <p class="fuente" data-t="t5.b12.fuente"><code>5_Tema_5_1#slide-16</code> y <code>#slide-21</code> · las tablas son de las diapositivas de David Silver (UCL), que <code>#slide-2</code> declara como fuente · la evidencia está dispersa en Sutton &amp; Barto, §9.4, §10.1, §11.2 y §11.3</p>
+    </header>
+    <p class="explicacion" data-t="t5.b12.texto">
+      El peligro de inestabilidad y divergencia aparece <strong>cuando se combinan los tres
+      elementos siguientes</strong>, y no antes:
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.b12.cab">
+            <th>Inductor</th><th>Qué es</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b12.i1"><td><strong>Aproximación de la función de valor</strong></td><td>Una forma potente y escalable de generalizar desde un espacio de estados mucho mayor que la memoria y el cómputo disponibles (por ejemplo, aproximación lineal o redes neuronales)</td></tr>
+          <tr data-t="t5.b12.i2"><td><em>Bootstrapping</em></td><td>Objetivos de actualización que <strong>incluyen estimaciones ya existentes</strong> —como en DP o en TD— en lugar de basarse solo en recompensas reales y retornos completos, como en MC</td></tr>
+          <tr data-t="t5.b12.i3"><td><strong>Entrenamiento fuera de política</strong></td><td>Entrenar sobre una distribución de transiciones <strong>distinta</strong> de la que produce la política objetivo. <strong>Barrer el espacio de estados actualizando todos los estados por igual, como en DP, no respeta la política objetivo y es un caso de entrenamiento fuera de política</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5.b12.aviso1">
+      El tercero suele sorprender y es literal del libro: <strong>DP es fuera de política</strong>. No hace
+      falta una política de comportamiento distinta para estar fuera de política; basta con
+      actualizar los estados con una distribución que no sea la que genera la política
+      objetivo.
+    </div>
+    <p class="explicacion" data-t="t5.b12.texto2">
+      <strong>Si están presentes dos cualesquiera de los tres, pero no los tres, la inestabilidad se
+      puede evitar.</strong> Así que lo natural es preguntarse cuál se puede soltar. La aproximación,
+      no: hace falta escalar, y la agregación o los métodos no paramétricos son demasiado
+      débiles o demasiado caros —los de mínimos cuadrados, como LSTD, son de complejidad
+      cuadrática y por tanto demasiado caros para problemas grandes—. El <em>bootstrapping</em> se
+      puede soltar, pero se paga en eficiencia de cálculo y de datos, y es demasiado valioso.
+      Queda el <strong>fuera de política</strong>, y ahí el libro da la receta concreta para el RL sin
+      modelo: <strong>usar SARSA en lugar de Q-learning</strong>. Que es exactamente lo que dice la tabla de
+      control de <code>#slide-21</code>, donde SARSA lineal es «(SÍ)» y Q-learning lineal es «NO».
+    </p>
+    <p class="explicacion" data-t="t5.b12.texto3">
+      Álvaro llama a estos tres «<strong>inductores de inestabilidad</strong>», y es el nombre que usa esta
+      página. En el libro y en las diapositivas de Lucía se llaman «<strong>la tríada mortal</strong>»
+      (<em>deadly triad</em>); es el mismo trío, y conviene reconocer las dos etiquetas porque el
+      examen y la bibliografía pueden usar cualquiera de ellas.
+    </p>
+    <div class="aviso" data-t="t5.b12.aviso2">
+      Ojo con leer la tabla de control como si el control añadiera peligro: el libro insiste en
+      que <strong>el peligro no viene del control ni de la iteración generalizada de la política</strong>.
+      La inestabilidad ya está en el caso de predicción, siempre que estén los tres inductores.
+      Y <strong>tampoco viene de aprender ni de no conocer el entorno</strong>, porque aparece igual de
+      fuerte en métodos de planificación como la programación dinámica, donde el entorno se
+      conoce por completo.
+    </div>
+    <div class="aviso" data-t="t5.b12.avisoFuente">
+      <strong>Las dos tablas de convergencia no son de Sutton &amp; Barto.</strong> En el libro no hay ninguna
+      tabla tabular / lineal / no lineal cruzada con dentro y fuera de política. Vienen de las
+      <strong>diapositivas de David Silver (UCL)</strong>, que la propia baraja declara como segunda fuente
+      en <code>#slide-2</code>. Lo que sí hay en el libro es la evidencia de cada casilla, dispersa por
+      cuatro capítulos, y es lo que el módulo 6 recompone.
+    </div>
+    <p><a class="siguiente" href="#m6" data-t="t5.b12.modulo">→ módulo 6: enciende y apaga los tres inductores y mira en qué casilla caes, con la cita del libro que la sostiene.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 6 · las dos tablas de convergencia, casilla por casilla    -->
+  <!-- (se sitúa aquí, detrás de B12, según su propia Ubicación §1)      -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m6">
+    <header>
+      <p class="etiqueta" data-t="t5.m6.etiqueta">MÓDULO 6</p>
+      <h2 data-t="t5.m6.h2">Las dos tablas, casilla por casilla</h2>
+      <p class="fuente" data-t="t5.m6.fuente"><code>5_Tema_5_1#slide-16</code>, <code>#slide-21</code> (idénticas en Lucía: <code>Tema5_1_Aproximacion#slide-15</code> y <code>Tema5_2_Aproximacion#slide-8</code>) · las tablas son de las diapositivas de David Silver (UCL), no de Sutton &amp; Barto · la evidencia, en Sutton &amp; Barto §§9.2-9.4, §10.1, §11.2 y §11.3</p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo6). -->
+    <div id="m6-controles"></div>
+    <div id="m6-tablas"></div>
+    <div id="m6-marcador"></div>
+    <div id="m6-veredicto"></div>
+    <div id="m6-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B13 · control: de v a q                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b13">
+    <header>
+      <h2 data-t="t5.b13.h2">Control: de \(v\) a \(q\)</h2>
+      <p class="fuente" data-t="t5.b13.fuente"><code>5_Tema_5_1#slide-17</code>, <code>#slide-18</code> (mejor presentado en Lucía, <code>Tema5_2_Aproximacion#slide-4</code>) · Sutton &amp; Barto, §10.1, ecuaciones (10.1) a (10.3)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b13.texto">
+      La extensión a valores de acción es directa: donde antes había ejemplos \(S_t \mapsto
+      U_t\), ahora hay ejemplos \(S_t,A_t \mapsto U_t\), y el objetivo \(U_t\) puede ser
+      cualquier aproximación de \(q_\pi(S_t,A_t)\) —el retorno completo de Monte Carlo, o
+      cualquiera de los retornos de SARSA a \(n\) pasos—. La respuesta al ejercicio de
+      <code>#slide-18</code> son estas cuatro líneas:
+    </p>
+    <p class="ecuacion" data-t="t5.b13.ecuacion">
+      \[ \hat q(S,A,w) \approx q_\pi(S,A), \qquad J(w) = \mathbb E_\pi\big[\big(q_\pi(S,A)-\hat q(S,A,w)\big)^2\big] \]
+      \[ -\tfrac12\nabla_w J(w) = \mathbb E_\pi\big[\big(q_\pi(S,A)-\hat q(S,A,w)\big)\nabla_w \hat q(S,A,w)\big] \]
+      \[ \Delta w = \alpha\big(q_\pi(S,A)-\hat q(S,A,w)\big)\,\nabla_w \hat q(S,A,w) \qquad\text{(la versión muestral)} \]
+    </p>
+    <div class="aviso" data-t="t5.b13.erratum">
+      En <code>#slide-18</code> la tercera línea aparece <strong>sin la \(\mathbb E_\pi\)</strong>, mientras la línea
+      homóloga de <code>#slide-8</code> sí la lleva. Tal como está escrita, iguala el gradiente exacto con
+      su estimación muestral, que son dos cosas distintas: la última línea es la muestral, y por
+      eso lleva \(\alpha\) y no lleva esperanza.
+    </div>
+    <p class="explicacion" data-t="t5.b13.texto2">
+      En el caso lineal, \(\hat q(s,a,w) \doteq w^\top x(s,a)\), con un vector de
+      características <strong>por cada par estado-acción</strong>. Y para hacer control hace falta acoplar
+      esto con la mejora de la política: si el conjunto de acciones es <strong>discreto y no demasiado
+      grande</strong>, se calcula \(\hat q(S_t,a,w_t)\) para cada acción disponible, se toma
+      \(A^*_t = \arg\max_a \hat q(S_t,a,w_t)\) y se hace la política \(\varepsilon\)-greedy
+      sobre eso.
+    </p>
+    <p class="ecuacion" data-t="t5.b13.ecuacion2">
+      \[ \hat q(s,a,w) \doteq w^\top x(s,a) = \sum_{i=1}^{d} w_i\,x_i(s,a) \]
+    </p>
+    <div class="aviso" data-t="t5.b13.aviso">
+      Y aquí el libro pone un límite explícito que conviene oír antes del tema 6: con
+      <strong>acciones continuas</strong> o conjuntos discretos muy grandes, <strong>no hay solución cerrada</strong>;
+      es tema de investigación abierta. Ése es el hueco por el que entra el gradiente de
+      política.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B14 · SARSA semi-gradiente y la línea que la separa de Q-learning -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b14">
+    <header>
+      <h2 data-t="t5.b14.h2">SARSA semi-gradiente, y la línea que cambia para Q-learning</h2>
+      <p class="fuente" data-t="t5.b14.fuente"><code>5_Tema_5_1#slide-19</code> (caja del libro, en inglés) y <code>#slide-20</code> (el ejercicio; la solución se escribe a mano en <code>5_Tema_5_1_completo#slide-20</code> y está impresa en Lucía, <code>Tema5_2_Aproximacion#slide-7</code>) · Sutton &amp; Barto, §10.1 (caja) y §16.5, ecuación (16.3)</p>
+    </header>
+    <pre class="codigo" data-t="t5.b14.caja">SARSA semi-gradiente episódico, para estimar q̂ ≈ q_*
+
+Entrada: una parametrización derivable q̂ : S × A × R^d → R
+Parámetros: paso α &gt; 0, exploración ε &gt; 0 pequeña
+Inicializar los pesos w ∈ R^d arbitrariamente (p. ej. w = 0)
+
+Repetir para cada episodio:
+    S, A ← estado y acción iniciales del episodio (p. ej. ε-greedy)
+    Repetir para cada paso del episodio:
+        Tomar la acción A; observar R, S′
+        Si S′ es terminal:
+            w ← w + α[R − q̂(S,A,w)] ∇q̂(S,A,w)
+            pasar al episodio siguiente
+        Elegir A′ en función de q̂(S′,·,w)   (p. ej. ε-greedy)
+        w ← w + α[R + γ q̂(S′,A′,w) − q̂(S,A,w)] ∇q̂(S,A,w)
+        S ← S′
+        A ← A′</pre>
+    <p class="explicacion" data-t="t5.b14.texto">
+      Detalle que se pierde al resumir y que hay que respetar al implementar: <strong>el caso
+      terminal tiene su propia línea</strong>, sin el término \(\gamma\hat q(S',A',w)\). Es la misma
+      condición de \(\hat v(\text{terminal},w)=0\) del bloque de predicción, escrita para
+      \(q\).
+    </p>
+    <p class="explicacion" data-t="t5.b14.texto2">
+      <code>#slide-20</code> es una diapositiva con el enunciado y <strong>la pantalla vacía</strong>: «Identifica las
+      líneas que difieren de SARSA y define cómo serían para Q-learning». Difieren <strong>dos</strong>, y en
+      realidad es una sola idea. La línea «Elegir \(A'\)» <strong>deja de existir como elección de la
+      acción a ejecutar</strong>: en Q-learning esa acción no se toma, solo se usa para el objetivo. Y
+      el objetivo pasa de \(\hat q(S',A',w)\) —la acción <strong>realmente elegida</strong> por la política de
+      comportamiento— a \(\max_a \hat q(S',a,w)\).
+    </p>
+    <p class="ecuacion" data-t="t5.b14.ecuacion">
+      \[ \text{SARSA:}\quad w \leftarrow w + \alpha\big[R + \gamma\,\hat q(S',A',w) - \hat q(S,A,w)\big]\nabla\hat q(S,A,w) \]
+      \[ \text{Q-learning:}\quad w \leftarrow w + \alpha\big[R + \gamma\,\max_a \hat q(S',a,w) - \hat q(S,A,w)\big]\nabla\hat q(S,A,w) \]
+    </p>
+    <p class="explicacion" data-t="t5.b14.texto3">
+      Ese \(\max\) es lo que convierte el método en <strong>fuera de política</strong>, y por tanto lo que le
+      añade el <strong>tercer inductor</strong> de B12. En el caso lineal, con
+      \(\nabla\hat q(S,A,w) = x(S,A)\), las dos reglas se escriben
+      \(\Delta w = \alpha\,\delta\,x(S,A)\), con el \(\delta\) que corresponda.
+    </p>
+    <div class="aviso" data-t="t5.b14.erratum">
+      <code>#slide-19</code> tiene <strong>dos</strong> imágenes: la caja de pseudocódigo y, <strong>debajo de ella en el
+      orden de apilado</strong>, la fórmula \(\Delta w = \alpha[r+\gamma\hat q(s',a',w)-\hat
+      q(s,a,w)]\,x(s,a)\), que la caja tapa por completo. En proyección <strong>esa fórmula no se ve
+      nunca</strong>, y es la <strong>única aparición de \(x(s,a)\) en toda la baraja de Álvaro</strong>. La versión
+      visible está en las diapositivas de Lucía, <code>Tema5_2_Aproximacion#slide-5</code>. Es notación
+      examinable: apréndela de aquí.
+    </div>
+    <div class="aviso" data-t="t5.b14.aviso">
+      Y una precisión sobre convergencia que la tabla de <code>#slide-21</code> resume con un paréntesis:
+      <strong>con política constante</strong>, SARSA(0) semi-gradiente lineal converge igual que TD(0) y con
+      el mismo tipo de cota. Con selección \(\varepsilon\)-greedy —o sea, con la política
+      cambiando— <strong>no converge en el sentido habitual, pero entra en una región acotada cerca de
+      la mejor solución</strong>. Eso es exactamente el «(SÍ) ➜ cerca, pero no quieto» de la
+      diapositiva, y la referencia es Gordon (1996a, 2001), en la nota bibliográfica 10.1 del
+      libro.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B14b · trazas de elegibilidad con aproximación (addenda)          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b14b">
+    <header>
+      <h2 data-t="t5.b14b.h2">Trazas de elegibilidad con aproximación: \(z_t\) tiene dimensión \(d\)</h2>
+      <p class="fuente" data-t="t5.b14b.fuente"><code>4_Tema4_2#slide-16</code>, <code>#slide-17</code> (tema 4.3) y <code>5_Tema_5_1#slide-11</code> · Sutton &amp; Barto, capítulo 12 — materia del tema 4.3, no del tema 5</p>
+    </header>
+    <div class="aviso" data-t="t5.b14b.procedencia">
+      Aviso de procedencia: <strong>esto no es del tema 5</strong>. Las trazas de elegibilidad son materia
+      del <strong>tema 4.3</strong> (<code>4_Tema4_2#slide-16</code>, <code>#slide-17</code>) y del <strong>capítulo 12</strong> del libro, que
+      queda fuera de este tema. Están aquí por una razón concreta: el problema práctico del
+      examen final pide <strong>\(x(s,a)\) y las trazas en el mismo enunciado</strong>, y \(x(s,a)\) sí es
+      de este tema. El desarrollo completo —el dilema frecuencia/recencia, el retorno
+      \(\lambda\), TD(λ) hacia adelante y la equivalencia de las dos vistas— está en la
+      <a href="tema4b.html#m2">segunda página del tema 4</a> y <strong>no se repite aquí</strong>.
+    </div>
+    <p class="explicacion" data-t="t5.b14b.texto">
+      En el caso tabular, la traza se incrementaba en <strong>1</strong> en la casilla del par visitado y se
+      desvanecía en las demás. Ese <strong>1</strong> no es un valor arbitrario: <code>4_Tema4_2#slide-16</code> dice que
+      <strong>es el gradiente de la función de valor en el caso de aproximación lineal con codificación
+      <em>one-hot</em> de los estados</strong>. Es exactamente el argumento de <code>#slide-11</code> —el caso tabular
+      <strong>es</strong> aproximación lineal con <em>one-hot</em>— contado del revés. Y leído así, la
+      generalización es inmediata: <strong>donde había un 1, va el gradiente</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5.b14b.ecuacion">
+      \[ z_{-1} \doteq 0, \qquad z_t \doteq \gamma\lambda\,z_{t-1} + \nabla\hat q(S_t,A_t,w_t) \;=\; \gamma\lambda\,z_{t-1} + x(S_t,A_t), \qquad w_{t+1} \doteq w_t + \alpha\,\delta_t\,z_t \]
+    </p>
+    <p class="explicacion" data-t="t5.b14b.texto2">
+      De ahí sale lo único que hay que memorizar de este bloque: <strong>\(z_t\) vive en el espacio
+      de los pesos</strong>. Tiene <strong>la misma dimensión que \(w\)</strong>, es decir \(d\), y <strong>no</strong>
+      \(|\mathcal S|\times|\mathcal A|\). Con aproximación no hay una
+      casilla por par estado-acción: hay \(d\) pesos, y la traza lleva <strong>un número por peso</strong>,
+      que dice cuánto ha contribuido ese peso a lo que se acaba de vivir. Si en el examen
+      escribes una traza del tamaño de la tabla, has vuelto al tema 4.
+    </p>
+    <p class="explicacion" data-t="t5.b14b.texto3">
+      Dos formas de acumular la visita, las mismas que en el caso tabular. La <strong>acumulativa</strong>
+      suma el gradiente, \(z_t = \gamma\lambda z_{t-1} + x(S_t,A_t)\): si una componente se
+      repite, su traza pasa de \(1\) a \(1+\gamma\lambda\). La de <strong>reemplazo</strong> desvanece
+      primero y después <strong>pone a 1</strong> las componentes activas, así que una componente repetida se
+      queda en 1. La de reemplazo está definida para <strong>características binarias</strong> —el caso de
+      <em>tile coding</em>— y es la que se usa con mosaicos; con características de valor real, como
+      las del ejemplo de abajo, la que aplica es la <strong>acumulativa</strong>.
+    </p>
+    <p class="explicacion" data-t="t5.b14b.texto4">
+      Dos detalles de implementación que son también detalles conceptuales. Uno: <strong>la traza se
+      reinicia a cero al empezar cada episodio</strong>; no arrastra crédito de un episodio al
+      siguiente, porque el anterior ya terminó. Dos: con <strong>\(\lambda = 0\)</strong> la recurrencia se
+      queda en \(z_t = x(S_t,A_t)\) y la actualización de pesos es
+      \(w \leftarrow w + \alpha\delta_t\,x(S_t,A_t)\), que es <strong>exactamente</strong> el algoritmo de
+      un paso de B14. No parecido: el mismo, peso a peso.
+    </p>
+
+    <h3 data-t="t5.b14b.ejemploTitulo">Resuelto al estilo del examen</h3>
+
+    <p class="explicacion" data-t="t5.b14b.ejemploIntro">
+      Un robot que navega hacia un objetivo. La observación son <strong>seis</strong> variables —posición en
+      \(x\), posición en \(y\), distancia mínima a un obstáculo, demora del obstáculo,
+      distancia al objetivo y demora del objetivo— y hay <strong>tres</strong> acciones: avanzar
+      (\(A_0\)), girar 90° a la izquierda (\(A_1\)) y girar 90° a la derecha (\(A_2\)). Ésta
+      es la evolución de la observación, y no hay más datos que éstos:
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos">
+        <thead>
+          <tr data-t="t5.b14b.tablaObsCab">
+            <th>Variable</th><th>\(t=0\)</th><th>\(t=1\)</th><th>\(t=2\)</th><th>\(t=3\)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b14b.obs1"><td>\(x_0\) (posición en \(x\))</td><td>2</td><td>3</td><td>3</td><td>3</td></tr>
+          <tr data-t="t5.b14b.obs2"><td>\(x_1\) (posición en \(y\))</td><td>2</td><td>2</td><td>2</td><td>3</td></tr>
+          <tr data-t="t5.b14b.obs3"><td>\(x_2\) (distancia al obstáculo)</td><td>2</td><td>2</td><td>2</td><td>1</td></tr>
+          <tr data-t="t5.b14b.obs4"><td>\(x_3\) (demora del obstáculo)</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+          <tr data-t="t5.b14b.obs5"><td>\(x_4\) (distancia al objetivo)</td><td>4,2</td><td>3,6</td><td>3,6</td><td>2,8</td></tr>
+          <tr data-t="t5.b14b.obs6"><td>\(x_5\) (demora del objetivo)</td><td>45</td><td>33,7</td><td>33,7</td><td>45</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion" data-t="t5.b14b.ejemploXsa">
+      <strong>Paso 1: construir \(x(s,a)\).</strong> Las seis variables van al <strong>bloque de la acción
+      tomada</strong> y los otros dos bloques van a <strong>cero</strong>. Tres acciones × seis variables ⟹
+      <strong>\(d = 18\) pesos</strong>, que se almacenan como un vector de 18 o como una matriz
+      \(3\times 6\), una fila por acción. Y las trazas, <strong>exactamente igual: 18</strong>. Ésa es la
+      respuesta a los dos apartados que preguntan por dimensiones y almacenamiento.
+    </p>
+    <p class="explicacion" data-t="t5.b14b.ejemploAcciones">
+      <strong>Paso 2: leer las acciones de la tabla.</strong> De \(t=0\) a \(t=1\) la posición cambia
+      (\(x_0: 2\to 3\)) y la distancia al objetivo baja: el robot <strong>avanzó</strong>, \(A_0\). De
+      \(t=1\) a \(t=2\) <strong>no cambia ni una de las seis variables</strong>: las demoras son respecto
+      al norte en un sistema de referencia <strong>estático</strong>, así que girar no cambia ninguna ⟹ fue un
+      <strong>giro</strong>. De \(t=2\) a \(t=3\) la posición vuelve a cambiar: <strong>avanzó</strong> otra vez,
+      \(A_0\).
+    </p>
+    <div class="aviso" data-t="t5.b14b.ejemploAviso">
+      Del texto se deduce que en \(t=1\) hubo un <strong>giro</strong>, pero <strong>no cuál de los dos</strong>: eso lo
+      fija la figura del enunciado. Aquí se toma \(A_1\) y <strong>se dice</strong>, porque el resultado no
+      depende de cuál sea: cambia <strong>en qué bloque</strong> caen los seis números, no su valor, ni el
+      número de componentes no nulas, ni la dimensión de la traza.
+    </div>
+    <p class="explicacion" data-t="t5.b14b.ejemploTraza">
+      <strong>Paso 3: la recurrencia.</strong> Con \(\gamma = 0{,}9\) y \(\lambda = 0{,}5\),
+      \(\gamma\lambda = 0{,}45\). Traza <strong>acumulativa</strong> —las características son de valor
+      real— y \(z = 0\) antes de empezar.
+      <br><br>
+      <strong>Primera actualización</strong> (la que el enunciado llama \(t=1\)):
+      \(z = 0{,}45\cdot 0 + x(S_0,A_0) = x(S_0,A_0)\), es decir el bloque de \(A_0\) con la
+      columna \(t=0\), \((2,\,2,\,2,\,0,\,4{,}2,\,45)\), y <strong>cero</strong> en los bloques de
+      \(A_1\) y \(A_2\).
+      <br><br>
+      <strong>Segunda actualización</strong> (\(t=2\)):
+      \(z = 0{,}45\cdot z_{\text{anterior}} + x(S_1,A_1)\). El primer término <strong>desvanece</strong> el
+      bloque de \(A_0\): \(0{,}45\cdot(2,\,2,\,2,\,0,\,4{,}2,\,45) =
+      (0{,}9,\,0{,}9,\,0{,}9,\,0,\,1{,}89,\,20{,}25)\). El segundo <strong>suma</strong> la columna
+      \(t=1\) en el bloque del giro: \((3,\,2,\,2,\,0,\,3{,}6,\,33{,}7)\).
+    </p>
+
+    <div class="tabla-scroll">
+      <table class="datos">
+        <thead>
+          <tr data-t="t5.b14b.tablaTrazaCab">
+            <th>Bloque</th><th>\(x_0\)</th><th>\(x_1\)</th><th>\(x_2\)</th><th>\(x_3\)</th><th>\(x_4\)</th><th>\(x_5\)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b14b.traza1"><td>\(A_0\) — avanzar, tomada en \(t=0\)</td><td>0,9</td><td>0,9</td><td>0,9</td><td>0</td><td>1,89</td><td>20,25</td></tr>
+          <tr data-t="t5.b14b.traza2"><td>\(A_1\) — el giro tomado en \(t=1\)</td><td>3</td><td>2</td><td>2</td><td>0</td><td>3,6</td><td>33,7</td></tr>
+          <tr data-t="t5.b14b.traza3"><td>\(A_2\) — no tomada</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="explicacion" data-t="t5.b14b.ejemploCierre">
+      Dieciocho números, diez de ellos no nulos, y <strong>ni uno solo indexado por estado</strong>. Dos
+      comprobaciones más del mismo enunciado, que salen gratis: el gradiente en \(t=2\) es
+      \(\nabla_w\hat q(S_2,A_2,w) = x(S_2,A_2)\), donde \(A_2\) es <strong>la acción tomada en
+      \(t=2\)</strong> —<em>avanzar</em>, porque la posición cambia en \(t=3\)—, o sea la columna
+      \(t=2\) escrita en el bloque de <em>avanzar</em>; y con
+      <strong>todos</strong> los pesos inicializados a 2,
+      \(\hat q(S_2,A_2,w) = 2\cdot(3+2+2+0+3{,}6+33{,}7) = 2\cdot 44{,}3 = \mathbf{88{,}6}\).
+    </p>
+    <div class="aviso" data-t="t5.b14b.ejemploIndices">
+      Cuidado con la numeración, porque el enunciado y el libro no coinciden. El enunciado llama
+      «\(t=1\)» y «\(t=2\)» a la <strong>primera</strong> y la <strong>segunda</strong> actualización; en la notación del
+      libro esas mismas trazas son \(z_0\) y \(z_1\), porque \(z_t\) se define con
+      \(\nabla\hat q(S_t,A_t,w_t)\) y \(z_{-1}=0\). <strong>Los números son los mismos</strong>; lo que
+      cambia es el índice. Aquí se usa la numeración del enunciado, que es la que verás en el
+      examen.
+    </div>
+    <p><a class="siguiente" href="#m5" data-t="t5.b14b.modulo">→ módulo 5: sube \(\lambda\) por encima de 0 sobre Mountain Car y mira qué cambia en las curvas —y qué no.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 5 · control: SARSA semi-gradiente en Mountain Car          -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m5">
+    <header>
+      <p class="etiqueta" data-t="t5.m5.etiqueta">MÓDULO 5</p>
+      <h2 data-t="t5.m5.h2">El algoritmo de la caja, corriendo</h2>
+      <p class="fuente" data-t="t5.m5.fuente"><code>5_Tema_5_1#slide-17</code> a <code>#slide-21</code> · la \(x(s,a)\) visible y el pseudocódigo de Q-learning, solo en Lucía: <code>Tema5_2_Aproximacion#slide-5</code>, <code>#slide-7</code> · Sutton &amp; Barto, §10.1, Example 10.1, figuras 10.1 y 10.2; §16.5, ecuación (16.3)</p>
+      <p class="fuente" id="m5-semilla"></p>
+    </header>
+
+    <!-- El interior lo construye assets/tema5.js (función modulo5), con cálculo en assets/aproximacion-worker.js. -->
+    <div id="m5-controles"></div>
+    <div id="m5-viz1"></div>
+    <div id="m5-viz2"></div>
+    <div id="m5-metricas"></div>
+    <div id="m5-cajas"></div>
+    <div id="m5-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B15 · Batch RL: el ciclo de vida de la experiencia                -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b15">
+    <header>
+      <h2 data-t="t5.b15.h2"><em>Batch RL</em>: reutilizar la experiencia</h2>
+      <p class="fuente" data-t="t5.b15.fuente"><code>5_Tema_5_1#slide-25</code> a <code>#slide-29</code> · la cadena de razonamiento es de las diapositivas de David Silver · Sutton &amp; Barto, §6.3 (actualización por lotes, caso tabular) y §9.8 (LSTD)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b15.texto">
+      <code>#slide-26</code> pregunta: «¿Cómo es el <strong>ciclo de vida</strong> de la experiencia que nos llega?». La
+      respuesta —que en la baraja de Álvaro no está, y sí en Lucía— es breve: <strong>cada dato se usa
+      una sola vez</strong>. Se genera una transición, se hace una actualización, y se tira. De ahí las
+      dos motivaciones del bloque: <strong>eficiencia de datos</strong> —reutilizar lo ya vivido— y
+      <strong>correlaciones</strong>, porque las muestras consecutivas de una trayectoria no son
+      independientes.
+    </p>
+    <p class="explicacion" data-t="t5.b15.texto2">
+      La idea de la predicción por mínimos cuadrados es: guardar un conjunto de experiencia
+      \(\mathcal D\) y buscar los pesos que minimizan el error sobre <strong>todo</strong> \(\mathcal D\), no
+      sobre la última muestra. Y la <strong>repetición de experiencia</strong> (<em>experience replay</em>) es la
+      forma incremental de hacerlo: muestrear al azar de \(\mathcal D\) y aplicar la regla de
+      siempre; en el límite, eso converge a la solución de mínimos cuadrados.
+    </p>
+    <p class="ecuacion" data-t="t5.b15.ecuacion">
+      \[ \mathcal D = \big\{\langle s_1, v_1^\pi\rangle, \dots, \langle s_T, v_T^\pi\rangle\big\}, \qquad LS(w) = \sum_{t=1}^{T}\big(v_t^\pi - \hat v(s_t,w)\big)^2, \qquad w^\pi = \arg\min_w LS(w) \]
+    </p>
+    <p class="explicacion" data-t="t5.b15.texto3">
+      En el caso lineal la condición de óptimo es que el incremento esperado sea cero, y de ahí
+      sale la ecuación normal. <strong>Las dos colecciones llegan hasta aquí y se paran</strong>, aunque el
+      texto prometa que «podemos calcular directamente el valor de \(w\)». La solución cerrada
+      es ésta:
+    </p>
+    <p class="ecuacion" data-t="t5.b15.ecuacion2">
+      \[ \mathbb E_{\mathcal D}[\Delta w] = 0 \;\Longleftrightarrow\; \alpha\sum_{t=1}^{T} x(s_t)\big(v_t^\pi - x(s_t)^\top w\big) = 0 \;\Longrightarrow\; w = \Big(\sum_{t=1}^{T} x(s_t)x(s_t)^\top\Big)^{-1}\sum_{t=1}^{T} x(s_t)\,v_t^\pi \]
+    </p>
+    <p class="explicacion" data-t="t5.b15.texto4">
+      Invertir esa matriz cuesta \(O(d^3)\) en general, con \(d\) el número de pesos. Pero es
+      una <strong>suma de productos externos</strong>, y su inversa se puede actualizar de forma incremental
+      con la <strong>fórmula de Sherman-Morrison</strong>, que solo tiene productos matriz-vector y
+      vector-vector: \(O(d^2)\). Compárese con el \(O(d)\) por paso de TD(0) semi-gradiente.
+    </p>
+    <div class="aviso" data-t="t5.b15.erratum">
+      <code>#slide-29</code> escribe «Shermann-Morrison» con dos «n»: es <strong>Sherman-Morrison</strong>. Y llama
+      \(N\) a lo que en el resto de esta página y en el libro es \(d\), el número de pesos.
+    </div>
+    <p class="explicacion" data-t="t5.b15.texto5">
+      Lo que el libro tiene de esto se llama <strong>LSTD</strong> (<em>Least-Squares TD</em>, §9.8): estimar \(A\)
+      y \(b\) con las sumas muestrales y calcular directamente el punto fijo TD,
+      \(w_t = \hat A_t^{-1}\hat b_t\). Es la forma <strong>más eficiente en datos</strong> de TD(0) lineal, y
+      es más caro de calcular. Y tiene tres peros que suelen omitirse: no necesita \(\alpha\),
+      pero <strong>sí necesita</strong> un \(\varepsilon\) de regularización —si es demasiado pequeño la
+      sucesión de inversas oscila salvajemente, si es demasiado grande el aprendizaje se
+      frena—; <strong>nunca olvida</strong>, lo que es un problema cuando la política objetivo cambia, como
+      pasa en control; y por eso, en aplicaciones de control, LSTD suele necesitar algún
+      mecanismo añadido que induzca olvido, con lo que la ventaja inicial de no tener paso se
+      desvanece.
+    </p>
+    <div class="aviso" data-t="t5.b15.aviso1">
+      Cuidado con el nombre: en este bloque, «repetición de experiencia» opera sobre pares
+      <strong>estado-valor</strong> \(\langle s, v^\pi\rangle\), como si \(v^\pi\) se conociera —es la
+      exposición de Silver, que cierra el círculo con los mínimos cuadrados—. En DQN, dos
+      bloques más abajo, opera sobre <strong>transiciones</strong> \((s,a,r,s')\), y el valor no se conoce: se
+      arranca por <em>bootstrapping</em>. <strong>Son dos cosas distintas con el mismo nombre</strong>, y el salto
+      no lo puentea ninguna de las dos colecciones. En la práctica, en el dataset de arriba lo
+      que se guarda es \(G_t\) (Monte Carlo) o el objetivo TD, no \(v^\pi\).
+    </div>
+    <div class="aviso" data-t="t5.b15.aviso2">
+      Y el aviso de B11, ahora que toca: <strong>los mínimos cuadrados no curan la inestabilidad</strong>.
+      El Example 11.1 del libro calcula en cada iteración el \(w\) que minimiza
+      \(\overline{VE}\) exactamente y la sucesión <strong>diverge</strong> igual. Los métodos de mínimos
+      cuadrados como LSTD, además, son de complejidad cuadrática, y ésa es la razón por la que
+      el libro los descarta como solución general al problema de la tríada.
+    </div>
+    <div class="aviso" data-t="t5.b15.enlaceT4">
+      La actualización por lotes en el caso <strong>tabular</strong> ya salió en el tema 4, con el ejemplo
+      A-B: <strong>MC por lotes minimiza el error sobre los datos vistos, TD(0) por lotes acierta el
+      modelo de Markov que los generó</strong>. Está en el
+      <a href="tema4.html#m2">módulo 2 del tema 4</a>, y no se repite aquí.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B16 · DQN                                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b16">
+    <header>
+      <h2 data-t="t5.b16.h2">DQN: Q-learning semi-gradiente más tres piezas de ingeniería</h2>
+      <p class="fuente" data-t="t5.b16.fuente"><code>5_Tema_5_1#slide-30</code> a <code>#slide-36</code> · Sutton &amp; Barto, §16.5 (caso de estudio, sin pseudocódigo) · Mnih et al., <em>Nature</em> 518, 529-533 (2015) · el pseudocódigo completo está en Lucía, <code>Tema5_2_Aproximacion#slide-18</code></p>
+    </header>
+    <p class="explicacion" data-t="t5.b16.texto">
+      Lo primero, para no perderse: <strong>DQN no es un algoritmo nuevo</strong>. Es <strong>Q-learning
+      semi-gradiente</strong> con una red convolucional profunda como aproximador, más tres añadidos de
+      ingeniería. La actualización base es la del bloque B14, con la red calculando \(\hat q\) y
+      el gradiente por retropropagación:
+    </p>
+    <p class="ecuacion" data-t="t5.b16.ecuacion">
+      \[ w_{t+1} = w_t + \alpha\big[R_{t+1} + \gamma\max_a \hat q(S_{t+1},a,w_t) - \hat q(S_t,A_t,w_t)\big]\nabla\hat q(S_t,A_t,w_t) \]
+    </p>
+    <p class="explicacion" data-t="t5.b16.texto2">
+      Y hay una razón concreta para que sea Q-learning y no SARSA: <strong>la repetición de
+      experiencia exige un algoritmo fuera de política</strong>. Al muestrear transiciones sueltas de
+      un búfer, ya no se está siguiendo una trayectoria conectada con la política actual, y solo
+      un método fuera de política puede aprender de eso. Ser sin modelo y fuera de política
+      hacía de Q-learning la elección natural.
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.b16.cab">
+            <th>Pieza</th><th>Qué problema resuelve</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.b16.f1">
+            <td><strong>Repetición de experiencia</strong>: cada transición \((S_t,A_t,R_{t+1},S_{t+1})\) va a un búfer, y cada paso se hace un minilote de actualizaciones con transiciones <strong>muestreadas uniformemente</strong> de él</td>
+            <td>Tres cosas: <strong>eficiencia de datos</strong> (cada experiencia se reutiliza muchas veces), <strong>varianza</strong> (las actualizaciones sucesivas dejan de estar correlacionadas entre sí) y <strong>una</strong> fuente de inestabilidad (se rompe la dependencia de las experiencias sucesivas respecto de los pesos actuales)</td>
+          </tr>
+          <tr data-t="t5.b16.f2">
+            <td><strong>Red objetivo</strong>: cada \(C\) actualizaciones se copian los pesos a una red duplicada, que se mantiene <strong>congelada</strong> durante las \(C\) siguientes y es la que produce el objetivo. Con \(\tilde q\) la salida de la red congelada, el objetivo es \(R_{t+1} + \gamma\max_a \tilde q(S_{t+1},a,w^-)\)</td>
+            <td>Que <strong>el objetivo dependa de los mismos parámetros que se están actualizando</strong>, que es el problema del <em>bootstrapping</em> con aproximación —el de B4 y B11— y lo que puede llevar a oscilaciones o divergencia</td>
+          </tr>
+          <tr data-t="t5.b16.f3">
+            <td><strong>Recorte del error</strong> al intervalo \([-1,1]\), y <strong>señal de recompensa normalizada</strong> a \(+1\) / \(0\) / \(-1\) según si la puntuación del juego sube, se queda o baja</td>
+            <td>Que un solo \(\alpha\) funcione en 49 juegos con rangos de puntuación distintos, y que un error enorme no reviente la actualización</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5.b16.aviso1">
+      <strong>No mezclar las dos primeras.</strong> <code>#slide-31</code> atribuye a la repetición de experiencia los
+      dos beneficios —romper la correlación entre muestras y la correlación entre objetivo y
+      valor estimado— y no menciona la red objetivo. El libro las separa: la repetición arregla
+      la correlación <strong>entre muestras sucesivas</strong> y la eficiencia de datos; que el objetivo
+      dependa de \(w\) lo arregla <strong>la red objetivo</strong>. Son dos problemas y dos soluciones.
+    </div>
+    <p class="explicacion" data-t="t5.b16.texto3">
+      La red: <strong>tres capas convolucionales ocultas</strong>, después <strong>una capa oculta totalmente
+      conectada</strong>, después la capa de salida. Las tres convolucionales producen 32 mapas de
+      características de 20×20, 64 de 9×9 y 64 de 7×7, con rectificador \(\max(0,x)\) como
+      activación; las 3.136 unidades de la tercera (64×7×7) se conectan a <strong>512</strong> unidades
+      totalmente conectadas, y ésas a <strong>18</strong> unidades de salida, una por acción posible en un
+      juego de Atari. La entrada son los <strong>cuatro últimos fotogramas</strong> preprocesados a 84×84
+      valores de luminancia, es decir 84×84×4: los fotogramas se apilan porque el estado
+      completo de muchos juegos no es observable en una sola imagen, y apilar cuatro los hace
+      <strong>más markovianos</strong> —que es exactamente la respuesta a la tercera pregunta de B5—.
+    </p>
+    <p class="explicacion" data-t="t5.b16.texto4">
+      Cada salida es el valor de acción estimado del par correspondiente; como el número de
+      acciones válidas iba de 4 a 18 según el juego, no todas las salidas tenían función en
+      todos los juegos. Ayuda pensar en la red como <strong>18 redes separadas</strong> que comparten las
+      primeras capas: la retropropagación de una actualización se aplica solo a la salida de la
+      acción que se tomó.
+    </p>
+    <p class="explicacion" data-t="t5.b16.texto5">
+      DQN aprendió una política distinta para cada uno de <strong>49 juegos</strong> de Atari 2600 —los pesos
+      se reinicializaban en cada juego— pero con <strong>la misma entrada, la misma arquitectura y los
+      mismos hiperparámetros</strong> en todos. Cada juego, 50 millones de fotogramas de interacción,
+      unos 38 días de experiencia. Jugó mejor que el mejor sistema de RL anterior en todos menos
+      6, y mejor que el jugador humano profesional en 22; tomando como «nivel humano» el 75 % de
+      la puntuación humana, alcanzó o superó ese nivel en <strong>29</strong> juegos. Y en la <strong>ablación</strong>
+      —repetición de experiencia y red objetivo, con las cuatro combinaciones de estar o no
+      estar, sobre 5 de los juegos— <strong>cada una de las dos por separado mejoró
+      significativamente el rendimiento, y juntas lo mejoraron de forma espectacular</strong>.
+    </p>
+    <div class="aviso" data-t="t5.b16.aviso2">
+      Tres cifras que <strong>no están en el libro</strong> y hay que citar del artículo si se dan: el
+      tamaño del búfer de repetición, el valor de \(C\) y el resto de hiperparámetros —el libro
+      dice literalmente que se eligieron «con búsquedas informales» y no los publica—. Y los
+      «indicadores de progreso menos ruidosos» de <code>#slide-35</code> <strong>tampoco están en §16.5</strong>: son la
+      figura 2 del artículo, donde el indicador estable es <strong>el valor de acción medio estimado
+      sobre un conjunto fijo de estados retenidos</strong>, no la puntuación media por episodio. Si se
+      citan, la fuente es Mnih et al. (2015).
+    </div>
+    <div class="aviso" data-t="t5.b16.aviso3">
+      <strong>Este bloque no tiene módulo, y es una decisión.</strong> Lo que hay que entender de DQN —qué
+      pieza resuelve qué problema— se lee en la tabla de arriba, y lo que haría falta para
+      <em>verlo</em> es entrenar una red convolucional durante 50 millones de fotogramas: no cabe en un
+      navegador, y una versión de juguete enseñaría otra cosa. El mecanismo que sí se puede ver
+      —que el objetivo dependa de los pesos que se actualizan— está en el <strong>módulo 4</strong>, con dos
+      estados y un solo peso.
+    </div>
+    <p class="explicacion" data-t="t5.b16.texto6">
+      DQN demostró que <strong>un solo agente puede aprender las características específicas de cada
+      problema</strong> y alcanzar habilidad competitiva con la humana en un rango de tareas. No
+      produjo un agente que destacara en todas a la vez —el aprendizaje era separado para cada
+      juego—, y en algunos juegos se quedó muy por debajo del nivel humano: los más difíciles
+      para DQN, como <em>Montezuma's Revenge</em> —donde aprendió a jugar más o menos como el jugador
+      aleatorio—, exigen <strong>planificación profunda</strong>, que es algo para lo que DQN no está
+      diseñado.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B17 · el ítem examinable, y de dónde viene cada mitad             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b17">
+    <header>
+      <h2 data-t="t5.b17.h2">El ítem examinable, y de dónde viene cada mitad</h2>
+      <p class="fuente" data-t="t5.b17.fuente"><code>4_Tema4_2#slide-16</code>, <code>#slide-17</code> (tema 4.3) · Sutton &amp; Barto, capítulo 12 (fuera del alcance del tema 5)</p>
+    </header>
+    <p class="explicacion" data-t="t5.b17.texto">
+      Aviso práctico, porque esto sale en el examen final y <strong>está a caballo entre dos temas</strong>.
+      El problema práctico del final pide, sobre un robot con tres acciones y aproximación
+      lineal: cuántos pesos hacen falta y cómo se almacenan, las acciones que tomó el agente,
+      \(\nabla_w \hat q(S,A,w)\) y \(\hat q(S,A,w)\) en un instante dado, <strong>las dimensiones y
+      el almacenamiento de las trazas de elegibilidad</strong>, y los pesos y las trazas en el paso
+      siguiente. La construcción de \(x(s,a)\) es de <strong>este</strong> tema —B13 y B14—; las <strong>trazas con
+      aproximación</strong> son del tema 4.3, y están resueltas en <strong>B14b</strong>, con el ejemplo numérico
+      completo.
+    </p>
+    <p class="explicacion" data-t="t5.b17.texto2">
+      Los apartados, y dónde está cada respuesta. <strong>Cuántos pesos y cómo se almacenan</strong>: B13 y
+      B14, y resuelto con \(d=18\) en B14b. <strong>Qué acciones tomó el agente</strong>: se leen de la tabla
+      de la observación, B14b. <strong>\(\nabla_w\hat q(S,A,w)\)</strong>: es \(x(S,A)\), B6 y B14.
+      <strong>\(\hat q(S,A,w)\)</strong>: el producto escalar, con el número hecho en B14b. <strong>Dimensiones y
+      almacenamiento de las trazas</strong>: B14b, y la respuesta es \(d\). <strong>Las trazas en el paso
+      siguiente</strong>: la recurrencia de B14b, resuelta paso a paso.
+    </p>
+    <p class="explicacion" data-t="t5.b17.texto3">
+      Lo que <strong>no</strong> entra en esta página, y está publicado: el dilema frecuencia/recencia de las
+      trazas, el retorno \(\lambda\), TD(λ) hacia adelante y la equivalencia entre las dos
+      vistas. Todo eso es la <a href="tema4b.html#m2">segunda página del tema 4</a> y el capítulo 12 del
+      libro. Aquí entra <strong>exactamente</strong> lo que el examen pide con aproximación, y nada más.
+    </p>
+    <div class="aviso" data-t="t5.b17.aviso">
+      Y un detalle que conviene no pasar por alto: <strong>los datos de la figura 10.2 del libro
+      —las curvas de aprendizaje de Mountain Car— no son de SARSA de un paso</strong>, son de
+      «SARSA(λ) semi-gradiente», del capítulo 12. Lo dice el propio libro en una nota al pie. El
+      módulo 5 usa SARSA semi-gradiente de un paso, que es lo que se da en este tema, y por eso
+      <strong>sus curvas no coinciden exactamente</strong> con las del libro.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B18 · cierre                                                      -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b18">
+    <header>
+      <h2 data-t="t5.b18.h2">Qué queda para el tema 6</h2>
+      <p class="fuente" data-t="t5.b18.fuente">Sutton &amp; Barto, §10.1 (final) y capítulo 13</p>
+    </header>
+    <p class="explicacion" data-t="t5.b18.texto">
+      El tema se cierra donde el libro pone el límite: con acciones continuas o conjuntos de
+      acciones muy grandes, el \(\arg\max_a \hat q(s,a,w)\) deja de ser calculable y <strong>no hay
+      solución cerrada</strong>. La salida es dejar de aproximar el valor y <strong>aproximar directamente la
+      política</strong>, con su propio vector de parámetros —que es \(\theta\), el símbolo que este tema
+      ha estado protegiendo—. Ése es el tema 6.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A5 · ecuaciones clave                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="ecuaciones">
+    <h2 data-t="t5.ecuaciones.h2">Ecuaciones clave del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.ecuaciones.cab">
+            <th>Ecuación</th><th>Qué dice</th><th>Dónde se usa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.ecuaciones.f1">
+            <td>\(\overline{VE}(w) = \sum_s \mu(s)[v_\pi(s)-\hat v(s,w)]^2\)</td>
+            <td>El error que se minimiza, <strong>ponderado por cuánto importa cada estado</strong></td>
+            <td>B3, módulos 1 y 3</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f2">
+            <td>\(\mu(s) = \eta(s)/\sum_{s'}\eta(s')\)</td>
+            <td>Cuánto importa un estado = la fracción del tiempo que se pasa en él</td>
+            <td>B3, módulo 1</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f3">
+            <td>\(w_{t+1} = w_t + \alpha[U_t - \hat v(S_t,w_t)]\nabla\hat v(S_t,w_t)\)</td>
+            <td>La regla única del tema: un objetivo, un error, un gradiente</td>
+            <td>B4, todos los módulos</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f4">
+            <td>\(\hat v(s,w) = w^\top x(s)\), \(\nabla\hat v(s,w) = x(s)\)</td>
+            <td>En el caso lineal el gradiente <strong>es</strong> el vector de características</td>
+            <td>B6, módulos 2 y 3</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f5">
+            <td>\(x(s)=e_s \Rightarrow w_s \leftarrow w_s + \alpha[U_t-w_s]\)</td>
+            <td>El caso tabular es aproximación lineal con <em>one-hot</em></td>
+            <td>B7, módulo 2</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f6">
+            <td>\(\alpha = 1/(\tau m)\)</td>
+            <td>Con \(m\) mosaicados hay \(m\) características activas: \(\alpha\) se divide por \(m\)</td>
+            <td>B8, módulos 2 y 5</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f7">
+            <td>\(w_{TD} = A^{-1}b\)</td>
+            <td>TD(0) lineal converge a un punto fijo que <strong>no</strong> es el óptimo global</td>
+            <td>B10, módulo 3</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f8">
+            <td>\(\overline{VE}(w_{TD}) \le \frac{1}{1-\gamma}\min_w\overline{VE}(w)\)</td>
+            <td>Cuánto peor puede ser TD que MC, asintóticamente</td>
+            <td>B10, módulo 3</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f9">
+            <td>\(w_{t+1} = (1+\alpha(2\gamma-1))w_t\)</td>
+            <td>Fuera de política, los pesos pueden crecer geométricamente para <strong>cualquier</strong> \(\alpha>0\)</td>
+            <td>B11, módulo 4</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f10">
+            <td>\(\hat q(s,a,w)=w^\top x(s,a)\), y \(\max_a\) en lugar de \(\hat q(S',A',w)\)</td>
+            <td>Control: una característica por par estado-acción; el \(\max\) es lo que hace Q-learning fuera de política</td>
+            <td>B13, B14, módulo 5</td>
+          </tr>
+          <tr data-t="t5.ecuaciones.f11">
+            <td>\(z_t = \gamma\lambda z_{t-1} + x(S_t,A_t)\), \(w \leftarrow w + \alpha\delta_t z_t\)</td>
+            <td>La traza lleva <strong>un número por peso</strong>: dimensión \(d\), no \(|\mathcal S|\times|\mathcal A|\)</td>
+            <td>B14b, y el control de traza del módulo 5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A6 · errores frecuentes                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="errores">
+    <h2 data-t="t5.errores.h2">Errores frecuentes</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.errores.cab">
+            <th>Lo que se suele decir</th><th>Lo que pasa de verdad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.errores.f1">
+            <td>«Con más pesos acabaré acertando en todos los estados»</td>
+            <td>Con aproximación de verdad <strong>no es posible</strong> acertar en todos: hacer más preciso un estado hace inevitablemente menos precisos otros. Por eso hace falta \(\mu\) (§9.2). Compruébalo en el módulo 1</td>
+          </tr>
+          <tr data-t="t5.errores.f2">
+            <td>«La actualización de TD es descenso del gradiente del error TD»</td>
+            <td><strong>No lo es.</strong> Tiene en cuenta el efecto de \(w\) sobre la estimación pero ignora su efecto sobre el objetivo: incluye <strong>solo una parte</strong> del gradiente. De ahí el nombre <em>semi</em>-gradiente (§9.3)</td>
+          </tr>
+          <tr data-t="t5.errores.f3">
+            <td>«TD(0) lineal converge al mismo sitio que MC, solo más despacio»</td>
+            <td>Converge al <strong>punto fijo TD</strong>, que <strong>no</strong> es el óptimo global; el error puede ser hasta \(1/(1-\gamma)\) veces el mínimo (§9.4). Mira las dos líneas horizontales del módulo 3</td>
+          </tr>
+          <tr data-t="t5.errores.f4">
+            <td>«Un mosaicado ya es <em>tile coding</em>»</td>
+            <td>Con un solo mosaicado <strong>no hay codificación gruesa: hay agregación de estados</strong> (§9.5.4). Ponlo a \(m=1\) en el módulo 2</td>
+          </tr>
+          <tr data-t="t5.errores.f5">
+            <td>«Campos receptivos anchos ⟹ no puedo aproximar bien»</td>
+            <td>La anchura controla la <strong>generalización inicial</strong>; la precisión final la controla más el <strong>número total</strong> de características (§9.5.3)</td>
+          </tr>
+          <tr data-t="t5.errores.f6">
+            <td>«Si bajo \(\alpha\) lo suficiente, dejará de divergir»</td>
+            <td><strong>No.</strong> La inestabilidad ocurre para cualquier \(\alpha>0\), por pequeño que sea; \(\alpha\) cambia la velocidad, no el destino (§11.2). Es el control secundario del módulo 4</td>
+          </tr>
+          <tr data-t="t5.errores.f7">
+            <td>«Con lotes o mínimos cuadrados se arregla la divergencia»</td>
+            <td><strong>No.</strong> Aun tomando en cada paso el \(w\) que minimiza \(\overline{VE}\) exactamente, la sucesión diverge (Example 11.1). Y LSTD es \(O(d^2)\), que es la razón por la que el libro lo descarta como solución general</td>
+          </tr>
+          <tr data-t="t5.errores.f8">
+            <td>«La traza de elegibilidad tiene una casilla por par estado-acción»</td>
+            <td><strong>No.</strong> Con aproximación, \(z_t\) vive en el espacio de los pesos: <strong>dimensión \(d\)</strong>. Es el apartado del examen que más falla, y el ejemplo resuelto de B14b lo enseña con \(d=18\)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A7 · cierre: qué hay que llevarse                                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="cierre">
+    <h2 data-t="t5.cierre.h2">Qué hay que llevarse</h2>
+    <ul class="explicacion">
+      <li data-t="t5.cierre.v1">Con \(d\) pesos y \(|\mathcal S|\) estados <strong>no se puede acertar en todos</strong>: el módulo
+        1 lo enseña con 1000 estados y 10 pesos, y el valor de cada grupo resulta ser la media
+        de los valores verdaderos <strong>ponderada por \(\mu\)</strong>, no la media sin más.</li>
+      <li data-t="t5.cierre.v2">El caso tabular <strong>es</strong> aproximación lineal con \(x(s)\) <em>one-hot</em>, y ahí
+        \(\min_w\overline{VE}=0\): en el módulo 2, con un grupo por estado, el error baja
+        exactamente a cero.</li>
+      <li data-t="t5.cierre.v3">Con \(m\) mosaicados hay <strong>exactamente \(m\) características activas</strong> para cualquier
+        estado, y por eso \(\alpha\) se divide por \(m\): con \(\alpha=1/m\) el estado
+        entrenado alcanza el objetivo <strong>en un solo paso</strong>.</li>
+      <li data-t="t5.cierre.v4">Monte Carlo y TD(0) <strong>no convergen al mismo sitio</strong>: en el módulo 3 las dos
+        asíntotas se calculan exactas y se dibujan, y la de TD queda por encima.</li>
+      <li data-t="t5.cierre.v5">Los pesos pueden <strong>divergir</strong>, y no es culpa de \(\alpha\): en el módulo 4, con
+        \(\gamma>0{,}5\) el factor de crecimiento pasa de 1 para cualquier \(\alpha>0\), y
+        mover \(\alpha\) solo cambia la pendiente.</li>
+      <li data-t="t5.cierre.v6">La inestabilidad necesita <strong>los tres inductores a la vez</strong>; con dos, no. En el módulo 6
+        se apaga uno cualquiera y la casilla cambia de veredicto.</li>
+      <li data-t="t5.cierre.v7">En control, la única línea que separa SARSA de Q-learning es el objetivo
+        (\(\hat q(S',A',w)\) frente a \(\max_a\hat q(S',a,w)\)), y eso es lo que le añade el
+        tercer inductor: en el módulo 5 se conmutan las dos sobre el mismo Mountain Car y la
+        misma semilla.</li>
+      <li data-t="t5.cierre.v8">La traza de elegibilidad con aproximación <strong>tiene la dimensión de \(w\)</strong>, no la de la
+        tabla: en el ejemplo resuelto de B14b son <strong>18 números</strong> para tres acciones y seis
+        variables, y en el módulo 5 son <strong>1944</strong>, los mismos que pesos. Y con \(\lambda = 0\)
+        el algoritmo es <strong>exactamente</strong> el de un paso.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A8 · glosario de notación                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="glosario">
+    <h2 data-t="t5.glosario.h2">Glosario de notación del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5.glosario.cab">
+            <th>Símbolo</th><th>Significado</th><th>Nota</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5.glosario.f1">
+            <td>\(w\)</td>
+            <td>vector de pesos de la aproximación de valor</td>
+            <td><strong>Redonda, nunca negrita</strong>, como fija <code>notacion.md</code>. La baraja mezcla \(w\) y \(\mathbf w\) sin criterio: redonda en <code>#slide-4,7,8,10,13</code>, negrita en <code>#slide-5,14,18,19,27,28,29</code></td>
+          </tr>
+          <tr data-t="t5.glosario.f2">
+            <td>\(d\)</td>
+            <td>dimensión de \(w\): número de pesos</td>
+            <td>El libro y las diapositivas de Lucía usan \(d\); Álvaro escribe \(n\) en <code>#slide-7</code> y \(N\) en <code>#slide-29</code>. Aquí siempre \(d\)</td>
+          </tr>
+          <tr data-t="t5.glosario.f3">
+            <td>\(x(s)\), \(x(s,a)\)</td>
+            <td>vector de características del estado / del par estado-acción</td>
+            <td><code>notacion.md</code>. \(x(s,a)\) <strong>no se ve nunca</strong> en la baraja de Álvaro: está tapado en <code>#slide-19</code>. Sí se proyecta en Lucía, <code>Tema5_2_Aproximacion#slide-5</code></td>
+          </tr>
+          <tr data-t="t5.glosario.f4">
+            <td>\(x_i(s)\)</td>
+            <td>componente \(i\)-ésima de \(x(s)\)</td>
+            <td>La suma se indexa con \(i\); <code>#slide-10</code> la indexa con \(j\)</td>
+          </tr>
+          <tr data-t="t5.glosario.f5">
+            <td>\(\hat v(s,w)\), \(\hat q(s,a,w)\)</td>
+            <td>valor de estado / de acción <strong>aproximado</strong></td>
+            <td><code>notacion.md</code>. \(\hat v(\text{terminal},w)=0\) siempre</td>
+          </tr>
+          <tr data-t="t5.glosario.f6">
+            <td>\(v_\pi\), \(q_\pi\), \(v_*\), \(q_*\)</td>
+            <td>valores <strong>verdaderos</strong></td>
+            <td>Sin sombrero = verdadero; con sombrero = aproximado. No se mezclan</td>
+          </tr>
+          <tr data-t="t5.glosario.f7">
+            <td>\(U_t\)</td>
+            <td>objetivo genérico de la actualización</td>
+            <td>De Lucía (<code>Tema5_1_Aproximacion#slide-14</code>) y del libro. <strong>Álvaro no lo tiene</strong>; hace falta para escribir MC y TD con una sola fórmula</td>
+          </tr>
+          <tr data-t="t5.glosario.f8">
+            <td>\(\mu(s)\)</td>
+            <td>distribución de estados dentro de política</td>
+            <td>De Lucía (<code>Tema5_1_Aproximacion#slide-7</code>) y del libro (9.2)-(9.3). <strong>Álvaro nunca define el objetivo ponderado</strong></td>
+          </tr>
+          <tr data-t="t5.glosario.f9">
+            <td>\(\eta(s)\)</td>
+            <td>número esperado de visitas a \(s\) por episodio</td>
+            <td>Solo aparece en el cálculo de \(\mu\), (9.2)</td>
+          </tr>
+          <tr data-t="t5.glosario.f10">
+            <td>\(\overline{VE}(w)\)</td>
+            <td>error cuadrático medio de valor, ponderado por \(\mu\)</td>
+            <td>En los ejes de las gráficas va <strong>\(\sqrt{\overline{VE}}\)</strong>, como en el libro. Álvaro escribe \(J(w)\), que es lo mismo si la esperanza se toma bajo \(\mu\)</td>
+          </tr>
+          <tr data-t="t5.glosario.f11">
+            <td>\(w^*\)</td>
+            <td>pesos que minimizan \(\overline{VE}\) (óptimo global)</td>
+            <td>En el caso lineal es único salvo degeneración</td>
+          </tr>
+          <tr data-t="t5.glosario.f12">
+            <td>\(A\), \(b\), \(w_{TD}\)</td>
+            <td>matriz, vector y punto fijo de TD(0) lineal, (9.11)-(9.12)</td>
+            <td>No están en ninguna de las dos barajas</td>
+          </tr>
+          <tr data-t="t5.glosario.f13">
+            <td>\(m\)</td>
+            <td>número de <strong>mosaicados</strong> (<em>tilings</em>)</td>
+            <td><strong>Símbolo nuevo de esta página.</strong> El libro <strong>lo evita</strong> y escribe «number of tilings (8)» en palabras, porque \(n\) ya son los pasos de los métodos de \(n\) pasos del tema 4</td>
+          </tr>
+          <tr data-t="t5.glosario.f14">
+            <td>\(\ell\)</td>
+            <td>ancho de un <strong>mosaico</strong> (<em>tile</em>)</td>
+            <td><strong>Símbolo nuevo de esta página.</strong> El libro escribe «if \(w\) denotes the tile width», que choca con el vector de pesos <strong>en la misma sección</strong></td>
+          </tr>
+          <tr data-t="t5.glosario.f15">
+            <td>\(\tau\)</td>
+            <td>número de experiencias con el mismo \(x\) en las que se quiere aprender, (9.19)</td>
+            <td>En el libro \(\tau\) también es el instante que se actualiza en los métodos de \(n\) pasos, y el periodo de la base de Fourier: tres usos distintos</td>
+          </tr>
+          <tr data-t="t5.glosario.f16">
+            <td>\(p\), \(\dot p\)</td>
+            <td>posición y velocidad del coche de Mountain Car</td>
+            <td>El libro escribe \(x_t\) y \(\dot x_t\) (p. 267), que <strong>choca con \(x_t\) = abreviatura de \(x(S_t)\)</strong> (p. 21). Aquí se renombra</td>
+          </tr>
+          <tr data-t="t5.glosario.f17">
+            <td>\(w^-\)</td>
+            <td>pesos <strong>congelados</strong> de la red objetivo de DQN</td>
+            <td>El artículo y <code>#slide-34</code> escriben \(\theta\) y \(\theta^-\); en este curso \(\theta\) son los parámetros de <strong>la política</strong> (tema 6), así que se traduce a \(w\) y \(w^-\)</td>
+          </tr>
+          <tr data-t="t5.glosario.f18">
+            <td>\(z_t\)</td>
+            <td>vector de <strong>trazas de elegibilidad</strong> en el instante \(t\)</td>
+            <td><strong>Tiene la dimensión de \(w\)</strong>, es decir \(d\), y no \(|\mathcal S|\times|\mathcal A|\). Es materia del tema 4.3 y del capítulo 12; entra en esta página por el ítem examinable (B14b). <code>notacion.md</code> no lo recoge: la redacción propuesta está en §0.2 del guion</td>
+          </tr>
+          <tr data-t="t5.glosario.f19">
+            <td>\(\lambda\)</td>
+            <td>parámetro de las trazas de elegibilidad</td>
+            <td>Ya está en <code>notacion.md</code> («parámetro de TD(λ) y trazas de elegibilidad»). En esta página \(\lambda = 0\) por omisión, y <strong>\(\lambda = 0\) es exactamente el algoritmo de un paso</strong></td>
+          </tr>
+          <tr data-t="t5.glosario.f20">
+            <td>\(\theta\)</td>
+            <td><strong>reservado</strong>: parámetros de la política (tema 6)</td>
+            <td>No se usa en esta página. La figura de Baird de <code>#slide-15</code> lo usa para los pesos, y aquí se reescribe con \(w\)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5.glosario.nota">
+      Dos etiquetas para lo mismo: Álvaro llama «<strong>inductores de inestabilidad</strong>» a lo que el
+      libro y Lucía llaman «<strong>tríada mortal</strong>» (<em>deadly triad</em>). Esta página usa la primera y
+      menciona la segunda una vez, en el bloque de los inductores.
+    </div>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema4b.html" data-t="t5.pie.anterior">← Tema 4 (continuación) · Fórmulas intermedias</a>
+    </p>
+    <p data-t="t5.pie.1">
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulos 9, 10 y 11 (y §16.5).
+    </p>
+    <p class="suave" data-t="t5.pie.2">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado. Los puntos de convergencia de los módulos 1, 3 y 4 se calculan
+      exactos y no dependen de ella.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema5.js"></script>
+</body>
+</html>

@@ -258,7 +258,24 @@ function lienzo(ancho, alto, { escalable = false } = {}) {
 /**
  * series: [{ nombre, color, y: number[], x?: number[] }]
  * opciones: { ancho, alto, ejeX, ejeY, yMin, yMax, escalaX, ticksX,
- *             formatoY, lineaCero, anotaciones: [{x, texto}] }
+ *             formatoY, lineaCero, anotaciones: [{x, texto}],
+ *             anotacionesY: [{y, texto, color?}], escalaY, ticksY }
+ *
+ * `anotacionesY` dibuja líneas HORIZONTALES discontinuas con su rótulo al
+ * final derecho, anclado dentro del lienzo. Es la simétrica de `anotaciones`
+ * y la piden las dos asíntotas del módulo 3 del Tema 5: son el resultado del
+ * módulo, y pasarlas como series de 5000 puntos constantes las metería en la
+ * leyenda como si fueran curvas aprendidas. Si `y` cae fuera del rango, la
+ * anotación se omite en silencio: el eje no se estira para hacerle sitio.
+ *
+ * `escalaY: "log"` pasa el eje y a log10, que es lo que necesita la figura
+ * 10.2 del libro («Steps per episode, log scale»): sin ella los episodios
+ * larguísimos del principio aplastan toda la curva. `yMin`/`yMax` siguen en
+ * unidades del dato, no del logaritmo; los valores ≤ 0 no se dibujan, porque
+ * en escala logarítmica no existen.
+ *
+ * LAS TRES SON ADITIVAS: sin ellas, la función se comporta exactamente igual
+ * que antes (temas 1 a 4).
  */
 export function graficaLineas(series, opciones = {}) {
   const {
@@ -267,12 +284,16 @@ export function graficaLineas(series, opciones = {}) {
     ejeX = "",
     ejeY = "",
     escalaX = "lineal",
+    escalaY = "lineal",
     ticksX = null,
+    ticksY = null,
     formatoY = (v) => num(v, 2),
     lineaCero = false,
     anotaciones = [],
+    anotacionesY = [],
     mensaje = t("grafica.sinDatos", "Sin datos todavía."),
   } = opciones;
+  const logY = escalaY === "log";
 
   const m = { i: 58, d: 14, s: 14, f: 42 };
   const w = ancho - m.i - m.d;
@@ -303,7 +324,9 @@ export function graficaLineas(series, opciones = {}) {
       if (x < xMin) xMin = x;
       if (x > xMax) xMax = x;
       const y = s.y[i];
-      if (Number.isFinite(y)) {
+      /* En escala logarítmica los valores ≤ 0 no existen: no entran en el
+         rango automático ni se dibujan después. */
+      if (Number.isFinite(y) && !(logY && y <= 0)) {
         if (y < yMinAuto) yMinAuto = y;
         if (y > yMaxAuto) yMaxAuto = y;
       }
@@ -311,10 +334,22 @@ export function graficaLineas(series, opciones = {}) {
   }
   if (yMin === undefined) yMin = yMinAuto;
   if (yMax === undefined) yMax = yMaxAuto;
-  if (yMax - yMin < 1e-9) { yMax += 0.5; yMin -= 0.5; }
-  const margenY = (yMax - yMin) * 0.06;
-  if (opciones.yMin === undefined) yMin -= margenY;
-  if (opciones.yMax === undefined) yMax += margenY;
+
+  if (logY) {
+    /* Sin ningún dato positivo no hay rango logarítmico posible: se cae a una
+       década arbitraria en vez de propagar un −Infinity a los atributos. */
+    if (!Number.isFinite(yMin) || yMin <= 0) yMin = 1;
+    if (!Number.isFinite(yMax) || yMax <= yMin) yMax = yMin * 10;
+    /* El margen también es multiplicativo: en log, sumar es deformar. */
+    const holgura = 10 ** (0.03 * (Math.log10(yMax) - Math.log10(yMin)));
+    if (opciones.yMin === undefined) yMin /= holgura;
+    if (opciones.yMax === undefined) yMax *= holgura;
+  } else {
+    if (yMax - yMin < 1e-9) { yMax += 0.5; yMin -= 0.5; }
+    const margenY = (yMax - yMin) * 0.06;
+    if (opciones.yMin === undefined) yMin -= margenY;
+    if (opciones.yMax === undefined) yMax += margenY;
+  }
 
   const log = escalaX === "log2";
   const tx = (x) => {
@@ -325,21 +360,39 @@ export function graficaLineas(series, opciones = {}) {
     }
     return m.i + ((x - xMin) / (xMax - xMin || 1)) * w;
   };
-  const ty = (y) => m.s + h - ((y - yMin) / (yMax - yMin)) * h;
+  const loY = logY ? Math.log10(yMin) : 0;
+  const hiY = logY ? Math.log10(yMax) : 0;
+  const ty = (y) => (logY
+    ? m.s + h - ((Math.log10(y) - loY) / (hiY - loY || 1)) * h
+    : m.s + h - ((y - yMin) / (yMax - yMin)) * h);
 
   /* --- rejilla y eje Y --- */
-  const pasosY = 5;
-  for (let k = 0; k <= pasosY; k++) {
-    const valor = yMin + ((yMax - yMin) * k) / pasosY;
+  const marcasY = logY
+    ? (ticksY || marcasLogaritmicas(yMin, yMax)).filter((v) => {
+      const valor = v.valor ?? v;
+      return valor >= yMin && valor <= yMax;
+    })
+    : Array.from({ length: 6 }, (_, k) => yMin + ((yMax - yMin) * k) / 5);
+  marcasY.forEach((marca, k) => {
+    const valor = marca.valor ?? marca;
+    const etiqueta = marca.etiqueta ?? formatoY(valor);
     const y = ty(valor);
     svg.appendChild(el("line", {
       x1: m.i, x2: m.i + w, y1: y, y2: y,
-      stroke: ejeColor, "stroke-width": 0.5, opacity: k === 0 ? 0.9 : 0.28,
+      stroke: ejeColor, "stroke-width": 0.5, opacity: (!logY && k === 0) ? 0.9 : 0.28,
     }));
     svg.appendChild(el("text", {
       x: m.i - 8, y: y + 4, "text-anchor": "end",
       fill: textoColor, "font-size": 11, "font-family": "monospace",
-    }, formatoY(valor)));
+    }, etiqueta));
+  });
+  /* En lineal la marca k = 0 hace de eje; en log las marcas son potencias de
+     10 y ninguna cae necesariamente en el borde, así que el eje se dibuja. */
+  if (logY) {
+    svg.appendChild(el("line", {
+      x1: m.i, x2: m.i + w, y1: m.s + h, y2: m.s + h,
+      stroke: ejeColor, "stroke-width": 0.5, opacity: 0.9,
+    }));
   }
 
   /* --- eje X --- */
@@ -357,7 +410,7 @@ export function graficaLineas(series, opciones = {}) {
     }, etiqueta));
   }
 
-  if (lineaCero && yMin < 0 && yMax > 0) {
+  if (lineaCero && !logY && yMin < 0 && yMax > 0) {
     svg.appendChild(el("line", {
       x1: m.i, x2: m.i + w, y1: ty(0), y2: ty(0),
       stroke: ejeColor, "stroke-width": 1, "stroke-dasharray": "4 3", opacity: 0.8,
@@ -381,17 +434,39 @@ export function graficaLineas(series, opciones = {}) {
     }, a.texto));
   }
 
+  /* --- anotaciones horizontales (p. ej. las dos asíntotas del Tema 5) --- */
+  for (const a of anotacionesY) {
+    if (!Number.isFinite(a.y) || a.y < yMin || a.y > yMax) continue;
+    if (logY && a.y <= 0) continue;
+    const y = ty(a.y);
+    const color = a.color || tono("--acento");
+    svg.appendChild(el("line", {
+      x1: m.i, x2: m.i + w, y1: y, y2: y,
+      stroke: color, "stroke-width": 1.2, "stroke-dasharray": "5 4",
+    }));
+    if (a.texto) {
+      /* Rótulo pegado al borde derecho y por encima de su línea, salvo que la
+         línea esté tan arriba que el texto se saldría del lienzo. */
+      const arriba = y - m.s > 14;
+      svg.appendChild(el("text", {
+        x: m.i + w - 4, y: arriba ? y - 5 : y + 13, "text-anchor": "end",
+        fill: color, "font-size": 11, "font-weight": 600,
+      }, a.texto));
+    }
+  }
+
   /* --- series (submuestreadas si hay muchos puntos) --- */
+  const dibujable = (v) => Number.isFinite(v) && !(logY && v <= 0);
   visibles.forEach((s) => {
     const n = s.y.length;
     const salto = Math.max(1, Math.floor(n / 900));
     let d = "";
     for (let i = 0; i < n; i += salto) {
-      if (!Number.isFinite(s.y[i])) continue;
+      if (!dibujable(s.y[i])) continue;
       d += `${d ? "L" : "M"}${tx(xDe(s, i)).toFixed(2)} ${ty(s.y[i]).toFixed(2)}`;
     }
     const ultimo = n - 1;
-    if ((ultimo % salto !== 0) && Number.isFinite(s.y[ultimo])) {
+    if ((ultimo % salto !== 0) && dibujable(s.y[ultimo])) {
       d += `L${tx(xDe(s, ultimo)).toFixed(2)} ${ty(s.y[ultimo]).toFixed(2)}`;
     }
     svg.appendChild(el("path", {
@@ -401,7 +476,7 @@ export function graficaLineas(series, opciones = {}) {
     }));
     if (s.puntos) {
       for (let i = 0; i < n; i++) {
-        if (!Number.isFinite(s.y[i])) continue;
+        if (!dibujable(s.y[i])) continue;
         svg.appendChild(el("circle", {
           cx: tx(xDe(s, i)), cy: ty(s.y[i]), r: 3, fill: s.color,
         }));
@@ -449,6 +524,26 @@ function marcasAutomaticas(min, max, log) {
 function formateaMarca(v) {
   if (Math.abs(v) >= 1000) return `${Math.round(v / 1000)}k`;
   return String(Math.round(v * 100) / 100);
+}
+
+/**
+ * Marcas de un eje logarítmico: las potencias de 10 del rango y sus mitades.
+ *
+ * Las mitades (2·10^k y 5·10^k) hacen falta porque el rango típico de la
+ * figura 10.2 —de 100 a 2000 pasos por episodio— cabe en poco más de una
+ * década y con solo potencias de 10 saldrían dos marcas en toda la gráfica.
+ */
+function marcasLogaritmicas(min, max) {
+  const marcas = [];
+  const desde = Math.floor(Math.log10(min));
+  const hasta = Math.ceil(Math.log10(max));
+  for (let e = desde; e <= hasta; e++) {
+    for (const k of [1, 2, 5]) {
+      const v = k * 10 ** e;
+      if (v >= min && v <= max) marcas.push({ valor: v, etiqueta: formateaMarca(v) });
+    }
+  }
+  return marcas;
 }
 
 /* ----------------------------------------------------------------------- *
@@ -733,6 +828,179 @@ export function rejilla(config) {
     if (alSeleccionar) grupo.addEventListener("click", () => alSeleccionar(indice, c));
     svg.appendChild(grupo);
   });
+
+  return svg;
+}
+
+/* ----------------------------------------------------------------------- *
+ * 6a. Campo de calor sobre dos dimensiones continuas
+ * ----------------------------------------------------------------------- */
+
+/**
+ * Campo escalar sobre dos dimensiones continuas, pintado como rejilla de
+ * celdas coloreadas.
+ *
+ * Lo pide la superficie de coste por recorrer de Mountain Car (Sutton &
+ * Barto, figura 10.1) y sirve para cualquier q̂ o v̂ sobre dos variables:
+ * `rejilla` no vale, porque aquí las celdas no son estados sino un muestreo
+ * de un espacio continuo, y `graficaLineas` tampoco, porque el dato es un
+ * campo y no una curva.
+ *
+ * No interpola: una celda, un color. Con 60×60 son 3600 <rect>, del mismo
+ * orden que la rejilla 4×12 del Tema 4 con sus cuñas.
+ *
+ * config: {
+ *   valores,            // Float64Array de celdasX*celdasY, en orden fila-mayor
+ *   celdasX, celdasY,   //   con la FILA 0 en el mínimo del eje y (abajo)
+ *   rangoX, rangoY,     // [min, max] de cada eje, en unidades del problema
+ *   ejeX, ejeY,         // rótulos
+ *   ticksX, ticksY,     // [{valor, etiqueta}] o [number]
+ *   min, max,           // extremos de la escala de color; por omisión, del dato
+ *   color = colorCalor, // (t en [0,1]) -> cadena de color
+ *   leyenda: { frio, caliente },
+ *   ancho = 420, alto = 300,
+ *   mensaje,            // texto centrado si `valores` es null o está vacío
+ *   alSeleccionar,      // opcional: (ix, iy, x, y) al pulsar una celda
+ * }
+ *
+ * @returns {SVGElement} Lienzo con el campo.
+ */
+export function campoCalor(config) {
+  const {
+    valores = null, celdasX = 0, celdasY = 0,
+    rangoX = [0, 1], rangoY = [0, 1],
+    ejeX = "", ejeY = "", ticksX = null, ticksY = null,
+    color = colorCalor, leyenda: rotulos = null,
+    ancho = 420, alto = 300,
+    mensaje = t("grafica.sinDatos", "Sin datos todavía."),
+    alSeleccionar = null,
+  } = config;
+
+  const conLeyenda = Boolean(rotulos);
+  const m = { i: 52, d: 16, s: 10, f: conLeyenda ? 62 : 36 };
+  const svg = lienzo(ancho, alto);
+  const ejeColor = tono("--borde-fuerte");
+  const textoColor = tono("--texto-suave");
+
+  if (!valores || !valores.length || !celdasX || !celdasY) {
+    svg.appendChild(el("text", {
+      x: ancho / 2, y: alto / 2, "text-anchor": "middle",
+      fill: textoColor, "font-size": 13,
+    }, mensaje));
+    return svg;
+  }
+
+  const w = ancho - m.i - m.d;
+  const h = alto - m.s - m.f;
+  let min = config.min;
+  let max = config.max;
+  if (min === undefined || max === undefined) {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let k = 0; k < valores.length; k++) {
+      const v = valores[k];
+      if (!Number.isFinite(v)) continue;
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
+    if (min === undefined) min = Number.isFinite(lo) ? lo : 0;
+    if (max === undefined) max = Number.isFinite(hi) ? hi : min + 1;
+  }
+  const rango = max - min || 1;
+
+  const anchoCelda = w / celdasX;
+  const altoCelda = h / celdasY;
+
+  for (let iy = 0; iy < celdasY; iy++) {
+    /* La fila 0 es el mínimo del eje y y va ABAJO: en pantalla el eje y crece
+       hacia arriba y en el array crece con el índice. */
+    const y = m.s + (celdasY - 1 - iy) * altoCelda;
+    for (let ix = 0; ix < celdasX; ix++) {
+      const v = valores[iy * celdasX + ix];
+      const celda = el("rect", {
+        x: m.i + ix * anchoCelda, y,
+        /* +0,6 para tapar las costuras del antialiasing entre celdas. */
+        width: anchoCelda + 0.6, height: altoCelda + 0.6,
+        fill: Number.isFinite(v) ? color((v - min) / rango) : "none",
+        style: alSeleccionar ? "cursor:pointer" : null,
+      });
+      if (alSeleccionar) {
+        const x = rangoX[0] + ((ix + 0.5) / celdasX) * (rangoX[1] - rangoX[0]);
+        const yDato = rangoY[0] + ((iy + 0.5) / celdasY) * (rangoY[1] - rangoY[0]);
+        celda.addEventListener("click", () => alSeleccionar(ix, iy, x, yDato));
+      }
+      svg.appendChild(celda);
+    }
+  }
+
+  svg.appendChild(el("rect", {
+    x: m.i, y: m.s, width: w, height: h,
+    fill: "none", stroke: ejeColor, "stroke-width": 1,
+  }));
+
+  /* --- marcas de los dos ejes, en unidades del problema --- */
+  const marcaValor = (marca) => (marca.valor ?? marca);
+  const marcaTexto = (marca) => (marca.etiqueta ?? num(marcaValor(marca), 2));
+  for (const marca of ticksX || [rangoX[0], rangoX[1]]) {
+    const v = marcaValor(marca);
+    const x = m.i + ((v - rangoX[0]) / (rangoX[1] - rangoX[0] || 1)) * w;
+    svg.appendChild(el("line", {
+      x1: x, x2: x, y1: m.s + h, y2: m.s + h + 4,
+      stroke: ejeColor, "stroke-width": 1,
+    }));
+    svg.appendChild(el("text", {
+      x, y: m.s + h + 16, "text-anchor": "middle",
+      fill: textoColor, "font-size": 11, "font-family": "monospace",
+    }, marcaTexto(marca)));
+  }
+  for (const marca of ticksY || [rangoY[0], rangoY[1]]) {
+    const v = marcaValor(marca);
+    const y = m.s + h - ((v - rangoY[0]) / (rangoY[1] - rangoY[0] || 1)) * h;
+    svg.appendChild(el("line", {
+      x1: m.i - 4, x2: m.i, y1: y, y2: y,
+      stroke: ejeColor, "stroke-width": 1,
+    }));
+    svg.appendChild(el("text", {
+      x: m.i - 7, y: y + 4, "text-anchor": "end",
+      fill: textoColor, "font-size": 11, "font-family": "monospace",
+    }, marcaTexto(marca)));
+  }
+
+  if (ejeX) {
+    svg.appendChild(textoSvg({
+      x: m.i + w / 2, y: m.s + h + (conLeyenda ? 32 : 31), "text-anchor": "middle",
+      fill: textoColor, "font-size": 11.5, "font-weight": 600,
+    }, ejeX));
+  }
+  if (ejeY) {
+    svg.appendChild(textoSvg({
+      x: 12, y: m.s + h / 2, "text-anchor": "middle",
+      fill: textoColor, "font-size": 11.5, "font-weight": 600,
+      transform: `rotate(-90 12 ${m.s + h / 2})`,
+    }, ejeY));
+  }
+
+  /* --- barra de color con sus dos extremos rotulados --- */
+  if (conLeyenda) {
+    const yBarra = alto - 22;
+    const pasos = 40;
+    const anchoPaso = w / pasos;
+    for (let k = 0; k < pasos; k++) {
+      svg.appendChild(el("rect", {
+        x: m.i + k * anchoPaso, y: yBarra,
+        width: anchoPaso + 0.6, height: 7,
+        fill: color(k / (pasos - 1)),
+      }));
+    }
+    svg.appendChild(el("text", {
+      x: m.i, y: yBarra + 19, "text-anchor": "start",
+      fill: textoColor, "font-size": 10.5,
+    }, rotulos.frio ?? ""));
+    svg.appendChild(el("text", {
+      x: m.i + w, y: yBarra + 19, "text-anchor": "end",
+      fill: textoColor, "font-size": 10.5,
+    }, rotulos.caliente ?? ""));
+  }
 
   return svg;
 }

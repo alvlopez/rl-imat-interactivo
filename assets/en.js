@@ -2395,6 +2395,7 @@ export const EN = {
 
   "nav.tema4": "Unit 4 · Model-free RL",
   "nav.tema4b": "Unit 4 (cont.) · In-between formulas",
+  "nav.tema5": "Unit 5 · Function approximation",
   "t3.pie.siguiente": "Unit 4 · Model-free RL →",
 
   /* --- tarjetas del índice ---------------------------------------------- */
@@ -2418,6 +2419,19 @@ export const EN = {
     + "<li>\\(n\\)-step SARSA</li>"
     + "<li>The \\(\\lambda\\)-return: averaging every \\(n\\) at once</li>"
     + "<li>Eligibility traces: the bell or the light?</li>",
+
+  "index.t5.num": "Unit 5 · Sutton, ch. 9, 10 and §11.2-11.3",
+  "index.t5.h2": "Value-function approximation",
+  "index.t5.suave":
+    "When the table no longer fits, it is replaced by a function with far fewer "
+    + "weights. And from then on, getting one state right starts costing error "
+    + "somewhere else.",
+  "index.t5.lista":
+    "<li>The weighted objective \\(\\overline{VE}\\) and the distribution \\(\\mu\\)</li>"
+    + "<li>What \\(x(s)\\) is: from one-hot to tile coding</li>"
+    + "<li>Linear MC and TD(0): where each one converges</li>"
+    + "<li>When the weights diverge, and the convergence tables</li>"
+    + "<li>Control: semi-gradient SARSA on Mountain Car</li>",
 
   /* --- pie --------------------------------------------------------------- */
   "t3.pie.anterior": "← Unit 2 · Markov Decision Processes",
@@ -4906,6 +4920,7 @@ export const EN = {
     + "notes that use \\(e\\), from the 1st edition. They are the same object.",
 
   /* --- pie ---------------------------------------------------------------- */
+  "t4b.pie.siguiente": "Unit 5 · Value-function approximation →",
   "t4b.pie.anterior": "← Unit 4 · Model-free reinforcement learning",
   "t4b.pie.1":
     "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
@@ -5276,4 +5291,2560 @@ export const EN = {
     + "<strong>does</strong> implement Monte Carlo, and in fact more generally; the TD error "
     + "of the last step is \\(-1\\) whatever \\(\\lambda\\) is; and with \\(\\lambda=1\\) no "
     + "bootstrapped estimate is left inside the target.",
+
+  /* ======================================================================= *
+   * TEMA 5 · aproximación de la función de valor (tema5.html)
+   *
+   * Terminología: la del libro. «Inductores de inestabilidad» (el término del
+   * profesor en la versión española) se traduce por «deadly triad», que es el
+   * nombre del libro y el único que un lector inglés puede buscar: es la única
+   * entrada del glosario en la que la traducción no es literal, y va anotada.
+   * Citas: sección, ecuación, ejemplo y figura de Sutton & Barto, salvo en el
+   * bloque B0, cuyo único contenido es la correspondencia con la baraja.
+   * ======================================================================= */
+
+  /* --- portada e índice -------------------------------------------------- */
+  "meta.titulo.tema5": "Unit 5 · Value-function approximation — RL IMAT",
+  "t5.kicker": "Unit 5 · Sutton &amp; Barto, chapters 9, 10 and 11 (and §16.5)",
+  "t5.h1": "Value-function approximation",
+  "t5.entradilla":
+    "A thousand states and ten weights: from here on there is no longer one cell per state, "
+    + "and <strong>getting one state right forces you to get another one wrong</strong>. This "
+    + "page answers the questions the lecture slides of this unit leave open: what exactly is "
+    + "being minimised once you can no longer be right everywhere, what \\(x(s)\\) is and what "
+    + "changes when going from <em>one-hot</em> to <em>tile coding</em>, where Monte Carlo "
+    + "converges and where TD converges —which is not the same place—, why the weights can "
+    + "<strong>diverge</strong>, and what justifies each cell of the two convergence tables that "
+    + "are projected as facts.",
+  "t5.subtitulo":
+    "It covers the whole lecture deck of the unit, from the first slide to the last, DQN "
+    + "included. <strong>The order is regrouped with respect to the lectures</strong>: see the "
+    + "first block for what has moved and why.",
+  "t5.semillaLabel": "Seed",
+  "t5.semilla": "Seed 2026 · everything random on this page is reproduced from it",
+  "t5.avisoEntornos":
+    "The two environments on this page —the <strong>1000-state random walk</strong> and "
+    + "<strong>Mountain Car</strong>— come from the book, <strong>not from the lectures</strong>: "
+    + "the slides of this unit contain no environment and no numerical example. They are "
+    + "brought in because without a concrete problem there is nothing to see approximation do.",
+  "t5.avisoEstocastico":
+    "Wherever there is simulation, each chart says how many independent runs it averages. The "
+    + "points each method converges to, on the other hand, <strong>are not simulated: they are "
+    + "computed exactly</strong>, so they do not depend on the seed.",
+  "t5.indice.m1": "The objective the deck never writes down: \\(\\overline{VE}\\) and \\(\\mu\\)",
+  "t5.indice.m2": "What \\(x(s)\\) is: from <em>one-hot</em> to <em>tile coding</em>",
+  "t5.indice.m3": "Linear MC and TD(0): where each one converges",
+  "t5.indice.m4": "When the weights diverge: the \\(w\\to 2w\\) example",
+  "t5.indice.m5": "Control: semi-gradient SARSA on Mountain Car",
+  "t5.indice.m6": "The two convergence tables, cell by cell",
+  "t5.indice.nota":
+    "Six hands-on stops. <strong>Eligibility traces with function approximation</strong> —what "
+    + "the exam asks for alongside \\(x(s,a)\\)— are not a separate stop: they are explained and "
+    + "worked out in the notes block that follows control, and can be switched on from module 5.",
+
+  /* --- A3 · mapa del tema ------------------------------------------------ */
+  "t5.mapa.h2": "Map of the unit",
+  "t5.mapa.cab": "<th>Concept</th><th>Where it comes from</th><th>Where it leads</th>",
+  "t5.mapa.f1":
+    "<td>Why approximate</td>"
+    + "<td>It is not only that the table does not fit: it is the <strong>time and data</strong> "
+    + "needed to fill it in, and that hardly any state is ever repeated</td>"
+    + "<td>\\(\\hat v(s,w)\\) with \\(d \\ll |\\mathcal S|\\)</td>",
+  "t5.mapa.f2":
+    "<td>Generalisation</td>"
+    + "<td>Changing <strong>one</strong> weight changes the value <strong>of many</strong> states</td>"
+    + "<td>It is the advantage and the problem at once</td>",
+  "t5.mapa.f3":
+    "<td>\\(\\overline{VE}\\) and \\(\\mu\\)</td>"
+    + "<td>If you cannot be right everywhere, you have to say <strong>which states matter</strong></td>"
+    + "<td>The weighted objective → <strong>module 1</strong></td>",
+  "t5.mapa.f4":
+    "<td>Gradient</td>"
+    + "<td>Going down \\(-\\nabla_w \\overline{VE}\\), one example at a time</td>"
+    + "<td>The rule \\(w \\leftarrow w + \\alpha[U_t - \\hat v]\\nabla\\hat v\\)</td>",
+  "t5.mapa.f5":
+    "<td>Semi-gradient</td>"
+    + "<td>With <em>bootstrapping</em> the target <strong>also</strong> depends on \\(w\\), and "
+    + "that piece of the gradient is thrown away</td>"
+    + "<td>It is not gradient descent on anything → B4</td>",
+  "t5.mapa.f6":
+    "<td>\\(x(s)\\)</td>"
+    + "<td>How a state is turned into numbers</td>"
+    + "<td><em>one-hot</em>, aggregation, <em>tile coding</em> → <strong>module 2</strong></td>",
+  "t5.mapa.f7":
+    "<td>The tabular case</td>"
+    + "<td>It is linear approximation with <em>one-hot</em> \\(x(s)\\): "
+    + "\\(\\min_w \\overline{VE} = 0\\)</td>"
+    + "<td>No approximation to share out → <strong>module 2</strong></td>",
+  "t5.mapa.f8":
+    "<td>MC and TD(0)</td>"
+    + "<td>The two targets \\(U_t\\): the return and the bootstrapped return</td>"
+    + "<td>They converge to <strong>different points</strong> → <strong>module 3</strong></td>",
+  "t5.mapa.f9":
+    "<td>The deadly triad</td>"
+    + "<td>Approximation + <em>bootstrapping</em> + off-policy</td>"
+    + "<td>With all three at once the weights can go to infinity → <strong>modules 4 and 6</strong></td>",
+  "t5.mapa.f10":
+    "<td>Control</td>"
+    + "<td>\\(v \\to q\\), \\(\\hat q(s,a,w) = w^\\top x(s,a)\\), SARSA and Q-learning</td>"
+    + "<td>Mountain Car → <strong>module 5</strong>, and from there to DQN → B16</td>",
+  "t5.mapa.f11":
+    "<td>Eligibility traces</td>"
+    + "<td>The “1” of the tabular trace <strong>is</strong> the gradient with <em>one-hot</em></td>"
+    + "<td>\\(z_t\\) has dimension \\(d\\), not \\(|\\mathcal S|\\times|\\mathcal A|\\) → "
+    + "<strong>B14b</strong> and the trace control of <strong>module 5</strong></td>",
+
+  /* --- B0 · el orden de esta página no es el de la baraja ---------------- */
+  "t5.b0.h2": "Before starting: what has been moved",
+  "t5.b0.fuente":
+    "Regrouped order of the lecture deck (<code>5_Tema_5_1</code>); the content is the same",
+  "t5.b0.texto":
+    "This page covers the 37 slides of the unit, but <strong>not in the order they are "
+    + "projected</strong>. One single thing has been moved, and for one reason: in the lectures, "
+    + "<em>tile coding</em> (<code>#slide-23</code> and <code>#slide-24</code>) comes "
+    + "<strong>after</strong> control, because what motivates it is the lab-3 assignment of "
+    + "<code>#slide-22</code>. Here it moves up to the state-representation block, next to linear "
+    + "approximation and the tabular case, because it is <strong>the answer to two questions left "
+    + "open earlier</strong>: “what alternatives do we have to build the state signal?” "
+    + "(<code>#slide-9</code>) and “is there any kind of approximation in the tabular case?” "
+    + "(<code>#slide-11</code>). With <em>tile coding</em> at the end, those two questions stay "
+    + "unanswered for fourteen slides.",
+  "t5.b0.cab": "<th>Block of this page</th><th>Lecture slides</th>",
+  "t5.b0.f1":
+    "<td>Why approximate; what is approximated and with what</td>"
+    + "<td><code>#slide-3</code> to <code>#slide-6</code></td>",
+  "t5.b0.f2":
+    "<td>The objective: \\(\\overline{VE}\\) and \\(\\mu\\) → <strong>module 1</strong></td>"
+    + "<td><code>#slide-4</code> (and <code>Tema5_1_Aproximacion#slide-7</code>, from the second deck)</td>",
+  "t5.b0.f3":
+    "<td>Gradient descent and semi-gradient</td><td><code>#slide-7</code>, <code>#slide-8</code></td>",
+  "t5.b0.f4":
+    "<td>State representation; linear; tabular case; <em>tile coding</em> → <strong>module 2</strong></td>"
+    + "<td><code>#slide-9</code> to <code>#slide-11</code> <strong>and <code>#slide-22</code> to "
+    + "<code>#slide-24</code></strong> ← <em>moved</em></td>",
+  "t5.b0.f5":
+    "<td>Prediction with MC and TD(0); where each one converges → <strong>module 3</strong></td>"
+    + "<td><code>#slide-12</code> to <code>#slide-14</code></td>",
+  "t5.b0.f6": "<td>When the weights diverge → <strong>module 4</strong></td><td><code>#slide-15</code></td>",
+  "t5.b0.f7":
+    "<td>The deadly triad and the two tables → <strong>module 6</strong></td>"
+    + "<td><code>#slide-16</code> and <code>#slide-21</code></td>",
+  "t5.b0.f8":
+    "<td>Control: \\(v\\to q\\), SARSA, Q-learning → <strong>module 5</strong></td>"
+    + "<td><code>#slide-17</code> to <code>#slide-21</code></td>",
+  "t5.b0.f9":
+    "<td><em>Batch RL</em> and least squares</td><td><code>#slide-25</code> to <code>#slide-29</code></td>",
+  "t5.b0.f10": "<td>DQN</td><td><code>#slide-30</code> to <code>#slide-36</code></td>",
+  "t5.b0.aviso":
+    "If you follow the slides in class and this page at home, this table is the correspondence. "
+    + "Nothing has been removed and nothing has been added to the scope: only two slides have "
+    + "moved up.",
+
+  /* --- B1 · RL a gran escala --------------------------------------------- */
+  "t5.b1.h2": "When the problem is large",
+  "t5.b1.fuente": "Sutton &amp; Barto, Part II introduction and §9.1",
+  "t5.b1.texto":
+    "The slide lists the examples: chess, Go, autonomous driving, finance. The book adds the "
+    + "argument that is usually missing: <strong>the problem with a large state space is not only "
+    + "the memory</strong> the table takes up, but <strong>the time and data needed to fill it in "
+    + "accurately</strong>. In many tasks, almost every state the agent encounters <strong>has never "
+    + "been seen before</strong>, and a table has nothing to say about a new state. Approximating is "
+    + "not a concession to memory: it is the only way to say anything about what has not been seen.",
+
+  /* --- B2 · qué se aproxima, y con qué ----------------------------------- */
+  "t5.b2.h2": "What is approximated, and with what",
+  "t5.b2.fuente": "Sutton &amp; Barto, §9.1 and §9.7",
+  "t5.b2.texto":
+    "The table is replaced by a <strong>parameterised functional form</strong>: \\(\\hat v(s,w)\\) "
+    + "or \\(\\hat q(s,a,w)\\), with \\(w \\in \\mathbb R^d\\) and <strong>\\(d\\) much smaller than "
+    + "the number of states</strong>. Three possible architectures, the ones on the slide: one that "
+    + "takes \\(s\\) and returns \\(\\hat v(s,w)\\); one that takes the pair \\((s,a)\\) and returns "
+    + "\\(\\hat q(s,a,w)\\); and a third that takes \\(s\\) and returns <strong>one output per "
+    + "action</strong>, \\(\\hat q(s,a_1,w)\\dots\\hat q(s,a_{|\\mathcal A|},w)\\) —which is exactly "
+    + "the DQN one, and what makes the \\(\\max_a\\) cost a single forward pass—.",
+  "t5.b2.texto2":
+    "The course focuses on <strong>differentiable approximators</strong>, and the book explains why "
+    + "not every supervised-learning method will do: learning has to be <strong>online</strong>, "
+    + "with data arriving one item at a time, and with <strong>nonstationary targets</strong> —the "
+    + "target changes because the weights themselves change, and because the policy improves—. A "
+    + "method that cannot tolerate that nonstationarity is of no use here.",
+  "t5.b2.ecuacion":
+    "\\[ \\hat v(s,w) \\approx v_\\pi(s) \\qquad\\text{or}\\qquad \\hat q(s,a,w) \\approx "
+    + "q_\\pi(s,a), \\qquad w \\in \\mathbb R^d,\\; d \\ll |\\mathcal S| \\]",
+
+  /* --- B3 · el objetivo: VE y mu → módulo 1 ------------------------------ */
+  "t5.b3.h2": "The objective: \\(\\overline{VE}\\) and \\(\\mu\\)",
+  "t5.b3.fuente": "Sutton &amp; Barto, §9.2, equations (9.1) to (9.3)",
+  "t5.b3.texto":
+    "In the tabular case no measure of quality was needed: the learned values could end up being "
+    + "<strong>exactly</strong> the true ones, and they were decoupled —updating one state affected "
+    + "no other—. With genuine approximation, updating one state affects many, and <strong>since "
+    + "there are far more states than weights, making one state more accurate invariably means "
+    + "making others less accurate</strong>. We are therefore obliged to say <strong>which states "
+    + "we care about most</strong>.",
+  "t5.b3.texto2":
+    "That is \\(\\mu(s)\\): a distribution over states, \\(\\mu(s)\\ge 0\\) and "
+    + "\\(\\sum_s \\mu(s) = 1\\), almost always taken as <strong>the fraction of time spent in "
+    + "\\(s\\)</strong>. With it one writes the objective of the unit, the <strong>mean squared "
+    + "value error</strong>. The reference deck writes \\(J(w) = \\mathbb E_\\pi[(v_\\pi(S) - "
+    + "\\hat v(S,w))^2]\\) and does not say under which distribution that expectation is taken: "
+    + "<strong>it is the same thing when the expectation is taken under \\(\\mu\\)</strong>, and it "
+    + "is the second deck that writes it explicitly.",
+  "t5.b3.ecuacion":
+    "\\[ \\overline{VE}(w) \\;\\doteq\\; \\sum_{s\\in\\mathcal S} \\mu(s)\\big[v_\\pi(s) - "
+    + "\\hat v(s,w)\\big]^2 \\]",
+  "t5.b3.texto3":
+    "For episodic tasks, \\(\\mu\\) is computed by counting visits: if \\(h(s)\\) is the "
+    + "probability that an episode starts in \\(s\\), the expected number of visits to \\(s\\) per "
+    + "episode satisfies \\(\\eta(s) = h(s) + \\sum_{\\bar s}\\eta(\\bar s)\\sum_a \\pi(a\\mid\\bar "
+    + "s)p(s\\mid\\bar s,a)\\), and \\(\\mu(s) = \\eta(s)/\\sum_{s'}\\eta(s')\\). Module 1 solves "
+    + "that system for the 1000-state walk and shows the shape of \\(\\mu\\): a triangle peaking at "
+    + "the start state.",
+  "t5.b3.aviso":
+    "The book itself admits that <strong>it is not clear that \\(\\overline{VE}\\) is the right "
+    + "objective</strong>: what one ultimately wants is a better policy, and the value function that "
+    + "serves that purpose best is not necessarily the one minimising \\(\\overline{VE}\\). No "
+    + "better-defined alternative exists yet, and that is why this one is used.",
+  "t5.b3.modulo":
+    "→ module 1: move the number of groups and watch what happens to "
+    + "\\(\\sqrt{\\overline{VE}}\\) and to the staircase of values.",
+
+  /* --- MÓDULO 1 (cabecera en HTML) --------------------------------------- */
+  "t5.m1.etiqueta": "MODULE 1",
+  "t5.m1.h2": "The objective: which states matter",
+  "t5.m1.fuente":
+    "Sutton &amp; Barto, §9.2, eqs. (9.1)–(9.3); §9.3 (state aggregation); Example 9.1 and "
+    + "Figure 9.1",
+
+  /* --- B4 · descenso del gradiente, y el término que se tira ------------- */
+  "t5.b4.h2": "Gradient descent, and why this is only <em>semi</em>-gradient",
+  "t5.b4.fuente": "Sutton &amp; Barto, §9.3, equations (9.4) to (9.7)",
+  "t5.b4.texto":
+    "If the true value were available, every visited state would be a supervised-learning "
+    + "example \\(S_t \\mapsto v_\\pi(S_t)\\) and it would be enough to go down the gradient of the "
+    + "squared error of that example. Differentiating \\([v_\\pi(S_t)-\\hat v(S_t,w_t)]^2\\) "
+    + "produces a 2 that cancels with the \\(\\tfrac12\\), and what remains is the rule used "
+    + "throughout the unit.",
+  "t5.b4.ecuacion":
+    "\\[ w_{t+1} \\doteq w_t - \\tfrac12\\,\\alpha\\,\\nabla\\big[v_\\pi(S_t)-\\hat v(S_t,w_t)\\big]^2"
+    + " \\;=\\; w_t + \\alpha\\big[v_\\pi(S_t)-\\hat v(S_t,w_t)\\big]\\nabla\\hat v(S_t,w_t) \\]",
+  "t5.b4.texto2":
+    "Since \\(v_\\pi\\) is not known, a <strong>target</strong> \\(U_t\\) is put in its place, and "
+    + "the rule holds for any of them: \\(U_t = G_t\\) gives Monte Carlo, \\(U_t = R_{t+1} + "
+    + "\\gamma\\hat v(S_{t+1},w_t)\\) gives TD(0). If \\(U_t\\) is an <strong>unbiased</strong> "
+    + "estimate of \\(v_\\pi(S_t)\\), \\(w_t\\) converges to a local optimum under the usual "
+    + "conditions on \\(\\alpha\\).",
+  "t5.b4.ecuacion2":
+    "\\[ w_{t+1} \\;\\doteq\\; w_t + \\alpha\\big[U_t - \\hat v(S_t,w_t)\\big]\\,\\nabla\\hat v(S_t,w_t) \\]",
+  "t5.b4.texto3":
+    "With a target that bootstraps —the TD one, the \\(n\\)-step one, the DP one— <strong>the "
+    + "target depends on \\(w_t\\) itself</strong>, and that breaks the step from the first formula "
+    + "to the second, which assumed a target independent of \\(w\\). The update takes into account "
+    + "the effect of changing \\(w\\) on <strong>the estimate</strong>, but <strong>ignores its "
+    + "effect on the target</strong>: it includes only <strong>part of the gradient</strong>. That is "
+    + "why they are called <strong>semi-gradient methods</strong>, and why <strong>they are not the "
+    + "gradient of any objective function</strong>: they cannot lean on the classical convergence "
+    + "results of stochastic gradient descent.",
+  "t5.b4.texto4":
+    "The trade-off is the usual one: semi-gradient methods do not converge as robustly, but "
+    + "<strong>they converge reliably in the important cases</strong> —the linear one among them—, "
+    + "<strong>they learn much faster</strong> and they allow online learning without waiting for "
+    + "the end of the episode. In the reference deck the word “semi-gradient” only appears inside "
+    + "the English title of the pseudocode box and in the handwritten annotation of the lecture; "
+    + "the concept is developed in the second deck.",
+  "t5.b4.erratum":
+    "Two clarifications about the gradient slide: \\(J(w)\\) is a <strong>scalar function of a "
+    + "vector</strong>, not a “vector function”; and the \\(\\tfrac12\\) in \\(\\Delta w = "
+    + "-\\tfrac12\\alpha\\nabla_w J(w)\\) does not belong to gradient descent in general —it is "
+    + "there only to cancel the 2 that comes from differentiating a <strong>square</strong>—, so it "
+    + "shows up one slide before there is any square to cancel.",
+
+  /* --- B5 · representación del estado: las cuatro preguntas -------------- */
+  "t5.b5.h2": "What is the state? The four questions from class, answered",
+  "t5.b5.fuente": "Sutton &amp; Barto, §9.1 (p. 219) and §9.5",
+  "t5.b5.texto":
+    "The slide throws out four questions and answers none of them on screen. They are answered "
+    + "in class, by hand. These are they:",
+  "t5.b5.cab": "<th>Question (as asked on the slide)</th><th>Answer</th>",
+  "t5.b5.p1":
+    "<td>“What is the state?”</td>"
+    + "<td>A signal that carries <strong>all the information needed</strong> to act optimally in the "
+    + "environment; it is not the environment, it is what the agent receives from it</td>",
+  "t5.b5.p2":
+    "<td>“What must a signal satisfy to convey information about the state?”</td>"
+    + "<td>The <strong>Markov property</strong>: the future depends on the present and not on the "
+    + "path by which it was reached</td>",
+  "t5.b5.p3":
+    "<td>“What alternatives do we have to ‘build’ that signal?”</td>"
+    + "<td>Choosing features, and sometimes <strong>stacking samples</strong> from the past —which "
+    + "is what DQN does with four frames—. The concrete alternatives are the next block: "
+    + "<em>one-hot</em>, aggregation, <em>coarse coding</em>, <em>tile coding</em></td>",
+  "t5.b5.p4":
+    "<td>“What are we going to call it? (Examples)”</td>"
+    + "<td><strong>Observation.</strong> It is the name used from here up to the DQN slides, where "
+    + "the DQN model starts with “observation of the state”</td>",
+  "t5.b5.aviso":
+    "The original Spanish slide has a typo in the second question (“trasmita” for “transmita”), "
+    + "and the same typo appears in the second deck. Nothing important; it is noted so that nobody "
+    + "thinks the transcription is wrong.",
+  "t5.b5.texto2":
+    "The book adds a nuance worth keeping at hand: function approximation <strong>makes RL "
+    + "applicable to partially observable problems</strong>, but what it <strong>cannot</strong> do "
+    + "is augment the state representation with memory of the past. Stacking four frames, as in "
+    + "DQN, is exactly that: <strong>widening the signal by hand</strong> so that it looks more like "
+    + "a Markov state.",
+
+  /* --- B6 · aproximación lineal ----------------------------------------- */
+  "t5.b6.h2": "Linear approximation: \\(\\hat v = w^\\top x(s)\\) and \\(\\nabla\\hat v = x(s)\\)",
+  "t5.b6.fuente": "Sutton &amp; Barto, §9.4, equation (9.8)",
+  "t5.b6.texto":
+    "Each state is assigned a <strong>feature vector</strong> \\(x(s) = (x_1(s),\\dots, "
+    + "x_d(s))^\\top\\), with as many components as weights, and the approximate value is the "
+    + "inner product. Each \\(x_i\\) is a function \\(x_i:\\mathcal S\\to\\mathbb R\\); in the "
+    + "linear case the features are <strong>basis functions</strong>, because they form a linear "
+    + "basis of the set of approximable functions.",
+  "t5.b6.ecuacion":
+    "\\[ \\hat v(s,w) \\doteq w^\\top x(s) = \\sum_{i=1}^{d} w_i\\,x_i(s), \\qquad "
+    + "\\nabla\\hat v(s,w) = x(s) \\]",
+  "t5.b6.texto2":
+    "That the gradient is <strong>the feature vector itself</strong> is what makes the linear case "
+    + "so simple, and it is the step the slide leaves blank. Substituting it into the generic rule "
+    + "gives the rule used throughout the unit:",
+  "t5.b6.ecuacion2":
+    "\\[ w_{t+1} \\;\\doteq\\; w_t + \\alpha\\big[U_t - \\hat v(S_t,w_t)\\big]\\,x(S_t) \\]",
+  "t5.b6.texto3":
+    "In the linear case <strong>there is only one optimum</strong> (or, in degenerate cases, a set "
+    + "of equally good optima), so any method guaranteed to converge to a <strong>local</strong> "
+    + "optimum is automatically guaranteed to converge to the <strong>global</strong> one. That is "
+    + "why almost all the useful convergence results in RL are for linear or simpler function "
+    + "approximation, and why the “Linear” column of the convergence tables has so many “YES”.",
+  "t5.b6.erratum":
+    "The linear-approximation slide ends with the bullet “Weight update rule:” and <strong>there "
+    + "is nothing underneath</strong>: the formula is written by hand in class. It is "
+    + "\\(\\Delta w = \\alpha\\big(v_\\pi(s) - x(s)^\\top w\\big)\\,x(s)\\), and it is the central "
+    + "result of the linear block.",
+  "t5.b6.aviso2":
+    "A limit that has to be stated here and not later: the linear form <strong>cannot represent "
+    + "interactions between features</strong>. The book’s example is the pole-balancing task: a high "
+    + "angular velocity is good or bad <strong>depending on the angle</strong>, and a linear value "
+    + "function with one feature for the angle and another for the velocity cannot express that. "
+    + "It is exactly the argument that justifies <em>tile coding</em> tiles being "
+    + "<strong>conjunctive</strong> —rectangles in the plane— rather than independent stripes.",
+
+  /* --- B7 · el caso tabular es aproximación lineal con one-hot ----------- */
+  "t5.b7.h2": "The tabular case, from the inside",
+  "t5.b7.fuente": "Sutton &amp; Barto, Exercise 9.1; §9.3 (state aggregation)",
+  "t5.b7.texto":
+    "Take \\(x(s) = e_s\\), the vector with a 1 in the position of \\(s\\) and zeros elsewhere "
+    + "—<em>one-hot</em>—. Then \\(\\hat v(s,w) = w_s\\), \\(\\nabla\\hat v(s,w) = e_s\\), and the "
+    + "linear rule becomes \\(w_s \\leftarrow w_s + \\alpha[U_t - w_s]\\): <strong>literally the "
+    + "tabular update</strong> of the previous units. The tabular case is nothing else: it is linear "
+    + "approximation with \\(d = |\\mathcal S|\\).",
+  "t5.b7.texto2":
+    "The slide asks: “Do you think there is any kind of approximation?”. <strong>There is "
+    + "none</strong>: with <em>one-hot</em> the weights can reproduce \\(v_\\pi\\) exactly, so "
+    + "\\(\\min_w \\overline{VE} = 0\\) and there is no error to share out among states. "
+    + "Approximation appears the moment <strong>states are grouped</strong> —which is the answer "
+    + "given in class—: that is <strong>state aggregation</strong>, one weight per group, and it is "
+    + "the first genuine approximator of the unit.",
+  "t5.b7.ecuacion":
+    "\\[ x(s) = e_s \\;\\Longrightarrow\\; \\hat v(s,w) = w_s,\\quad \\nabla\\hat v(s,w) = e_s,"
+    + "\\quad w_s \\leftarrow w_s + \\alpha\\big[U_t - w_s\\big] \\]",
+  "t5.b7.texto3":
+    "State aggregation is a special case of the general rule in which the gradient is <strong>1 "
+    + "in the component of the group of \\(S_t\\) and 0 in the others</strong>. That is: it is "
+    + "<em>one-hot</em>, but <strong>over groups</strong> instead of over states.",
+  "t5.b7.enlaceT4":
+    "This argument already came up in Unit 4, told the other way round: when presenting "
+    + "eligibility traces, the lecture slide says that <strong>this 1 is not an arbitrary value, it "
+    + "is the gradient of the value function in the case of linear approximation with a "
+    + "<em>one-hot</em> encoding of the states</strong>. It is the same sentence, read in the other "
+    + "direction. It is on the <a href=\"tema4b.html#m2\">second page of Unit 4</a>.",
+  "t5.b7.modulo":
+    "→ module 2: change the representation and watch which components of \\(x(s)\\) light up and "
+    + "which states a single update splashes onto.",
+
+  /* --- B8 · tile coding → módulo 2 ---------------------------------------- */
+  "t5.b8.h2": "<em>Tile coding</em>: overlapping tiles",
+  "t5.b8.fuente":
+    "Sutton &amp; Barto, §9.5.3 and §9.5.4, Figures 9.9, 9.10 and 9.11; eq. (9.19); Exercise 9.5",
+  "t5.b8.tarea":
+    "These two figures are projected in class <strong>without text</strong>, and what motivates "
+    + "them is the assignment on the slide before: <strong>“Read section 9.5.4 (<em>tile "
+    + "coding</em>) of Sutton &amp; Barto”</strong> and <strong>“do the exercises with the code we "
+    + "will hand out next week”</strong>, for <strong>lab 3</strong>. Moving them up on this page "
+    + "moves the assignment with them: what follows is a summary of §9.5.4, not a substitute for "
+    + "reading it.",
+  "t5.b8.texto":
+    "Before the tiles, the general idea: <strong>coarse coding</strong> uses <strong>binary</strong> "
+    + "features associated with <strong>overlapping receptive fields</strong>. Given a state, the "
+    + "features that equal 1 say which fields it falls in, and that encodes its position. How much "
+    + "an update at \\(s\\) generalises to \\(s'\\) depends on <strong>how many receptive fields they "
+    + "share</strong>. The size and shape of the fields control the initial generalisation; "
+    + "<strong>the final accuracy —the finest possible discrimination— is controlled more by the "
+    + "total number of features</strong>, not by their width.",
+  "t5.b8.texto2":
+    "<em>Tile coding</em> is the form of coarse coding for multidimensional continuous spaces "
+    + "that is practical to compute. The receptive fields are grouped into <strong>partitions</strong> "
+    + "of the state space: each partition is called a <strong>tiling</strong> and each element of "
+    + "the partition a <strong>tile</strong>. With \\(m\\) tilings offset from one another, each "
+    + "state falls in <strong>exactly one tile of each tiling</strong>, so there are <strong>exactly "
+    + "\\(m\\) active features</strong>, always, for any state.",
+  "t5.b8.aviso1":
+    "<strong>With a single tiling there is no coarse coding: there is state aggregation.</strong> "
+    + "Generalisation would be total within the tile and <strong>nonexistent</strong> outside it. "
+    + "Everything <em>tile coding</em> brings comes from <strong>overlapping several offset "
+    + "tilings</strong>.",
+  "t5.b8.texto3":
+    "That the number of active features is always the same makes it possible to set \\(\\alpha\\) "
+    + "intuitively. With <strong>\\(\\alpha = 1/m\\)</strong> one gets <strong>exact one-trial "
+    + "learning</strong>: if the example \\(s\\mapsto u\\) is trained on, whatever the previous "
+    + "estimate, the new one is <strong>exactly \\(u\\)</strong>. Usually one wants to go more slowly, "
+    + "to leave room for generalisation and for the noise in the targets: with \\(\\alpha = "
+    + "1/(10m)\\) the estimate of the trained state moves <strong>exactly one tenth</strong> of the "
+    + "way to the target, and neighbouring states move less, in proportion to the number of tiles "
+    + "they share.",
+  "t5.b8.ecuacion":
+    "\\[ \\alpha \\;\\doteq\\; \\big(\\tau\\,\\mathbb E[x^\\top x]\\big)^{-1} "
+    + "\\;\\stackrel{\\text{tile coding}}{=}\\; \\frac{1}{\\tau\\,m} \\]",
+  "t5.b8.texto4":
+    "The first equality is the book’s general rule for linear methods, with \\(\\tau\\) = the "
+    + "number of experiences with <strong>the same</strong> feature vector over which one wants to "
+    + "learn. The second holds because with <em>tile coding</em> the features are binary and "
+    + "exactly \\(m\\) are active, so \\(x^\\top x = m\\) <strong>is constant</strong>. That is where "
+    + "the \\(1/m\\) and the \\(1/(10m)\\) above come from, with \\(\\tau=1\\) and \\(\\tau=10\\). "
+    + "And it is also why the book’s figures write \\(\\alpha\\) as \\(0.5/8\\) or label the axis "
+    + "“\\(\\alpha\\times\\) number of tilings (8)”: <strong>they are normalising by \\(m\\)</strong>.",
+  "t5.b8.texto5":
+    "The tilings are offset from one another by a fraction of the tile width. If \\(\\ell\\) is "
+    + "the width and \\(m\\) the number of tilings, <strong>\\(\\ell/m\\)</strong> is the fundamental "
+    + "unit: inside a square of side \\(\\ell/m\\) every state activates the same tiles and has the "
+    + "same approximate value. If all the tilings are offset equally in each dimension "
+    + "—displacement vector \\((1,1)\\)— generalisation comes out with <strong>diagonal "
+    + "artifacts</strong> and varies a lot from point to point; that is the upper half of Figure "
+    + "9.11. With <strong>asymmetric</strong> offsets generalisation comes out more spherical and "
+    + "homogeneous: that is the lower half. The book’s recipe for a space of dimension \\(k\\) is to "
+    + "use the <strong>first odd integers</strong> \\((1,3,5,\\dots,2k-1)\\) with \\(m\\) a power of 2 "
+    + "greater than or equal to \\(4k\\); for \\(k=2\\) that is \\(m=8\\) and the vector \\((1,3)\\), "
+    + "which is exactly what Mountain Car uses in module 5.",
+  "t5.b8.texto6":
+    "Two more things the figure does not say. One: the <strong>computational advantage</strong>. "
+    + "Since the features are 0 or 1, the inner product does not cost \\(d\\) multiplications: the "
+    + "indices of the \\(m \\ll d\\) active features are computed and \\(m\\) weights are added up. "
+    + "Two: <strong>hashing</strong>, a consistent pseudo-random collapse of a large tiling into a "
+    + "small set of tiles; it produces tiles made of scattered pieces, but it is still a partition, "
+    + "and it reduces memory a great deal at little cost. It is what frees <em>tile coding</em> from "
+    + "the curse of dimensionality: memory need not be exponential in the number of dimensions, it "
+    + "only needs to match what the task really demands.",
+  "t5.b8.modulo":
+    "→ module 2, second half: raise the number of tilings and watch how the generalisation "
+    + "profile changes.",
+
+  /* --- MÓDULO 2 (cabecera en HTML) --------------------------------------- */
+  "t5.m2.etiqueta": "MODULE 2",
+  "t5.m2.h2": "What \\(x(s)\\) is",
+  "t5.m2.fuente":
+    "Sutton &amp; Barto, Exercise 9.1; §9.5.3 (coarse coding), Figures 9.6–9.8; §9.5.4 (tile "
+    + "coding), Figures 9.9–9.11; eq. (9.19) and Exercise 9.5",
+
+  /* --- B9 · predicción: MC y TD(0) con aproximación lineal --------------- */
+  "t5.b9.h2": "The two rules used in practice: MC and TD(0)",
+  "t5.b9.fuente":
+    "Sutton &amp; Barto, §9.3 (both algorithm boxes) and §9.4",
+  "t5.b9.texto":
+    "The slide warns about what changes: up to here the formulas contained the true value being "
+    + "approximated, but <strong>RL is not supervised learning</strong> —only the reward is "
+    + "available—. So \\(U_t\\) is filled with what one does have. With Monte Carlo, the observed "
+    + "return; with TD(0), the reward plus the estimated value of the next state.",
+  "t5.b9.ecuacion":
+    "\\[ \\text{Gradient MC:}\\quad \\Delta w = \\alpha\\big[G_t - x(S_t)^\\top w\\big]\\,x(S_t) \\]"
+    + "\\[ \\text{Semi-gradient TD(0):}\\quad \\Delta w = \\alpha\\big[R_{t+1} + "
+    + "\\gamma\\,x(S_{t+1})^\\top w - x(S_t)^\\top w\\big]\\,x(S_t) \\]",
+  "t5.b9.texto2":
+    "The training-sample lists on the slides are exactly this, written as input–target pairs: "
+    + "\\(\\langle S_0,G_0\\rangle,\\dots,\\langle S_{T-1},G_{T-1}\\rangle\\) for MC, and "
+    + "\\(\\langle S_0, R_1+\\gamma\\hat v(S_1,w)\\rangle,\\dots, \\langle S_{T-1},R_T\\rangle\\) "
+    + "for TD(0). Look at the <strong>last pair of the TD list</strong>: there is no "
+    + "<em>bootstrapping</em> in it. The reason is that <strong>\\(\\hat v(\\text{terminal},w) = 0\\) "
+    + "by definition</strong>, something the book’s box demands explicitly and the deck says "
+    + "nowhere.",
+  "t5.b9.ecuacion2":
+    "\\[ \\hat v(\\text{terminal},w) \\;=\\; 0 \\quad\\text{always, for every } w \\]",
+  "t5.b9.texto3":
+    "The slide says that MC <strong>converges to the global optimum</strong> in the linear case, "
+    + "and it is true: the return is an <strong>unbiased</strong> estimate of \\(v_\\pi(S_t)\\), "
+    + "the rule is genuine gradient descent, and in the linear case the local optimum "
+    + "<strong>is</strong> the global one. The next slide says that TD(0) <strong>converges to a "
+    + "point close to the global optimum</strong>; that is a didactic simplification of something "
+    + "more precise, and it is the next block.",
+  "t5.b9.erratum":
+    "The MC sample list on the slide ends at \\(\\langle S_T, G_T\\rangle\\): \\(S_T\\) is "
+    + "terminal, it is not updated, and \\(G_T\\) is not defined. It should end at "
+    + "\\(\\langle S_{T-1}, G_{T-1}\\rangle\\), as the TD one does. And it starts at \\(S_1\\), "
+    + "whereas the book’s box loops over \\(t = 0,1,\\dots,T-1\\).",
+  "t5.b9.modulo":
+    "→ module 3: the two rules on the same environment, with the same episodes and the same seed.",
+
+  /* --- B10 · a dónde converge cada uno → módulo 3 ------------------------ */
+  "t5.b10.h2": "The TD fixed point and the \\(1/(1-\\gamma)\\) bound",
+  "t5.b10.fuente": "Sutton &amp; Barto, §9.4, equations (9.11), (9.12) and (9.14)",
+  "t5.b10.texto":
+    "“Close” has an exact measure, and it is not in the deck. In the continuing linear case, the "
+    + "expected TD(0) update is written with two objects: a matrix \\(A\\) and a vector \\(b\\). "
+    + "Linear TD(0) <strong>converges to the point where \\(b - Aw = 0\\)</strong>, which is called "
+    + "the <strong>TD fixed point</strong>.",
+  "t5.b10.ecuacion":
+    "\\[ A \\doteq \\mathbb E\\big[x_t(x_t - \\gamma x_{t+1})^\\top\\big], \\qquad b \\doteq "
+    + "\\mathbb E\\big[R_{t+1}\\,x_t\\big], \\qquad w_{TD} \\doteq A^{-1}b \\]",
+  "t5.b10.texto2":
+    "<strong>That point is not the global optimum of \\(\\overline{VE}\\)</strong>, and the book "
+    + "bounds how much worse it can be: the asymptotic error of TD <strong>is no more than "
+    + "\\(1/(1-\\gamma)\\) times the smallest possible error</strong>, which is the one Monte Carlo "
+    + "reaches in the limit.",
+  "t5.b10.ecuacion2":
+    "\\[ \\overline{VE}(w_{TD}) \\;\\le\\; \\frac{1}{1-\\gamma}\\,\\min_w \\overline{VE}(w) \\]",
+  "t5.b10.aviso":
+    "With \\(\\gamma\\) near 1 that expansion factor is enormous, so <strong>the potential loss in "
+    + "asymptotic quality of TD is large</strong>. The other side is the usual one: TD has far less "
+    + "variance and learns faster. Which one wins depends on the problem, the approximation and how "
+    + "long learning goes on. <strong>The bound is stated for continuing tasks</strong>; for episodic "
+    + "tasks the book says it is “slightly different but related”, and that is why module 3 shows "
+    + "it as a reference and not as a test.",
+  "t5.b10.texto3":
+    "Three more things the book adds that help read the tables of module 6: the same bound holds "
+    + "for <strong>semi-gradient DP</strong> when the updates follow the on-policy distribution; it "
+    + "holds, with an analogous bound, for <strong>semi-gradient SARSA(0)</strong> —with a constant "
+    + "policy—; and it is <strong>critical</strong> that the updates follow the on-policy "
+    + "distribution: <strong>with other distributions, bootstrapping methods with function "
+    + "approximation can diverge to infinity</strong>. That is the next block.",
+  "t5.b10.modulo":
+    "→ module 3: the two convergence points are computed exactly and drawn as two horizontal "
+    + "lines over the learning curves.",
+
+  /* --- MÓDULO 3 (cabecera en HTML) --------------------------------------- */
+  "t5.m3.etiqueta": "MODULE 3",
+  "t5.m3.h2": "Where each one converges",
+  "t5.m3.fuente":
+    "Sutton &amp; Barto, §9.3 (Gradient Monte Carlo and Semi-gradient TD(0) boxes); §9.4, eqs. "
+    + "(9.11), (9.12) and (9.14); Example 9.1 with Figure 9.1; Example 9.2 with Figure 9.2 (left "
+    + "panel)",
+
+  /* --- B11 · cuándo divergen los pesos → módulo 4 ------------------------ */
+  "t5.b11.h2": "The weights can go to infinity",
+  "t5.b11.fuente":
+    "Sutton &amp; Barto, §11.2: the \\(w\\to 2w\\) example (p. 282) and Baird’s counterexample "
+    + "(Figures 11.1 and 11.2)",
+  "t5.b11.texto":
+    "The lecture slide projects a figure from the book with the weights shooting off and "
+    + "<strong>one line of text</strong>: “Evolution of the weights in Baird’s counterexample (TD "
+    + "prediction)”. It does not say what Baird’s MDP is, nor that training is "
+    + "<strong>off-policy</strong>, nor why the weights diverge. It is the strongest claim of the "
+    + "unit resting on the most silent figure, so we start with the smallest example there is, "
+    + "which can be followed by hand.",
+  "t5.b11.texto2":
+    "Two states and <strong>a single weight</strong>. The first state has estimated value \\(w\\) "
+    + "and the second \\(2w\\) —that is, scalar features \\(x=1\\) and \\(x=2\\)—. From the first "
+    + "there is <strong>a single action</strong>, which leads deterministically to the second with "
+    + "<strong>reward 0</strong>. The TD error of that transition is \\(\\delta = 0 + \\gamma\\cdot "
+    + "2w - w = (2\\gamma-1)w\\), and the semi-gradient update leaves:",
+  "t5.b11.ecuacion":
+    "\\[ w_{t+1} \\;=\\; w_t + \\alpha\\,\\delta_t\\,\\nabla\\hat v(S_t,w_t) \\;=\\; w_t + "
+    + "\\alpha(2\\gamma-1)w_t\\cdot 1 \\;=\\; \\big(1 + \\alpha(2\\gamma-1)\\big)\\,w_t \\]",
+  "t5.b11.texto3":
+    "If that factor exceeds 1, the system is unstable and \\(w\\) goes to \\(+\\infty\\) or to "
+    + "\\(-\\infty\\) depending on its initial value. And it exceeds 1 <strong>exactly when "
+    + "\\(\\gamma > 0.5\\)</strong>. The important point: <strong>stability does not depend on the "
+    + "step size</strong>, as long as \\(\\alpha > 0\\). A smaller \\(\\alpha\\) changes <strong>the "
+    + "speed</strong> at which \\(w\\) goes to infinity, not <strong>whether</strong> it goes.",
+  "t5.b11.texto4":
+    "The key to the example is that <strong>this transition occurs repeatedly without \\(w\\) "
+    + "being updated on the other transitions</strong>. That is possible off-policy, because the "
+    + "behaviour policy can choose, on those other transitions, actions the target policy would "
+    + "never choose: for them the importance-sampling ratio is zero and nothing is updated. "
+    + "On-policy, that ratio is always one. As the book puts it: <strong>in the end, the piper must "
+    + "be paid</strong>. On-policy, the promise of future reward has to be kept and the system is "
+    + "kept in check; off-policy one can promise and then, after taking an action the target policy "
+    + "would never take, forget and forgive.",
+  "t5.b11.texto5":
+    "<strong>Baird’s</strong> counterexample is this same mechanism, complete and without tricks. "
+    + "An episodic MDP with <strong>seven states and two actions</strong>; the dashed action leads "
+    + "to one of the six upper states <strong>with equal probability</strong>, the solid one leads "
+    + "to the seventh. The behaviour policy chooses the dashed action <strong>6 times out of "
+    + "7</strong>, so that the next-state distribution is <strong>uniform</strong>; the target "
+    + "policy <strong>always</strong> chooses the solid one, and its distribution is concentrated on "
+    + "the seventh state. <strong>The reward is zero on every transition</strong>, \\(\\gamma = "
+    + "0.99\\), and there are <strong>eight weights for seven non-terminal states</strong>, with "
+    + "linearly independent features: the true value is \\(v_\\pi(s)=0\\) for every \\(s\\) and "
+    + "<strong>it can be represented exactly</strong> with \\(w=0\\). Everything favourable. And "
+    + "even so, with \\(\\alpha = 0.01\\) and \\(w_0 = (1,1,1,1,1,1,10,1)^\\top\\), <strong>the "
+    + "weights diverge</strong>.",
+  "t5.b11.texto6":
+    "Two things that usually surprise. <strong>It is not a matter of step size</strong>: the "
+    + "instability occurs for any \\(\\alpha>0\\), however small. And <strong>it is not a matter of "
+    + "sampling or asynchrony</strong>: with semi-gradient <strong>DP</strong> updates —sweeping "
+    + "every state, with no randomness at all, exactly like a classical dynamic-programming "
+    + "sweep— the system is still unstable. What fixes it is not the algorithm: it is <strong>the "
+    + "distribution</strong>. If in Baird’s counterexample only the distribution of the updates is "
+    + "changed, from uniform to the on-policy distribution, convergence is guaranteed with the "
+    + "error bounded by the bound of the previous block.",
+  "t5.b11.aviso":
+    "Not even solving exactly by least squares at every step fixes it. Example 11.1 of the book "
+    + "extends the \\(w\\to 2w\\) example with a terminal state and computes at every iteration the "
+    + "\\(w\\) that <strong>minimises \\(\\overline{VE}\\) exactly</strong>; the resulting sequence "
+    + "is \\(w_{k+1} = \\tfrac{6-4\\varepsilon}{5}\\,\\gamma\\,w_k\\), which <strong>diverges</strong> "
+    + "when \\(\\gamma > 5/(6-4\\varepsilon)\\) and \\(w_0 \\ne 0\\). Keep it at hand when we get to "
+    + "<em>batch RL</em> and least squares: <strong>they are not the cure for instability</strong>.",
+  "t5.b11.erratum":
+    "The figure on the lecture slide is Figure 11.2 of the book and labels the axis “Parameter "
+    + "values, \\(\\theta_k(i)\\)”: it uses <strong>\\(\\theta\\)</strong> for the weights, whereas "
+    + "the whole deck uses \\(w\\) and in this course \\(\\theta\\) are the parameters of <strong>the "
+    + "policy</strong> (Unit 6). Here everything is written with \\(w\\). The same unannounced switch "
+    + "is on the DQN slide, with \\(\\theta\\) and \\(\\theta^-\\). And the projected figure "
+    + "<strong>does not include Baird’s MDP</strong>: only the divergence plot, which is what makes "
+    + "it hard to read.",
+  "t5.b11.modulo":
+    "→ module 4: move \\(\\gamma\\) above and below 0.5, and then move \\(\\alpha\\) to check that "
+    + "nothing changes.",
+
+  /* --- MÓDULO 4 (cabecera en HTML) --------------------------------------- */
+  "t5.m4.etiqueta": "MODULE 4",
+  "t5.m4.h2": "When the weights diverge",
+  "t5.m4.fuente":
+    "Sutton &amp; Barto, §11.2: the \\(w \\to 2w\\) example (p. 282), Baird’s counterexample "
+    + "(Figures 11.1 and 11.2) and Example 11.1",
+
+  /* --- B12 · los tres inductores de inestabilidad y las dos tablas ------- */
+  "t5.b12.h2": "The deadly triad",
+  "t5.b12.fuente":
+    "Convergence tables from <strong>David Silver’s UCL lecture slides</strong>, not from Sutton "
+    + "&amp; Barto; per-cell evidence in S&amp;B §§9.2–9.4, §9.7, §10.1, note 10.1 and §§11.2–11.3",
+  "t5.b12.texto":
+    "The danger of instability and divergence arises <strong>when the following three elements "
+    + "are combined</strong>, and not before:",
+  "t5.b12.cab": "<th>Element</th><th>What it is</th>",
+  "t5.b12.i1":
+    "<td><strong>Function approximation</strong></td>"
+    + "<td>A powerful, scalable way of generalising from a state space much larger than the "
+    + "memory and computation available (for instance, linear approximation or neural networks)</td>",
+  "t5.b12.i2":
+    "<td><em>Bootstrapping</em></td>"
+    + "<td>Update targets that <strong>include existing estimates</strong> —as in DP or TD— rather "
+    + "than relying only on actual rewards and complete returns, as in MC</td>",
+  "t5.b12.i3":
+    "<td><strong>Off-policy training</strong></td>"
+    + "<td>Training on a distribution of transitions <strong>other</strong> than that produced by "
+    + "the target policy. <strong>Sweeping through the state space and updating all states "
+    + "uniformly, as in DP, does not respect the target policy and is an example of off-policy "
+    + "training</strong></td>",
+  "t5.b12.aviso1":
+    "The third one usually surprises and it is literal from the book: <strong>DP is "
+    + "off-policy</strong>. No separate behaviour policy is needed to be off-policy; it is enough to "
+    + "update the states with a distribution that is not the one the target policy generates.",
+  "t5.b12.texto2":
+    "<strong>If any two elements of the deadly triad are present, but not all three, instability "
+    + "can be avoided.</strong> So the natural thing is to ask which one can be given up. Not "
+    + "function approximation: scaling is needed, and aggregation or nonparametric methods are too "
+    + "weak or too expensive —least-squares methods such as LSTD are of quadratic complexity and "
+    + "therefore too expensive for large problems—. <em>Bootstrapping</em> can be given up, but at "
+    + "a cost in computational and data efficiency, and it is too valuable. That leaves "
+    + "<strong>off-policy</strong>, and there the book gives the concrete recipe for model-free RL: "
+    + "<strong>use SARSA instead of Q-learning</strong>. Which is exactly what the control table "
+    + "says, where linear SARSA is “(YES)” and linear Q-learning is “NO”.",
+  "t5.b12.texto3":
+    "The Spanish lecture deck calls these three “<strong>instability inducers</strong>” "
+    + "(<em>inductores de inestabilidad</em>), and that is the term the Spanish version of this "
+    + "page uses. In the book and in the second deck they are called “<strong>the deadly "
+    + "triad</strong>”; it is the same trio, and this English version uses the book’s name because "
+    + "it is the one you will find in the literature. It is worth recognising both labels, because "
+    + "the exam and the bibliography may use either.",
+  "t5.b12.aviso2":
+    "Careful not to read the control table as if control added danger: the book insists that "
+    + "<strong>the danger comes neither from control nor from generalised policy iteration</strong>. "
+    + "The instability is already there in the prediction case, whenever the three elements are "
+    + "present. And <strong>it does not come from learning or from not knowing the environment "
+    + "either</strong>, because it shows up just as strongly in planning methods such as dynamic "
+    + "programming, where the environment is completely known.",
+  "t5.b12.avisoFuente":
+    "<strong>The two convergence tables are not from Sutton &amp; Barto.</strong> Nowhere in the "
+    + "book is there a tabular / linear / nonlinear table crossed with on- and off-policy. They come "
+    + "from <strong>David Silver’s UCL lecture slides</strong>, which the course deck itself declares "
+    + "as its second source. What the book does have is the evidence behind each cell, scattered "
+    + "over four chapters, and that is what module 6 puts back together.",
+  "t5.b12.modulo":
+    "→ module 6: switch the three elements of the triad on and off and see which cell you land "
+    + "in, with the book citation that supports it.",
+
+  /* --- MÓDULO 6 (cabecera en HTML) --------------------------------------- */
+  "t5.m6.etiqueta": "MODULE 6",
+  "t5.m6.h2": "The two tables, cell by cell",
+  "t5.m6.fuente":
+    "Convergence tables from <strong>David Silver’s UCL lecture slides</strong> (declared as a "
+    + "source in the course deck), <strong>not</strong> from Sutton &amp; Barto. Evidence per cell: "
+    + "S&amp;B §9.2 (p. 222), §9.3 (p. 224), §9.4 (pp. 227-230), §9.7 (p. 250), §10.1 (p. 266), "
+    + "bibliographical note 10.1 (p. 278), §11.2 (pp. 282-285), §11.3 (pp. 286-287)",
+
+  /* --- B13 · control: de v a q ------------------------------------------- */
+  "t5.b13.h2": "Control: from \\(v\\) to \\(q\\)",
+  "t5.b13.fuente": "Sutton &amp; Barto, §10.1, equations (10.1) to (10.3)",
+  "t5.b13.texto":
+    "The extension to action values is direct: where before there were examples \\(S_t \\mapsto "
+    + "U_t\\), now there are examples \\(S_t,A_t \\mapsto U_t\\), and the target \\(U_t\\) can be "
+    + "any approximation of \\(q_\\pi(S_t,A_t)\\) —the full Monte Carlo return, or any of the "
+    + "\\(n\\)-step SARSA returns—. The answer to the exercise on the slide is these four lines:",
+  "t5.b13.ecuacion":
+    "\\[ \\hat q(S,A,w) \\approx q_\\pi(S,A), \\qquad J(w) = \\mathbb E_\\pi\\big[\\big(q_\\pi(S,A)-"
+    + "\\hat q(S,A,w)\\big)^2\\big] \\]"
+    + "\\[ -\\tfrac12\\nabla_w J(w) = \\mathbb E_\\pi\\big[\\big(q_\\pi(S,A)-\\hat q(S,A,w)\\big)"
+    + "\\nabla_w \\hat q(S,A,w)\\big] \\]"
+    + "\\[ \\Delta w = \\alpha\\big(q_\\pi(S,A)-\\hat q(S,A,w)\\big)\\,\\nabla_w \\hat q(S,A,w) "
+    + "\\qquad\\text{(the sample version)} \\]",
+  "t5.b13.erratum":
+    "On the lecture slide the third line appears <strong>without the \\(\\mathbb E_\\pi\\)</strong>, "
+    + "whereas the analogous line of the state-value slide does carry it. As written, it equates the "
+    + "exact gradient with its sample estimate, which are two different things: the last line is "
+    + "the sample one, and that is why it carries \\(\\alpha\\) and no expectation.",
+  "t5.b13.texto2":
+    "In the linear case, \\(\\hat q(s,a,w) \\doteq w^\\top x(s,a)\\), with a feature vector "
+    + "<strong>for each state–action pair</strong>. And to do control this has to be coupled with "
+    + "policy improvement: if the action set is <strong>discrete and not too large</strong>, "
+    + "\\(\\hat q(S_t,a,w_t)\\) is computed for each available action, \\(A^*_t = \\arg\\max_a "
+    + "\\hat q(S_t,a,w_t)\\) is taken and the policy is made \\(\\varepsilon\\)-greedy with respect "
+    + "to that.",
+  "t5.b13.ecuacion2":
+    "\\[ \\hat q(s,a,w) \\doteq w^\\top x(s,a) = \\sum_{i=1}^{d} w_i\\,x_i(s,a) \\]",
+  "t5.b13.aviso":
+    "And here the book sets an explicit limit worth hearing before Unit 6: with <strong>continuous "
+    + "actions</strong> or very large discrete sets, <strong>there is no closed-form solution</strong>; "
+    + "it is an open research topic. That is the gap through which policy gradient enters.",
+
+  /* --- B14 · SARSA semi-gradiente y la línea que la separa de Q-learning - */
+  "t5.b14.h2": "Semi-gradient SARSA, and the line that changes for Q-learning",
+  "t5.b14.fuente":
+    "Sutton &amp; Barto, §10.1 (the <em>Episodic Semi-gradient Sarsa</em> box) and §16.5, "
+    + "equation (16.3)",
+  "t5.b14.caja":
+    "Episodic semi-gradient SARSA, for estimating q̂ ≈ q<sub>*</sub>\n"
+    + "\n"
+    + "Input: a differentiable action-value parameterization q̂ : S × A × R^d → R\n"
+    + "Parameters: step size α &gt; 0, small exploration ε &gt; 0\n"
+    + "Initialise the weights w ∈ R^d arbitrarily (e.g. w = 0)\n"
+    + "\n"
+    + "Loop for each episode:\n"
+    + "    S, A ← initial state and action of the episode (e.g. ε-greedy)\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Take action A; observe R, S′\n"
+    + "        If S′ is terminal:\n"
+    + "            w ← w + α[R − q̂(S,A,w)] ∇q̂(S,A,w)\n"
+    + "            go to the next episode\n"
+    + "        Choose A′ as a function of q̂(S′,·,w)   (e.g. ε-greedy)\n"
+    + "        w ← w + α[R + γ q̂(S′,A′,w) − q̂(S,A,w)] ∇q̂(S,A,w)\n"
+    + "        S ← S′\n"
+    + "        A ← A′",
+  "t5.b14.texto":
+    "A detail that gets lost when summarising and must be respected when implementing: "
+    + "<strong>the terminal case has its own line</strong>, without the \\(\\gamma\\hat q(S',A',w)\\) "
+    + "term. It is the same condition \\(\\hat v(\\text{terminal},w)=0\\) of the prediction block, "
+    + "written for \\(q\\).",
+  "t5.b14.texto2":
+    "The next slide states the exercise and leaves <strong>the screen blank</strong>: “Identify the "
+    + "lines that differ from SARSA and define what they would be for Q-learning”. "
+    + "<strong>Two</strong> differ, and it is really a single idea. The line “Choose \\(A'\\)” "
+    + "<strong>ceases to exist as the choice of the action to execute</strong>: in Q-learning that "
+    + "action is not taken, it is only used for the target. And the target goes from "
+    + "\\(\\hat q(S',A',w)\\) —the action <strong>actually chosen</strong> by the behaviour policy— "
+    + "to \\(\\max_a \\hat q(S',a,w)\\).",
+  "t5.b14.ecuacion":
+    "\\[ \\text{SARSA:}\\quad w \\leftarrow w + \\alpha\\big[R + \\gamma\\,\\hat q(S',A',w) - "
+    + "\\hat q(S,A,w)\\big]\\nabla\\hat q(S,A,w) \\]"
+    + "\\[ \\text{Q-learning:}\\quad w \\leftarrow w + \\alpha\\big[R + \\gamma\\,\\max_a \\hat q(S',a,w) "
+    + "- \\hat q(S,A,w)\\big]\\nabla\\hat q(S,A,w) \\]",
+  "t5.b14.texto3":
+    "That \\(\\max\\) is what makes the method <strong>off-policy</strong>, and therefore what adds "
+    + "the <strong>third element</strong> of the triad from B12. In the linear case, with "
+    + "\\(\\nabla\\hat q(S,A,w) = x(S,A)\\), both rules are written \\(\\Delta w = "
+    + "\\alpha\\,\\delta\\,x(S,A)\\), with the corresponding \\(\\delta\\).",
+  "t5.b14.erratum":
+    "The SARSA slide has <strong>two</strong> images: the pseudocode box and, <strong>underneath it "
+    + "in the stacking order</strong>, the formula \\(\\Delta w = \\alpha[r+\\gamma\\hat q(s',a',w)-"
+    + "\\hat q(s,a,w)]\\,x(s,a)\\), which the box covers completely. When projected <strong>that "
+    + "formula is never seen</strong>, and it is the <strong>only occurrence of \\(x(s,a)\\) in the "
+    + "whole reference deck</strong>. The visible version is in the second deck. It is examinable "
+    + "notation: learn it from here.",
+  "t5.b14.aviso":
+    "And a point about convergence that the control table sums up with a parenthesis: "
+    + "<strong>with a constant policy</strong>, linear semi-gradient SARSA(0) converges just as TD(0) "
+    + "does and with the same kind of bound. With \\(\\varepsilon\\)-greedy selection —that is, with "
+    + "the policy changing— <strong>it does not converge in the usual sense, but it enters a bounded "
+    + "region near the best solution</strong>. That is exactly the “(YES) ➜ close, but not still” "
+    + "of the slide, and the reference is Gordon (1996a, 2001), in bibliographical note 10.1 of "
+    + "the book.",
+
+  /* --- B14b · trazas de elegibilidad con aproximación ------------------- */
+  "t5.b14b.h2": "Eligibility traces with function approximation: \\(z_t\\) has dimension \\(d\\)",
+  "t5.b14b.fuente":
+    "Sutton &amp; Barto, Chapter 12 — material of Unit 4 (part 3), outside this unit",
+  "t5.b14b.procedencia":
+    "A note on provenance: <strong>this is not Unit 5 material</strong>. Eligibility traces belong "
+    + "to <strong>Unit 4 (part 3)</strong> and to <strong>Chapter 12</strong> of the book, which is "
+    + "outside this unit. They are here for one concrete reason: the practical problem of the final "
+    + "exam asks for <strong>\\(x(s,a)\\) and the traces in the same statement</strong>, and "
+    + "\\(x(s,a)\\) is indeed from this unit. The full development —the frequency/recency dilemma, "
+    + "the \\(\\lambda\\)-return, forward-view TD(λ) and the equivalence of the two views— is on the "
+    + "<a href=\"tema4b.html#m2\">second page of Unit 4</a> and <strong>is not repeated here</strong>.",
+  "t5.b14b.texto":
+    "In the tabular case, the trace was incremented by <strong>1</strong> in the cell of the "
+    + "visited pair and faded in the others. That <strong>1</strong> is not an arbitrary value: the "
+    + "Unit 4 slide says that <strong>it is the gradient of the value function in the case of linear "
+    + "approximation with a <em>one-hot</em> encoding of the states</strong>. It is exactly the "
+    + "argument of the tabular-case slide —the tabular case <strong>is</strong> linear approximation "
+    + "with <em>one-hot</em>— told the other way round. And read that way, the generalisation is "
+    + "immediate: <strong>where there was a 1, the gradient goes</strong>.",
+  "t5.b14b.ecuacion":
+    "\\[ z_{-1} \\doteq 0, \\qquad z_t \\doteq \\gamma\\lambda\\,z_{t-1} + \\nabla\\hat q(S_t,A_t,w_t) "
+    + "\\;=\\; \\gamma\\lambda\\,z_{t-1} + x(S_t,A_t), \\qquad w_{t+1} \\doteq w_t + "
+    + "\\alpha\\,\\delta_t\\,z_t \\]",
+  "t5.b14b.texto2":
+    "From this comes the only thing to memorise from this block: <strong>\\(z_t\\) lives in weight "
+    + "space</strong>. It has <strong>the same dimension as \\(w\\)</strong>, that is \\(d\\), and "
+    + "<strong>not</strong> \\(|\\mathcal S|\\times|\\mathcal A|\\). With function approximation "
+    + "there is no cell per state–action pair: there are \\(d\\) weights, and the trace carries "
+    + "<strong>one number per weight</strong>, saying how much that weight contributed to what has "
+    + "just been experienced. If in the exam you write a trace the size of the table, you have "
+    + "gone back to Unit 4.",
+  "t5.b14b.texto3":
+    "Two ways of accumulating the visit, the same as in the tabular case. The "
+    + "<strong>accumulating</strong> trace adds the gradient, \\(z_t = \\gamma\\lambda z_{t-1} + "
+    + "x(S_t,A_t)\\): if a component repeats, its trace goes from \\(1\\) to "
+    + "\\(1+\\gamma\\lambda\\). The <strong>replacing</strong> trace fades first and then "
+    + "<strong>sets to 1</strong> the active components, so a repeated component stays at 1. The "
+    + "replacing trace is defined for <strong>binary features</strong> —the <em>tile coding</em> "
+    + "case— and is the one used with tiles; with real-valued features, such as those of the "
+    + "example below, the applicable one is the <strong>accumulating</strong> trace.",
+  "t5.b14b.texto4":
+    "Two implementation details that are also conceptual details. One: <strong>the trace is reset "
+    + "to zero at the start of every episode</strong>; it carries no credit from one episode to the "
+    + "next, because the previous one is over. Two: with <strong>\\(\\lambda = 0\\)</strong> the "
+    + "recurrence collapses to \\(z_t = x(S_t,A_t)\\) and the weight update is \\(w \\leftarrow w + "
+    + "\\alpha\\delta_t\\,x(S_t,A_t)\\), which is <strong>exactly</strong> the one-step algorithm of "
+    + "B14. Not similar: the same, weight by weight.",
+  "t5.b14b.ejemploTitulo": "Worked in the style of the exam",
+  "t5.b14b.ejemploIntro":
+    "A robot navigating towards a goal. The observation is <strong>six</strong> variables "
+    + "—\\(x\\) position, \\(y\\) position, minimum distance to an obstacle, bearing of the obstacle, "
+    + "distance to the goal and bearing of the goal— and there are <strong>three</strong> actions: "
+    + "move forward (\\(A_0\\)), turn 90° left (\\(A_1\\)) and turn 90° right (\\(A_2\\)). This is "
+    + "the evolution of the observation, and there is no other data:",
+  "t5.b14b.tablaObsCab":
+    "<th>Variable</th><th>\\(t=0\\)</th><th>\\(t=1\\)</th><th>\\(t=2\\)</th><th>\\(t=3\\)</th>",
+  "t5.b14b.obs1": "<td>\\(x_0\\) (\\(x\\) position)</td><td>2</td><td>3</td><td>3</td><td>3</td>",
+  "t5.b14b.obs2": "<td>\\(x_1\\) (\\(y\\) position)</td><td>2</td><td>2</td><td>2</td><td>3</td>",
+  "t5.b14b.obs3": "<td>\\(x_2\\) (distance to obstacle)</td><td>2</td><td>2</td><td>2</td><td>1</td>",
+  "t5.b14b.obs4": "<td>\\(x_3\\) (bearing of obstacle)</td><td>0</td><td>0</td><td>0</td><td>0</td>",
+  "t5.b14b.obs5": "<td>\\(x_4\\) (distance to goal)</td><td>4.2</td><td>3.6</td><td>3.6</td><td>2.8</td>",
+  "t5.b14b.obs6": "<td>\\(x_5\\) (bearing of goal)</td><td>45</td><td>33.7</td><td>33.7</td><td>45</td>",
+  "t5.b14b.ejemploXsa":
+    "<strong>Step 1: build \\(x(s,a)\\).</strong> The six variables go into the <strong>block of the "
+    + "action taken</strong> and the other two blocks are set to <strong>zero</strong>. Three actions "
+    + "× six variables ⟹ <strong>\\(d = 18\\) weights</strong>, stored as a vector of 18 or as a "
+    + "\\(3\\times 6\\) matrix, one row per action. And the traces, <strong>exactly the same: "
+    + "18</strong>. That is the answer to the two items asking about dimensions and storage.",
+  "t5.b14b.ejemploAcciones":
+    "<strong>Step 2: read the actions off the table.</strong> From \\(t=0\\) to \\(t=1\\) the "
+    + "position changes (\\(x_0: 2\\to 3\\)) and the distance to the goal drops: the robot "
+    + "<strong>moved forward</strong>, \\(A_0\\). From \\(t=1\\) to \\(t=2\\) <strong>not one of the "
+    + "six variables changes</strong>: the bearings are relative to north in a <strong>static</strong> "
+    + "reference frame, so turning changes none of them ⟹ it was a <strong>turn</strong>. From "
+    + "\\(t=2\\) to \\(t=3\\) the position changes again: it <strong>moved forward</strong> again, "
+    + "\\(A_0\\).",
+  "t5.b14b.ejemploAviso":
+    "From the text one deduces that at \\(t=1\\) there was a <strong>turn</strong>, but "
+    + "<strong>not which of the two</strong>: that is fixed by the figure in the exam statement. Here "
+    + "\\(A_1\\) is taken, <strong>and said so</strong>, because the result does not depend on which "
+    + "it is: it changes <strong>which block</strong> the six numbers fall into, not their value, nor "
+    + "the number of nonzero components, nor the dimension of the trace.",
+  "t5.b14b.ejemploTraza":
+    "<strong>Step 3: the recurrence.</strong> With \\(\\gamma = 0.9\\) and \\(\\lambda = 0.5\\), "
+    + "\\(\\gamma\\lambda = 0.45\\). <strong>Accumulating</strong> trace —the features are "
+    + "real-valued— and \\(z = 0\\) before starting."
+    + "<br><br>"
+    + "<strong>First update</strong> (the one the statement calls \\(t=1\\)): "
+    + "\\(z = 0.45\\cdot 0 + x(S_0,A_0) = x(S_0,A_0)\\), that is the \\(A_0\\) block with the "
+    + "\\(t=0\\) column, \\((2,\\,2,\\,2,\\,0,\\,4.2,\\,45)\\), and <strong>zero</strong> in the "
+    + "\\(A_1\\) and \\(A_2\\) blocks."
+    + "<br><br>"
+    + "<strong>Second update</strong> (\\(t=2\\)): "
+    + "\\(z = 0.45\\cdot z_{\\text{previous}} + x(S_1,A_1)\\). The first term <strong>fades</strong> "
+    + "the \\(A_0\\) block: \\(0.45\\cdot(2,\\,2,\\,2,\\,0,\\,4.2,\\,45) = "
+    + "(0.9,\\,0.9,\\,0.9,\\,0,\\,1.89,\\,20.25)\\). The second <strong>adds</strong> the \\(t=1\\) "
+    + "column into the block of the turn: \\((3,\\,2,\\,2,\\,0,\\,3.6,\\,33.7)\\).",
+  "t5.b14b.tablaTrazaCab":
+    "<th>Block</th><th>\\(x_0\\)</th><th>\\(x_1\\)</th><th>\\(x_2\\)</th><th>\\(x_3\\)</th>"
+    + "<th>\\(x_4\\)</th><th>\\(x_5\\)</th>",
+  "t5.b14b.traza1":
+    "<td>\\(A_0\\) — forward, taken at \\(t=0\\)</td><td>0.9</td><td>0.9</td><td>0.9</td><td>0</td>"
+    + "<td>1.89</td><td>20.25</td>",
+  "t5.b14b.traza2":
+    "<td>\\(A_1\\) — the turn taken at \\(t=1\\)</td><td>3</td><td>2</td><td>2</td><td>0</td>"
+    + "<td>3.6</td><td>33.7</td>",
+  "t5.b14b.traza3":
+    "<td>\\(A_2\\) — not taken</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td>",
+  "t5.b14b.ejemploCierre":
+    "Eighteen numbers, ten of them nonzero, and <strong>not a single one indexed by state</strong>. "
+    + "Two more checks from the same statement, which come for free: the gradient at \\(t=2\\) is "
+    + "\\(\\nabla_w\\hat q(S_2,A_2,w) = x(S_2,A_2)\\), that is the \\(t=2\\) column in the \\(A_0\\) "
+    + "block —the action at \\(t=2\\) is moving forward, because the position changes at "
+    + "\\(t=3\\)—; and with <strong>all</strong> the weights initialised to 2, "
+    + "\\(\\hat q(S_2,A_2,w) = 2\\cdot(3+2+2+0+3.6+33.7) = 2\\cdot 44.3 = \\mathbf{88.6}\\).",
+  "t5.b14b.ejemploIndices":
+    "Careful with the numbering, because the exam statement and the book do not agree. The "
+    + "statement calls the <strong>first</strong> and <strong>second</strong> updates “\\(t=1\\)” and "
+    + "“\\(t=2\\)”; in the book’s notation those same traces are \\(z_0\\) and \\(z_1\\), because "
+    + "\\(z_t\\) is defined with \\(\\nabla\\hat q(S_t,A_t,w_t)\\) and \\(z_{-1}=0\\). <strong>The "
+    + "numbers are the same</strong>; what changes is the index. Here the statement’s numbering is "
+    + "used, which is the one you will see in the exam.",
+  "t5.b14b.modulo":
+    "→ module 5: raise \\(\\lambda\\) above 0 on Mountain Car and watch what changes in the curves "
+    + "—and what does not.",
+
+  /* --- MÓDULO 5 (cabecera en HTML) --------------------------------------- */
+  "t5.m5.etiqueta": "MODULE 5",
+  "t5.m5.h2": "The algorithm in the box, running",
+  "t5.m5.fuente":
+    "Sutton &amp; Barto, §10.1, eqs. (10.1)–(10.3), the <em>Episodic Semi-gradient Sarsa</em> "
+    + "box, Example 10.1 with Figures 10.1 and 10.2; §16.5, eq. (16.3); bibliographical note 10.1 "
+    + "(Gordon)",
+
+  /* --- B15 · batch RL ---------------------------------------------------- */
+  "t5.b15.h2": "<em>Batch RL</em>: reusing experience",
+  "t5.b15.fuente":
+    "Sutton &amp; Barto, §6.3 (batch updating, tabular case) and §9.8 (LSTD), eqs. (9.20)–(9.22); "
+    + "the chain of reasoning is from David Silver’s lecture slides",
+  "t5.b15.texto":
+    "The slide asks: “What is the <strong>life cycle</strong> of the experience that reaches us?”. "
+    + "The answer —not in the reference deck, but in the second one— is short: <strong>each data "
+    + "point is used exactly once</strong>. A transition is generated, one update is made, and it is "
+    + "thrown away. Hence the two motivations of the block: <strong>data efficiency</strong> "
+    + "—reusing what has already been experienced— and <strong>correlations</strong>, because "
+    + "consecutive samples of a trajectory are not independent.",
+  "t5.b15.texto2":
+    "The idea of least-squares prediction is: keep a set of experience \\(\\mathcal D\\) and look "
+    + "for the weights that minimise the error over <strong>all</strong> of \\(\\mathcal D\\), not "
+    + "over the last sample. And <strong>experience replay</strong> is the incremental way of doing "
+    + "it: sample at random from \\(\\mathcal D\\) and apply the usual rule; in the limit, that "
+    + "converges to the least-squares solution.",
+  "t5.b15.ecuacion":
+    "\\[ \\mathcal D = \\big\\{\\langle s_1, v_1^\\pi\\rangle, \\dots, \\langle s_T, v_T^\\pi\\rangle\\big\\}, "
+    + "\\qquad LS(w) = \\sum_{t=1}^{T}\\big(v_t^\\pi - \\hat v(s_t,w)\\big)^2, \\qquad w^\\pi = "
+    + "\\arg\\min_w LS(w) \\]",
+  "t5.b15.texto3":
+    "In the linear case the optimality condition is that the expected increment be zero, and "
+    + "from there comes the normal equation. <strong>Both decks get this far and stop</strong>, even "
+    + "though the text promises that “we can compute the value of \\(w\\) directly”. The closed-form "
+    + "solution is this:",
+  "t5.b15.ecuacion2":
+    "\\[ \\mathbb E_{\\mathcal D}[\\Delta w] = 0 \\;\\Longleftrightarrow\\; \\alpha\\sum_{t=1}^{T} "
+    + "x(s_t)\\big(v_t^\\pi - x(s_t)^\\top w\\big) = 0 \\;\\Longrightarrow\\; w = "
+    + "\\Big(\\sum_{t=1}^{T} x(s_t)x(s_t)^\\top\\Big)^{-1}\\sum_{t=1}^{T} x(s_t)\\,v_t^\\pi \\]",
+  "t5.b15.texto4":
+    "Inverting that matrix costs \\(O(d^3)\\) in general, with \\(d\\) the number of weights. But "
+    + "it is a <strong>sum of outer products</strong>, and its inverse can be updated incrementally "
+    + "with the <strong>Sherman–Morrison formula</strong>, which only involves matrix–vector and "
+    + "vector–vector products: \\(O(d^2)\\). Compare with the \\(O(d)\\) per step of semi-gradient "
+    + "TD(0).",
+  "t5.b15.erratum":
+    "The lecture slide writes “Shermann-Morrison” with two “n”: it is "
+    + "<strong>Sherman–Morrison</strong>. And it calls \\(N\\) what in the rest of this page and in "
+    + "the book is \\(d\\), the number of weights.",
+  "t5.b15.texto5":
+    "What the book has of this is called <strong>LSTD</strong> (<em>Least-Squares TD</em>, §9.8): "
+    + "estimate \\(A\\) and \\(b\\) with the sample sums and compute the TD fixed point directly, "
+    + "\\(w_t = \\hat A_t^{-1}\\hat b_t\\). It is the <strong>most data-efficient</strong> form of "
+    + "linear TD(0), and it is more expensive to compute. And it has three caveats that are usually "
+    + "omitted: it needs no \\(\\alpha\\), but <strong>it does need</strong> a regularisation "
+    + "\\(\\varepsilon\\) —too small and the sequence of inverses varies wildly, too large and "
+    + "learning is slowed—; <strong>it never forgets</strong>, which is a problem when the target "
+    + "policy changes, as it does in control; and so, in control applications, LSTD usually needs "
+    + "some added mechanism to induce forgetting, whereby the initial advantage of having no step "
+    + "size fades away.",
+  "t5.b15.aviso1":
+    "Careful with the name: in this block, “experience replay” operates on <strong>state–value</strong> "
+    + "pairs \\(\\langle s, v^\\pi\\rangle\\), as if \\(v^\\pi\\) were known —it is Silver’s "
+    + "exposition, which closes the circle with least squares—. In DQN, two blocks further down, it "
+    + "operates on <strong>transitions</strong> \\((s,a,r,s')\\), and the value is not known: it is "
+    + "bootstrapped. <strong>They are two different things with the same name</strong>, and neither "
+    + "deck bridges the gap. In practice, what is stored in the dataset above is \\(G_t\\) (Monte "
+    + "Carlo) or the TD target, not \\(v^\\pi\\).",
+  "t5.b15.aviso2":
+    "And the warning from B11, now that it applies: <strong>least squares does not cure "
+    + "instability</strong>. Example 11.1 of the book computes at every iteration the \\(w\\) that "
+    + "minimises \\(\\overline{VE}\\) exactly and the sequence <strong>diverges</strong> all the same. "
+    + "Least-squares methods such as LSTD are, moreover, of quadratic complexity, and that is why "
+    + "the book rules them out as a general solution to the problem of the triad.",
+  "t5.b15.enlaceT4":
+    "Batch updating in the <strong>tabular</strong> case already came up in Unit 4, with the A-B "
+    + "example: <strong>batch MC minimises the error on the data seen, batch TD(0) gets right the "
+    + "Markov model that generated them</strong>. It is in <a href=\"tema4.html#m2\">module 2 of "
+    + "Unit 4</a>, and is not repeated here.",
+
+  /* --- B16 · DQN --------------------------------------------------------- */
+  "t5.b16.h2": "DQN: semi-gradient Q-learning plus three pieces of engineering",
+  "t5.b16.fuente":
+    "Sutton &amp; Barto, §16.5 (case study, no pseudocode) · Mnih et al., <em>Nature</em> 518, "
+    + "529-533 (2015)",
+  "t5.b16.texto":
+    "First, so as not to get lost: <strong>DQN is not a new algorithm</strong>. It is "
+    + "<strong>semi-gradient Q-learning</strong> with a deep convolutional network as approximator, "
+    + "plus three engineering additions. The base update is the one from block B14, with the "
+    + "network computing \\(\\hat q\\) and the gradient by backpropagation:",
+  "t5.b16.ecuacion":
+    "\\[ w_{t+1} = w_t + \\alpha\\big[R_{t+1} + \\gamma\\max_a \\hat q(S_{t+1},a,w_t) - "
+    + "\\hat q(S_t,A_t,w_t)\\big]\\nabla\\hat q(S_t,A_t,w_t) \\]",
+  "t5.b16.texto2":
+    "And there is a concrete reason for it to be Q-learning and not SARSA: <strong>experience "
+    + "replay requires an off-policy algorithm</strong>. When sampling loose transitions from a "
+    + "buffer, one is no longer following a trajectory connected to the current policy, and only "
+    + "an off-policy method can learn from that. Being model-free and off-policy made Q-learning "
+    + "the natural choice.",
+  "t5.b16.cab": "<th>Piece</th><th>What problem it solves</th>",
+  "t5.b16.f1":
+    "<td><strong>Experience replay</strong>: each transition \\((S_t,A_t,R_{t+1},S_{t+1})\\) goes "
+    + "into a buffer, and at each step a minibatch of updates is made with transitions "
+    + "<strong>sampled uniformly</strong> from it</td>"
+    + "<td>Three things: <strong>data efficiency</strong> (each experience is reused many times), "
+    + "<strong>variance</strong> (successive updates stop being correlated with one another) and "
+    + "<strong>one</strong> source of instability (the dependence of successive experiences on the "
+    + "current weights is broken)</td>",
+  "t5.b16.f2":
+    "<td><strong>Target network</strong>: every \\(C\\) updates the weights are copied to a "
+    + "duplicate network, which is kept <strong>frozen</strong> for the next \\(C\\) and is the one "
+    + "producing the target. With \\(\\tilde q\\) the output of the frozen network, the target is "
+    + "\\(R_{t+1} + \\gamma\\max_a \\tilde q(S_{t+1},a,w^-)\\)</td>"
+    + "<td>That <strong>the target depends on the very parameters being updated</strong>, which is "
+    + "the problem of <em>bootstrapping</em> with function approximation —the one from B4 and B11— "
+    + "and what can lead to oscillation or divergence</td>",
+  "t5.b16.f3":
+    "<td><strong>Error clipping</strong> to the interval \\([-1,1]\\), and <strong>normalised reward "
+    + "signal</strong> to \\(+1\\) / \\(0\\) / \\(-1\\) according to whether the game score goes up, "
+    + "stays or goes down</td>"
+    + "<td>That a single \\(\\alpha\\) works across 49 games with different score ranges, and that "
+    + "a huge error does not blow up the update</td>",
+  "t5.b16.aviso1":
+    "<strong>Do not mix up the first two.</strong> The lecture slide attributes both benefits to "
+    + "experience replay —breaking the correlation between samples and the correlation between "
+    + "target and estimated value— and does not mention the target network. The book separates "
+    + "them: replay fixes the correlation <strong>between successive samples</strong> and data "
+    + "efficiency; the target depending on \\(w\\) is fixed by <strong>the target network</strong>. "
+    + "Two problems and two solutions.",
+  "t5.b16.texto3":
+    "The network: <strong>three hidden convolutional layers</strong>, then <strong>one fully "
+    + "connected hidden layer</strong>, then the output layer. The three convolutional layers "
+    + "produce 32 feature maps of 20×20, 64 of 9×9 and 64 of 7×7, with the rectifier \\(\\max(0,x)\\) "
+    + "as activation; the 3,136 units of the third (64×7×7) connect to <strong>512</strong> fully "
+    + "connected units, and those to <strong>18</strong> output units, one per possible action in an "
+    + "Atari game. The input is the <strong>last four frames</strong> preprocessed to 84×84 luminance "
+    + "values, that is 84×84×4: the frames are stacked because the complete state of many games is "
+    + "not observable in a single image, and stacking four makes them <strong>more Markovian</strong> "
+    + "—which is exactly the answer to the third question of B5—.",
+  "t5.b16.texto4":
+    "Each output is the estimated action value of the corresponding pair; since the number of "
+    + "valid actions ranged from 4 to 18 depending on the game, not every output had a function in "
+    + "every game. It helps to think of the network as <strong>18 separate networks</strong> sharing "
+    + "the first layers: the backpropagation of an update applies only to the output of the action "
+    + "that was taken.",
+  "t5.b16.texto5":
+    "DQN learned a different policy for each of <strong>49 games</strong> of the Atari 2600 —the "
+    + "weights were reinitialised for each game— but with <strong>the same input, the same "
+    + "architecture and the same hyperparameters</strong> in all of them. Each game, 50 million "
+    + "frames of interaction, about 38 days of experience. It played better than the best previous "
+    + "RL system on all but 6, and better than the professional human player on 22; taking 75% of "
+    + "the human score as “human level”, it reached or exceeded that level in <strong>29</strong> "
+    + "games. And in the <strong>ablation</strong> —experience replay and target network, with the "
+    + "four combinations of present or absent, on 5 of the games— <strong>each of the two on its own "
+    + "improved performance significantly, and together they improved it dramatically</strong>.",
+  "t5.b16.aviso2":
+    "Three figures that <strong>are not in the book</strong> and must be cited from the paper if "
+    + "given: the size of the replay buffer, the value of \\(C\\) and the remaining hyperparameters "
+    + "—the book says literally that they were chosen “by informal search” and does not publish "
+    + "them—. And the “less noisy progress indicators” of the lecture slide <strong>are not in §16.5 "
+    + "either</strong>: they are Figure 2 of the paper, where the stable indicator is <strong>the "
+    + "average estimated action value on a fixed set of held-out states</strong>, not the average "
+    + "score per episode. If cited, the source is Mnih et al. (2015).",
+  "t5.b16.aviso3":
+    "<strong>This block has no module, and that is a decision.</strong> What has to be understood "
+    + "about DQN —which piece solves which problem— can be read in the table above, and what it "
+    + "would take to <em>see</em> it is training a convolutional network for 50 million frames: "
+    + "that does not fit in a browser, and a toy version would teach something else. The mechanism "
+    + "that can be seen —the target depending on the weights being updated— is in <strong>module "
+    + "4</strong>, with two states and a single weight.",
+  "t5.b16.texto6":
+    "DQN showed that <strong>a single agent can learn the problem-specific features of each "
+    + "task</strong> and reach human-competitive skill on a range of tasks. It did not produce an "
+    + "agent that excelled at all of them at once —learning was separate for each game—, and in "
+    + "some games it stayed far below human level: the hardest ones for DQN, such as "
+    + "<em>Montezuma’s Revenge</em> —where it learned to play roughly like the random player—, "
+    + "require <strong>deep planning</strong>, which is something DQN is not designed for.",
+
+  /* --- B17 · el ítem examinable ------------------------------------------ */
+  "t5.b17.h2": "The exam item, and where each half comes from",
+  "t5.b17.fuente": "Sutton &amp; Barto, Chapter 12 (outside the scope of Unit 5)",
+  "t5.b17.texto":
+    "A practical warning, because this comes up in the final exam and <strong>straddles two "
+    + "units</strong>. The practical problem of the final asks, about a robot with three actions and "
+    + "linear approximation: how many weights are needed and how they are stored, the actions the "
+    + "agent took, \\(\\nabla_w \\hat q(S,A,w)\\) and \\(\\hat q(S,A,w)\\) at a given instant, "
+    + "<strong>the dimensions and storage of the eligibility traces</strong>, and the weights and "
+    + "traces at the next step. The construction of \\(x(s,a)\\) belongs to <strong>this</strong> "
+    + "unit —B13 and B14—; <strong>traces with function approximation</strong> belong to Unit 4 "
+    + "(part 3), and are worked out in <strong>B14b</strong>, with the full numerical example.",
+  "t5.b17.texto2":
+    "The items, and where each answer is. <strong>How many weights and how they are "
+    + "stored</strong>: B13 and B14, worked out with \\(d=18\\) in B14b. <strong>Which actions the "
+    + "agent took</strong>: read off the observation table, B14b. <strong>\\(\\nabla_w\\hat "
+    + "q(S,A,w)\\)</strong>: it is \\(x(S,A)\\), B6 and B14. <strong>\\(\\hat q(S,A,w)\\)</strong>: the "
+    + "inner product, with the number worked out in B14b. <strong>Dimensions and storage of the "
+    + "traces</strong>: B14b, and the answer is \\(d\\). <strong>The traces at the next step</strong>: "
+    + "the recurrence of B14b, solved step by step.",
+  "t5.b17.texto3":
+    "What does <strong>not</strong> come into this page, and is published: the frequency/recency "
+    + "dilemma of the traces, the \\(\\lambda\\)-return, forward-view TD(λ) and the equivalence "
+    + "between the two views. All of that is the <a href=\"tema4b.html#m2\">second page of Unit "
+    + "4</a> and Chapter 12 of the book. Here comes in <strong>exactly</strong> what the exam asks "
+    + "with function approximation, and nothing more.",
+  "t5.b17.aviso":
+    "And a detail worth not overlooking: <strong>the data of Figure 10.2 of the book —the Mountain "
+    + "Car learning curves— are not from one-step SARSA</strong>, they are from “semi-gradient "
+    + "SARSA(λ)”, from Chapter 12. The book itself says so in a footnote. Module 5 uses one-step "
+    + "semi-gradient SARSA, which is what this unit teaches, and that is why <strong>its curves do "
+    + "not exactly match</strong> the book’s.",
+
+  /* --- B18 · cierre ------------------------------------------------------ */
+  "t5.b18.h2": "What is left for Unit 6",
+  "t5.b18.fuente": "Sutton &amp; Barto, §10.1 (end) and Chapter 13",
+  "t5.b18.texto":
+    "The unit closes where the book sets the limit: with continuous actions or very large action "
+    + "sets, \\(\\arg\\max_a \\hat q(s,a,w)\\) stops being computable and <strong>there is no "
+    + "closed-form solution</strong>. The way out is to stop approximating the value and to "
+    + "<strong>approximate the policy directly</strong>, with its own parameter vector —which is "
+    + "\\(\\theta\\), the symbol this unit has been protecting—. That is Unit 6.",
+
+  /* --- A5 · ecuaciones clave --------------------------------------------- */
+  "t5.ecuaciones.h2": "Key equations of the unit",
+  "t5.ecuaciones.cab": "<th>Equation</th><th>What it says</th><th>Where it is used</th>",
+  "t5.ecuaciones.f1":
+    "<td>\\(\\overline{VE}(w) = \\sum_s \\mu(s)[v_\\pi(s)-\\hat v(s,w)]^2\\)</td>"
+    + "<td>The error being minimised, <strong>weighted by how much each state matters</strong></td>"
+    + "<td>B3, modules 1 and 3</td>",
+  "t5.ecuaciones.f2":
+    "<td>\\(\\mu(s) = \\eta(s)/\\sum_{s'}\\eta(s')\\)</td>"
+    + "<td>How much a state matters = the fraction of time spent in it</td>"
+    + "<td>B3, module 1</td>",
+  "t5.ecuaciones.f3":
+    "<td>\\(w_{t+1} = w_t + \\alpha[U_t - \\hat v(S_t,w_t)]\\nabla\\hat v(S_t,w_t)\\)</td>"
+    + "<td>The single rule of the unit: one target, one error, one gradient</td>"
+    + "<td>B4, every module</td>",
+  "t5.ecuaciones.f4":
+    "<td>\\(\\hat v(s,w) = w^\\top x(s)\\), \\(\\nabla\\hat v(s,w) = x(s)\\)</td>"
+    + "<td>In the linear case the gradient <strong>is</strong> the feature vector</td>"
+    + "<td>B6, modules 2 and 3</td>",
+  "t5.ecuaciones.f5":
+    "<td>\\(x(s)=e_s \\Rightarrow w_s \\leftarrow w_s + \\alpha[U_t-w_s]\\)</td>"
+    + "<td>The tabular case is linear approximation with <em>one-hot</em></td>"
+    + "<td>B7, module 2</td>",
+  "t5.ecuaciones.f6":
+    "<td>\\(\\alpha = 1/(\\tau m)\\)</td>"
+    + "<td>With \\(m\\) tilings there are \\(m\\) active features: \\(\\alpha\\) is divided by \\(m\\)</td>"
+    + "<td>B8, modules 2 and 5</td>",
+  "t5.ecuaciones.f7":
+    "<td>\\(w_{TD} = A^{-1}b\\)</td>"
+    + "<td>Linear TD(0) converges to a fixed point that is <strong>not</strong> the global optimum</td>"
+    + "<td>B10, module 3</td>",
+  "t5.ecuaciones.f8":
+    "<td>\\(\\overline{VE}(w_{TD}) \\le \\frac{1}{1-\\gamma}\\min_w\\overline{VE}(w)\\)</td>"
+    + "<td>How much worse TD can be than MC, asymptotically</td>"
+    + "<td>B10, module 3</td>",
+  "t5.ecuaciones.f9":
+    "<td>\\(w_{t+1} = (1+\\alpha(2\\gamma-1))w_t\\)</td>"
+    + "<td>Off-policy, the weights can grow geometrically for <strong>any</strong> \\(\\alpha>0\\)</td>"
+    + "<td>B11, module 4</td>",
+  "t5.ecuaciones.f10":
+    "<td>\\(\\hat q(s,a,w)=w^\\top x(s,a)\\), and \\(\\max_a\\) in place of \\(\\hat q(S',A',w)\\)</td>"
+    + "<td>Control: one feature vector per state–action pair; the \\(\\max\\) is what makes "
+    + "Q-learning off-policy</td>"
+    + "<td>B13, B14, module 5</td>",
+  "t5.ecuaciones.f11":
+    "<td>\\(z_t = \\gamma\\lambda z_{t-1} + x(S_t,A_t)\\), \\(w \\leftarrow w + \\alpha\\delta_t z_t\\)</td>"
+    + "<td>The trace carries <strong>one number per weight</strong>: dimension \\(d\\), not "
+    + "\\(|\\mathcal S|\\times|\\mathcal A|\\)</td>"
+    + "<td>B14b, and the trace control of module 5</td>",
+
+  /* --- A6 · errores frecuentes ------------------------------------------- */
+  "t5.errores.h2": "Common mistakes",
+  "t5.errores.cab": "<th>What people tend to say</th><th>What really happens</th>",
+  "t5.errores.f1":
+    "<td>“With more weights I will end up getting every state right”</td>"
+    + "<td>With genuine approximation <strong>it is not possible</strong> to be right everywhere: "
+    + "making one state more accurate invariably makes others less accurate. That is why \\(\\mu\\) "
+    + "is needed (§9.2). Check it in module 1</td>",
+  "t5.errores.f2":
+    "<td>“The TD update is gradient descent on the TD error”</td>"
+    + "<td><strong>It is not.</strong> It accounts for the effect of \\(w\\) on the estimate but "
+    + "ignores its effect on the target: it includes <strong>only part</strong> of the gradient. "
+    + "Hence the name <em>semi</em>-gradient (§9.3)</td>",
+  "t5.errores.f3":
+    "<td>“Linear TD(0) converges to the same place as MC, only more slowly”</td>"
+    + "<td>It converges to the <strong>TD fixed point</strong>, which is <strong>not</strong> the "
+    + "global optimum; the error can be up to \\(1/(1-\\gamma)\\) times the minimum (§9.4). Look at "
+    + "the two horizontal lines of module 3</td>",
+  "t5.errores.f4":
+    "<td>“One tiling is already <em>tile coding</em>”</td>"
+    + "<td>With a single tiling <strong>there is no coarse coding: there is state aggregation</strong> "
+    + "(§9.5.4). Set \\(m=1\\) in module 2</td>",
+  "t5.errores.f5":
+    "<td>“Wide receptive fields ⟹ I cannot approximate well”</td>"
+    + "<td>Width controls the <strong>initial generalisation</strong>; the final accuracy is "
+    + "controlled more by the <strong>total number</strong> of features (§9.5.3)</td>",
+  "t5.errores.f6":
+    "<td>“If I lower \\(\\alpha\\) enough, it will stop diverging”</td>"
+    + "<td><strong>No.</strong> The instability occurs for any \\(\\alpha>0\\), however small; "
+    + "\\(\\alpha\\) changes the speed, not the destination (§11.2). It is the secondary control of "
+    + "module 4</td>",
+  "t5.errores.f7":
+    "<td>“Batches or least squares fix the divergence”</td>"
+    + "<td><strong>No.</strong> Even taking at every step the \\(w\\) that minimises "
+    + "\\(\\overline{VE}\\) exactly, the sequence diverges (Example 11.1). And LSTD is "
+    + "\\(O(d^2)\\), which is why the book rules it out as a general solution</td>",
+  "t5.errores.f8":
+    "<td>“The eligibility trace has one cell per state–action pair”</td>"
+    + "<td><strong>No.</strong> With function approximation, \\(z_t\\) lives in weight space: "
+    + "<strong>dimension \\(d\\)</strong>. It is the exam item most often failed, and the worked "
+    + "example of B14b shows it with \\(d=18\\)</td>",
+
+  /* --- A7 · cierre --------------------------------------------------------- */
+  "t5.cierre.h2": "What to take away",
+  "t5.cierre.v1":
+    "With \\(d\\) weights and \\(|\\mathcal S|\\) states <strong>you cannot be right "
+    + "everywhere</strong>: module 1 shows it with 1000 states and 10 weights, and the value of each "
+    + "group turns out to be the mean of the true values <strong>weighted by \\(\\mu\\)</strong>, "
+    + "not the plain mean.",
+  "t5.cierre.v2":
+    "The tabular case <strong>is</strong> linear approximation with <em>one-hot</em> \\(x(s)\\), "
+    + "and there \\(\\min_w\\overline{VE}=0\\): in module 2, with one group per state, the error "
+    + "drops exactly to zero.",
+  "t5.cierre.v3":
+    "With \\(m\\) tilings there are <strong>exactly \\(m\\) active features</strong> for any state, "
+    + "and that is why \\(\\alpha\\) is divided by \\(m\\): with \\(\\alpha=1/m\\) the trained state "
+    + "reaches the target <strong>in a single step</strong>.",
+  "t5.cierre.v4":
+    "Monte Carlo and TD(0) <strong>do not converge to the same place</strong>: in module 3 the two "
+    + "asymptotes are computed exactly and drawn, and TD’s sits above.",
+  "t5.cierre.v5":
+    "The weights can <strong>diverge</strong>, and it is not \\(\\alpha\\)’s fault: in module 4, "
+    + "with \\(\\gamma>0.5\\) the growth factor exceeds 1 for any \\(\\alpha>0\\), and moving "
+    + "\\(\\alpha\\) only changes the slope.",
+  "t5.cierre.v6":
+    "Instability needs <strong>all three elements of the deadly triad at once</strong>; with two, "
+    + "it does not. In module 6, switching any one of them off changes the verdict of the cell.",
+  "t5.cierre.v7":
+    "In control, the only line separating SARSA from Q-learning is the target "
+    + "(\\(\\hat q(S',A',w)\\) versus \\(\\max_a\\hat q(S',a,w)\\)), and that is what adds the third "
+    + "element of the triad: in module 5 the two are switched on the same Mountain Car and the same "
+    + "seed.",
+  "t5.cierre.v8":
+    "The eligibility trace with function approximation <strong>has the dimension of "
+    + "\\(w\\)</strong>, not that of the table: in the worked example of B14b it is <strong>18 "
+    + "numbers</strong> for three actions and six variables, and in module 5 it is "
+    + "<strong>1944</strong>, the same as the weights. And with \\(\\lambda = 0\\) the algorithm is "
+    + "<strong>exactly</strong> the one-step one.",
+
+  /* --- A8 · glosario ------------------------------------------------------ */
+  "t5.glosario.h2": "Notation glossary of the unit",
+  "t5.glosario.cab": "<th>Symbol</th><th>Meaning</th><th>Note</th>",
+  "t5.glosario.f1":
+    "<td>\\(w\\)</td>"
+    + "<td>weight vector of the value approximation</td>"
+    + "<td><strong>Roman, never bold</strong>, as the course notation guide fixes it. The lecture "
+    + "deck mixes \\(w\\) and \\(\\mathbf w\\) with no criterion</td>",
+  "t5.glosario.f2":
+    "<td>\\(d\\)</td>"
+    + "<td>dimension of \\(w\\): number of weights</td>"
+    + "<td>The book and the second deck use \\(d\\); the reference deck writes \\(n\\) on one slide "
+    + "and \\(N\\) on another. Here always \\(d\\)</td>",
+  "t5.glosario.f3":
+    "<td>\\(x(s)\\), \\(x(s,a)\\)</td>"
+    + "<td>feature vector of the state / of the state–action pair</td>"
+    + "<td>Course notation guide. \\(x(s,a)\\) <strong>is never seen</strong> in the reference deck: "
+    + "it is covered up on the SARSA slide. It is projected in the second deck</td>",
+  "t5.glosario.f4":
+    "<td>\\(x_i(s)\\)</td>"
+    + "<td>\\(i\\)-th component of \\(x(s)\\)</td>"
+    + "<td>The sum is indexed with \\(i\\); the linear-approximation slide indexes it with \\(j\\)</td>",
+  "t5.glosario.f5":
+    "<td>\\(\\hat v(s,w)\\), \\(\\hat q(s,a,w)\\)</td>"
+    + "<td><strong>approximate</strong> state / action value</td>"
+    + "<td>Course notation guide. \\(\\hat v(\\text{terminal},w)=0\\) always</td>",
+  "t5.glosario.f6":
+    "<td>\\(v_\\pi\\), \\(q_\\pi\\), \\(v_*\\), \\(q_*\\)</td>"
+    + "<td><strong>true</strong> values</td>"
+    + "<td>No hat = true; hat = approximate. They are not mixed</td>",
+  "t5.glosario.f7":
+    "<td>\\(U_t\\)</td>"
+    + "<td>generic update target</td>"
+    + "<td>From the second deck and the book. <strong>The reference deck does not have it</strong>; "
+    + "it is needed to write MC and TD with a single formula</td>",
+  "t5.glosario.f8":
+    "<td>\\(\\mu(s)\\)</td>"
+    + "<td>on-policy state distribution</td>"
+    + "<td>From the second deck and the book, (9.2)-(9.3). <strong>The reference deck never defines "
+    + "the weighted objective</strong></td>",
+  "t5.glosario.f9":
+    "<td>\\(\\eta(s)\\)</td>"
+    + "<td>expected number of visits to \\(s\\) per episode</td>"
+    + "<td>Only appears in the computation of \\(\\mu\\), (9.2)</td>",
+  "t5.glosario.f10":
+    "<td>\\(\\overline{VE}(w)\\)</td>"
+    + "<td>mean squared value error, weighted by \\(\\mu\\)</td>"
+    + "<td>The chart axes carry <strong>\\(\\sqrt{\\overline{VE}}\\)</strong>, as in the book. The "
+    + "reference deck writes \\(J(w)\\), which is the same thing if the expectation is taken under "
+    + "\\(\\mu\\)</td>",
+  "t5.glosario.f11":
+    "<td>\\(w^*\\)</td>"
+    + "<td>weights minimising \\(\\overline{VE}\\) (global optimum)</td>"
+    + "<td>In the linear case it is unique up to degeneracy</td>",
+  "t5.glosario.f12":
+    "<td>\\(A\\), \\(b\\), \\(w_{TD}\\)</td>"
+    + "<td>matrix, vector and fixed point of linear TD(0), (9.11)-(9.12)</td>"
+    + "<td>In neither of the two decks</td>",
+  "t5.glosario.f13":
+    "<td>\\(m\\)</td>"
+    + "<td>number of <strong>tilings</strong></td>"
+    + "<td><strong>New symbol of this page.</strong> The book <strong>avoids it</strong> and writes "
+    + "“number of tilings (8)” in words, because \\(n\\) is already the number of steps of the "
+    + "\\(n\\)-step methods of Unit 4</td>",
+  "t5.glosario.f14":
+    "<td>\\(\\ell\\)</td>"
+    + "<td>width of a <strong>tile</strong></td>"
+    + "<td><strong>New symbol of this page.</strong> The book writes “if \\(w\\) denotes the tile "
+    + "width”, which clashes with the weight vector <strong>in the same section</strong></td>",
+  "t5.glosario.f15":
+    "<td>\\(\\tau\\)</td>"
+    + "<td>number of experiences with the same \\(x\\) over which one wants to learn, (9.19)</td>"
+    + "<td>In the book \\(\\tau\\) is also the time being updated in the \\(n\\)-step methods, and "
+    + "the period of the Fourier basis: three different uses</td>",
+  "t5.glosario.f16":
+    "<td>\\(p\\), \\(\\dot p\\)</td>"
+    + "<td>position and velocity of the Mountain Car</td>"
+    + "<td>The book writes \\(x_t\\) and \\(\\dot x_t\\) (p. 267), which <strong>clashes with \\(x_t\\) "
+    + "= shorthand for \\(x(S_t)\\)</strong> (p. 21). Renamed here</td>",
+  "t5.glosario.f17":
+    "<td>\\(w^-\\)</td>"
+    + "<td><strong>frozen</strong> weights of the DQN target network</td>"
+    + "<td>The paper and the lecture slide write \\(\\theta\\) and \\(\\theta^-\\); in this course "
+    + "\\(\\theta\\) are the parameters of <strong>the policy</strong> (Unit 6), so it is rendered as "
+    + "\\(w\\) and \\(w^-\\)</td>",
+  "t5.glosario.f18":
+    "<td>\\(z_t\\)</td>"
+    + "<td>vector of <strong>eligibility traces</strong> at time \\(t\\)</td>"
+    + "<td><strong>It has the dimension of \\(w\\)</strong>, that is \\(d\\), and not "
+    + "\\(|\\mathcal S|\\times|\\mathcal A|\\). It is Unit 4 (part 3) and Chapter 12 material; it "
+    + "enters this page through the exam item (B14b). The course notation guide does not list it "
+    + "yet</td>",
+  "t5.glosario.f19":
+    "<td>\\(\\lambda\\)</td>"
+    + "<td>parameter of the eligibility traces</td>"
+    + "<td>Already in the course notation guide (“parameter of TD(λ) and eligibility traces”). On "
+    + "this page \\(\\lambda = 0\\) by default, and <strong>\\(\\lambda = 0\\) is exactly the one-step "
+    + "algorithm</strong></td>",
+  "t5.glosario.f20":
+    "<td>\\(\\theta\\)</td>"
+    + "<td><strong>reserved</strong>: parameters of the policy (Unit 6)</td>"
+    + "<td>Not used on this page. The Baird figure on the lecture slide uses it for the weights, and "
+    + "here it is rewritten with \\(w\\)</td>",
+  "t5.glosario.nota":
+    "Two labels for the same thing: the Spanish lecture deck calls “<strong>instability "
+    + "inducers</strong>” what the book and the second deck call “<strong>the deadly triad</strong>”. "
+    + "The Spanish version of this page uses the former; this English version uses the book’s "
+    + "name, and says so in the triad block.",
+
+  /* --- pie ---------------------------------------------------------------- */
+  "t5.pie.anterior": "← Unit 4 (continued) · In-between formulas",
+  "t5.pie.1":
+    "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
+    + "Mathematical Engineering and Artificial Intelligence · Universidad Pontificia Comillas · "
+    + "ICAI. Based on Sutton &amp; Barto, <em>Reinforcement Learning: An Introduction</em>, 2nd "
+    + "ed., chapters 9, 10 and 11 (and §16.5).",
+  "t5.pie.2":
+    "Every simulation is reproducible: the same seed always yields the same result. The "
+    + "convergence points of modules 1 to 4 and 6 are computed exactly and do not depend on it.",
+
+  /* --- MÓDULO 1 · VE y μ (assets/tema5.js) -------------------------------- */
+  "t5.m1.explicacion":
+    "A thousand states in a row. You always start at 500 and at each step you jump to "
+    + "<strong>one of the 100 states to the left or one of the 100 to the right</strong>, all with "
+    + "the same probability; if the jump goes off one end, the episode ends, with reward "
+    + "<strong>−1</strong> on the left and <strong>+1</strong> on the right. With \\(k\\) weights "
+    + "—one per group of consecutive states— the best possible approximation is <strong>flat within "
+    + "each group</strong>, so it has to be decided which value each group gets. And that decision "
+    + "is exactly the objective: the one minimising \\(\\overline{VE}\\) gives each group "
+    + "<strong>the mean of the true values weighted by \\(\\mu\\)</strong>.",
+  "t5.m1.notaExacto":
+    "Nothing is learned here: the weights <strong>are computed</strong> in closed form, and "
+    + "\\(v_\\pi\\) and \\(\\mu\\) are solved by dynamic programming with tolerance "
+    + "\\(10^{-12}\\). <strong>This module does not use the seed</strong>: changing it does not "
+    + "change a single digit. Learning these same weights with Monte Carlo and with TD is module 3.",
+  "t5.m1.notaGamma":
+    "\\(\\gamma = 1\\): the task is episodic and undiscounted. <strong>The book does not say so in "
+    + "this example</strong>; it is inherited from the random walk of Unit 4, which does state it, "
+    + "and it is consistent with the true values running from −1 to +1.",
+  "t5.m1.gruposLabel": "Number of groups (\\(k\\))",
+  "t5.m1.pesoLabel": "Weighting",
+  "t5.m1.pesoMu": "by \\(\\mu\\)",
+  "t5.m1.pesoUnif": "uniform",
+  "t5.m1.estadoLabel": "Inspected state",
+  "t5.m1.reiniciar": "Default values",
+  "t5.m1.viz1": "The thousand true values and the \\(k\\) weights approximating them",
+  "t5.m1.viz2": "How much time is spent in each state",
+  "t5.m1.mError": "Minimum \\(\\sqrt{\\overline{VE}}\\) with \\(k\\) groups",
+  "t5.m1.mAlcance": "States that change when one weight moves",
+  "t5.m1.mPonderada": "Value of the group, weighting by \\(\\mu\\)",
+  "t5.m1.mSinPonderar": "The same group, unweighted",
+  "t5.m1.fichaCab": "Item · Value",
+  "t5.m1.notaUniforme":
+    "You have just changed the objective. With uniform weighting each group takes the arithmetic "
+    + "mean of its true values, which is a perfectly reasonable approximation —and one that "
+    + "<strong>makes \\(\\overline{VE}\\) worse</strong>, because \\(\\overline{VE}\\) measures the "
+    + "error where the agent spends its time. There is no “right” answer without first saying "
+    + "which states matter: that is the whole content of \\(\\mu\\).",
+  "t5.m1.notaTabular":
+    "One weight per state: this is <em>one-hot</em>, and this is <strong>the tabular case</strong>. "
+    + "The minimum error is <strong>exactly zero</strong>, because there is no approximation to "
+    + "share out. It is the answer to the question the lecture slide leaves open.",
+  "t5.m1.notaUnPeso":
+    "A single weight for a thousand states: the best possible approximation is a constant, and "
+    + "the constant minimising \\(\\overline{VE}\\) is the mean of \\(v_\\pi\\) weighted by "
+    + "\\(\\mu\\). Since \\(\\mu\\) is almost centred, it comes out almost zero, and the error is "
+    + "almost all there is.",
+  "t5.m1.anotEstado": "s = {s}",
+  "t5.m1.serieVerdadero": "true \\(v_\\pi\\)",
+  "t5.m1.serieAprox": "\\(\\hat v(s,w)\\), \\(k\\) groups",
+  "t5.m1.viz1x": "State",
+  "t5.m1.viz1y": "Value",
+  "t5.m1.viz1vacio": "Solving \\(v_\\pi\\) by dynamic programming…",
+  "t5.m1.rotuloExacto": "Exact computation · no simulation",
+  "t5.m1.serieMu": "\\(\\mu(s)\\)",
+  "t5.m1.viz2y": "μ(s)",
+  "t5.m1.anotInicio": "start",
+  "t5.m1.viz2vacio": "Solving \\(\\eta\\) and \\(\\mu\\)…",
+  "t5.m1.fichaV": "true \\(v_\\pi(s)\\)",
+  "t5.m1.fichaMu": "\\(\\mu(s)\\)",
+  "t5.m1.fichaGrupo": "Group",
+  "t5.m1.fichaGrupoValor": "states {a}–{b}",
+  "t5.m1.fichaVhat": "\\(\\hat v(s,w)\\)",
+  "t5.m1.fichaError": "Error at this state",
+  "t5.m1.lecturaSesgo":
+    "With \\(k={k}\\), the first group is states 1 to {b}. Its value is <strong>not</strong> the "
+    + "mean of its {n} true values: it is the mean <strong>weighted by \\(\\mu\\)</strong>, and since "
+    + "state {b} is visited <strong>{razon} times more often</strong> than state 1, the value of the "
+    + "group shifts towards that of state {b}, which is the highest of the {n}. Compare the two "
+    + "metrics on the right: that is the difference between minimising \\(\\overline{VE}\\) and "
+    + "averaging without thinking.",
+
+  /* --- cuestionario del módulo 1 ----------------------------------------- */
+  "t5.m1.quiz.0.enunciado":
+    "With aggregation into 10 groups of 100 states, which value does the first group (states 1 "
+    + "to 100) get if \\(\\overline{VE}\\) is to be minimised?",
+  "t5.m1.quiz.0.opciones": [
+    "The mean of the hundred true values <strong>weighted by \\(\\mu\\)</strong>, which ends up "
+      + "closer to the value of state 100 because it is visited more often than state 1.",
+    "The arithmetic mean of the hundred true values, because the hundred states belong to the "
+      + "same group and therefore count equally.",
+    "The true value of the central state of the group, state 50, because it is the one "
+      + "minimising the maximum distance to the rest.",
+    "The true value of state 1, because it is the first one encountered when traversing the "
+      + "group and the one that sets the weight.",
+  ],
+  "t5.m1.quiz.0.explicacion":
+    "\\(\\overline{VE}\\) weights each state by \\(\\mu(s)\\), the fraction of time spent in it, "
+    + "so differentiating and setting to zero yields the <strong>weighted</strong> mean, not the "
+    + "arithmetic one. In this walk \\(\\mu\\) grows from left to right within the first group "
+    + "—the book says state 100 carries more than three times the weight of state 1—, and that is "
+    + "why the value of the group shifts upwards. Belonging to the same group does not make the "
+    + "states count equally: that would be true only with uniform weighting, which is another "
+    + "objective. And neither the central state nor the first one plays any privileged role in "
+    + "the formula.",
+  "t5.m1.quiz.1.enunciado":
+    "Why was no weighted measure of the error needed in the tabular case, whereas here it is?",
+  "t5.m1.quiz.1.opciones": [
+    "Because in the tabular case the values are decoupled and can end up being exactly the true "
+      + "ones; with fewer weights than states, improving one state worsens others and one has to "
+      + "decide which ones matter.",
+    "Because in the tabular case the error is always zero by construction, and with approximation "
+      + "it is always positive because of sampling noise.",
+    "Because weighting by \\(\\mu\\) is an acceleration technique: it serves to converge sooner, "
+      + "not to define the objective.",
+    "Because in the tabular case \\(\\gamma\\) plays no part and here it does, and \\(\\mu\\) is the "
+      + "way of bringing discounting into the objective.",
+  ],
+  "t5.m1.quiz.1.explicacion":
+    "The key is decoupling: with one cell per state, updating one state affected no other and "
+    + "the attainable limit was the true value everywhere. With fewer weights than states, every "
+    + "update is shared out, and making one state more accurate invariably means making others "
+    + "less accurate: one has to say which states matter more. The tabular error is not zero “by "
+    + "construction” —during learning it is positive—; rather, its attainable minimum is zero. "
+    + "\\(\\mu\\) accelerates nothing: it defines <strong>what</strong> is minimised. And "
+    + "discounting is handled separately: in this environment \\(\\gamma=1\\) and \\(\\mu\\) is "
+    + "still indispensable.",
+  "t5.m1.quiz.2.enunciado":
+    "You move the number of groups from 10 to 1000, with one weight per state. What happens to "
+    + "\\(\\min_w \\overline{VE}\\) and why?",
+  "t5.m1.quiz.2.opciones": [
+    "It drops to exactly zero, because with a <em>one-hot</em> feature vector the weights can "
+      + "reproduce \\(v_\\pi\\) and no error is left to share out among states.",
+    "It drops a lot but does not reach zero, because \\(v_\\pi\\) is estimated by dynamic "
+      + "programming and the numerical error of the iteration always remains.",
+    "It stays the same, because \\(\\overline{VE}\\) is weighted by \\(\\mu\\) and \\(\\mu\\) does "
+      + "not change when the number of groups changes.",
+    "It goes up, because with a thousand weights and a thousand states the problem is "
+      + "overparameterised and the solution stops being unique.",
+  ],
+  "t5.m1.quiz.2.explicacion":
+    "With one group per state the feature vector is <em>one-hot</em>, the approximation can match "
+    + "\\(v_\\pi\\) state by state and the minimum of the objective is zero: that is exactly the "
+    + "tabular case, and it is the answer to the question the lecture slide leaves open. The "
+    + "error of the dynamic-programming iteration is controlled by a tolerance and is several "
+    + "orders of magnitude below any figure shown. \\(\\mu\\) does not change, true, but what "
+    + "changes is the set of representable functions. And there is no overparameterisation: there "
+    + "is exactly one weight per state, and the solution is unique.",
+
+  /* --- MÓDULO 2 · x(s) (assets/tema5.js) ---------------------------------- */
+  "t5.m2.explicacion":
+    "The thousand states of the walk, treated as <strong>a single continuous dimension</strong>, "
+    + "which is what the book does in Figure 9.10. A <strong>tiling</strong> is a partition of that "
+    + "line into <strong>tiles</strong> of width \\(\\ell = 200\\) states: each state falls in "
+    + "exactly one tile, and the corresponding feature is 1 and all the others 0. With <strong>a "
+    + "single tiling that is state aggregation</strong>. When tilings offset from one another are "
+    + "added, each state activates <strong>exactly \\(m\\)</strong> features, one per tiling, and "
+    + "<strong>that</strong> is <em>tile coding</em>.",
+  "t5.m2.notaExacto":
+    "There is no simulation and no randomness here: what is drawn is the geometry of the "
+    + "representation, and it is exact. The seed does not affect this module.",
+  "t5.m2.repLabel": "Representation",
+  "t5.m2.repOneHot": "<em>one-hot</em>",
+  "t5.m2.repAgreg": "aggregation",
+  "t5.m2.repTile": "<em>tile coding</em>",
+  "t5.m2.mLabel": "Tilings (\\(m\\))",
+  "t5.m2.gruposLabel": "Groups",
+  "t5.m2.estadoLabel": "Inspected state",
+  "t5.m2.reiniciar": "Default values",
+  "t5.m2.viz1": "The tilings, and which tile the state falls in",
+  "t5.m2.viz2": "How far a single update splashes",
+  "t5.m2.mD": "Weights (\\(d\\))",
+  "t5.m2.mActivas": "Active features",
+  "t5.m2.mAlpha1": "\\(\\alpha = 1/m\\) (one-trial learning)",
+  "t5.m2.mAncho": "States that receive something",
+  "t5.m2.reglaAlpha":
+    "Since the features are binary and <strong>exactly \\(m\\)</strong> are active, "
+    + "\\(x^\\top x = m\\) is constant, and the book’s general rule reduces to "
+    + "\\(\\alpha = 1/(\\tau m)\\). With \\(\\tau=1\\) this gives \\(\\alpha = 1/m\\), which yields "
+    + "<strong>exact one-trial learning</strong>: train on the example \\(s\\mapsto u\\) and the new "
+    + "estimate is <strong>exactly \\(u\\)</strong>, whatever the previous one. With \\(\\tau=10\\), "
+    + "\\(\\alpha = 1/(10m)\\), and the estimate moves <strong>exactly one tenth</strong> of the way.",
+  "t5.m2.botonEnsayo": "Train \\(s \\mapsto 0.5\\) with \\(\\alpha = 1/m\\)",
+  "t5.m2.ejercicio95":
+    "Exercise 9.5 of the book is exactly this rule: a continuous space of <strong>7 "
+    + "dimensions</strong>, with 8 tilings for each single dimension (7×8 = 56) plus 2 tilings for "
+    + "each of the \\(\\binom{7}{2}=21\\) pairs (42), <strong>98 tilings</strong> in total; one wants "
+    + "to learn gradually, over about 10 presentations. Then \\(\\tau = 10\\), \\(m = 98\\) and "
+    + "\\(\\alpha = 1/(10\\cdot 98) = 1/980\\).",
+  "t5.m2.notaPractica":
+    "Remember where this comes from in class: the lecture slide assigns <strong>reading section "
+    + "9.5.4 of Sutton &amp; Barto</strong> and doing the exercises with the code of <strong>lab "
+    + "3</strong>. This module is the summary of that section, not its substitute: "
+    + "<em>hashing</em>, irregular tiles and the diagonal stripes of Figure 9.12 are in the book and "
+    + "not here.",
+  "t5.m2.notaOneHot":
+    "One weight per state: \\(x(s) = e_s\\), \\(d = 1000\\), <strong>one</strong> active feature. "
+    + "The approximate value is literally the weight, \\(\\hat v(s,w) = w_s\\), and the update is "
+    + "\\(w_s \\leftarrow w_s + \\alpha[U_t - w_s]\\): <strong>the tabular update of the previous "
+    + "units</strong>. Generalisation is zero: training on \\(s\\) moves absolutely nothing in any "
+    + "other state. It is the answer to the lecture slide’s question: <strong>there is no "
+    + "approximation here</strong>.",
+  "t5.m2.notaAgreg":
+    "One weight per group. The gradient is <strong>1 in the component of the group of \\(s\\) and "
+    + "0 in the others</strong>: it is still <em>one-hot</em>, but over groups. Generalisation is "
+    + "<strong>total within the group and nil outside</strong>, which is why the profile below is a "
+    + "step with vertical edges. It is the handwritten answer given in class: approximation "
+    + "appears <strong>as soon as states are grouped</strong>.",
+  "t5.m2.notaTileUno":
+    "<strong>With a single tiling there is no coarse coding: there is state aggregation.</strong> "
+    + "Compare the profile with that of the “aggregation” button and five groups: it is the same. "
+    + "Everything <em>tile coding</em> brings comes from overlapping several offset tilings.",
+  "t5.m2.notaVacios":
+    "Some tiles at the ends contain no state at all: their weights exist, equal zero and are never "
+    + "updated. They count in \\(d\\) because they are in the vector.",
+  "t5.m2.notaDesplazamiento":
+    "The offset \\(\\ell/m\\) need not be an integer: the states are integers, but the tile "
+    + "boundaries are not.",
+  "t5.m2.notaDibujo":
+    "With <em>one-hot</em> the band is drawn with one mark every 10 states: there are a thousand "
+    + "tiles and they do not all fit on screen. The computation uses all thousand.",
+  "t5.m2.notaMovil": "Only the first eight of the \\(m\\) tilings are drawn; the computation uses all of them.",
+  "t5.m2.activas": "{m} active out of {d}",
+  "t5.m2.rotuloEstado": "state {s}",
+  "t5.m2.ensayoResultado":
+    "Before: \\(\\hat v(s,w) = {antes}\\). After <strong>one</strong> update with "
+    + "\\(\\alpha = 1/{m}\\): \\(\\hat v(s,w) = {despues}\\), which is exactly the target.",
+  "t5.m2.rotuloExacto": "Exact geometry · no simulation",
+  "t5.m2.serieperfil": "\\(x(s)^\\top x(s')/m\\)",
+  "t5.m2.anotS": "s",
+  "t5.m2.anotAncho": "±ℓ (bound)",
+  "t5.m2.viz2x": "State s′",
+  "t5.m2.viz2y": "Fraction of the update that reaches s′",
+  "t5.m2.viz2vacio": "Move the inspected state.",
+
+  /* --- cuestionario del módulo 2 ----------------------------------------- */
+  "t5.m2.quiz.0.enunciado": "You set <em>tile coding</em> with a single tiling. What do you have?",
+  "t5.m2.quiz.0.opciones": [
+    "State aggregation: generalisation is total within the tile and nonexistent outside it, and "
+      + "there is no coarse coding of any kind.",
+    "<em>Tile coding</em> with the maximum possible generalisation, because with one tiling each "
+      + "tile is as wide as it can be.",
+    "<em>One-hot</em> encoding, because only one feature is active at a time.",
+    "A degenerate representation that cannot be used, because the gradient is not defined "
+      + "without overlapping tilings.",
+  ],
+  "t5.m2.quiz.0.explicacion":
+    "With one tiling the space is partitioned and each state activates a single feature: that is "
+    + "exactly state aggregation, and the book says so in these words. Generalisation is neither "
+    + "maximal nor minimal because of the tile width: it is <strong>total</strong> inside and "
+    + "<strong>nil</strong> outside, with no gradation, and that is precisely why it is not coarse "
+    + "coding. It is not <em>one-hot</em> over states but over groups —with <em>one-hot</em> there "
+    + "would be a thousand weights, here there are five—. And the gradient is perfectly well "
+    + "defined: it is 1 in the component of the tile and 0 in the others.",
+  "t5.m2.quiz.1.enunciado":
+    "With 8 tilings and \\(\\alpha = 1/8\\), you train on the example \\(s\\mapsto u\\) once. What "
+    + "is \\(\\hat v(s,w)\\) afterwards?",
+  "t5.m2.quiz.1.opciones": [
+    "Exactly \\(u\\), because there are 8 active features and each receives "
+      + "\\(\\alpha[u-\\hat v]\\), so the approximate value moves "
+      + "\\(8\\alpha[u-\\hat v] = [u-\\hat v]\\).",
+    "One eighth of the way towards \\(u\\), because the step has been shared among the 8 active "
+      + "tilings.",
+    "Eight times the way towards \\(u\\), that is, it overshoots: that is why \\(\\alpha=1/8\\) is "
+      + "an unstable value with 8 tilings.",
+    "It depends on the initial weights, because the update is proportional to the previous value "
+      + "and not to the error.",
+  ],
+  "t5.m2.quiz.1.explicacion":
+    "The approximate value is the sum of the weights of the active features, and all 8 are "
+    + "updated at once with the same error, so the total increment is \\(8\\alpha\\) times the "
+    + "error. With \\(\\alpha = 1/8\\) that is exactly the error, and the new estimate is \\(u\\): it "
+    + "is the book’s “exact one-trial learning”, and the reason \\(\\alpha\\) is always written "
+    + "divided by the number of tilings. It neither falls short nor overshoots, and it does not "
+    + "depend on the previous weights: the update is proportional <strong>to the error</strong>, "
+    + "not to the value.",
+  "t5.m2.quiz.2.enunciado":
+    "With wide tiles, the initial generalisation is broad. What can be said about the accuracy "
+    + "that will eventually be reached?",
+  "t5.m2.quiz.2.opciones": [
+    "That it is controlled more by the total number of features than by the tile width: width "
+      + "mainly affects the initial generalisation.",
+    "That it is limited by the tile width: with wide tiles one cannot discriminate inside a tile, "
+      + "however long one trains.",
+    "That it is the same in every case, because linear approximation always converges to the same "
+      + "fixed point.",
+    "That it gets worse with the number of tilings, because each added tiling shares the step "
+      + "among more weights.",
+  ],
+  "t5.m2.quiz.2.explicacion":
+    "The book says it explicitly: the initial generalisation is controlled by the size and shape "
+    + "of the receptive fields, but <em>acuity</em> —the finest possible discrimination— is "
+    + "controlled more by the total number of features. With several offset tilings one "
+    + "discriminates perfectly well inside a tile, because the states inside differ in the features "
+    + "of the other tilings: that is the whole trick. The fixed point depends on the "
+    + "representation, so it is not the same in every case. And adding tilings does not worsen "
+    + "accuracy: \\(\\alpha\\) has to be rescaled, which is another matter.",
+
+  /* --- MÓDULO 3 · MC y TD(0) lineales (assets/tema5.js) ------------------- */
+  "t5.m3.semillaPie": "Seed {s} · 10 runs, seeds {a}…{b}",
+  "t5.m3.explicacion":
+    "The same thousand-state walk, the same ten-weight approximator, <strong>the same "
+    + "episodes</strong>: MC and TD(0) see exactly the same experience, generated with the same "
+    + "seed, and the only thing that changes is the target \\(U_t\\) —the observed return for MC, "
+    + "the reward plus the estimated value of the next state for TD—. The two <strong>horizontal "
+    + "lines</strong> are the points each one converges to, <strong>computed exactly</strong>: "
+    + "MC’s is the minimum of \\(\\overline{VE}\\); TD’s, the fixed point "
+    + "<span class=\"nowrap\">\\(w_{TD} = A^{-1}b\\).</span>",
+  "t5.m3.notaAsintotas":
+    "The two horizontal lines <strong>are not simulated</strong>: they are solved for. MC’s comes "
+    + "from differentiating \\(\\overline{VE}\\) and setting it to zero; TD’s, from solving the "
+    + "system \\(A\\,w = b\\) with \\(A = \\mathbb E[x_t(x_t-\\gamma x_{t+1})^\\top]\\) and "
+    + "\\(b = \\mathbb E[R_{t+1}x_t]\\) built from the exact dynamics of the environment. That is "
+    + "why they do not move when \\(\\alpha\\) or the seed changes: <strong>they depend only on the "
+    + "environment, the representation and \\(\\gamma\\)</strong>.",
+  "t5.m3.notaSimplificacion":
+    "The book runs <strong>100,000 episodes</strong> with \\(\\alpha = 2\\times 10^{-5}\\) for "
+    + "Figure 9.1. Here <strong>5,000</strong> are run and <strong>10 runs</strong> are averaged, "
+    + "so that it responds in class, and the default \\(\\alpha\\) is <strong>fifty times "
+    + "larger</strong> for the same reason. You can set \\(\\alpha = 2\\times10^{-5}\\) on the "
+    + "slider to see the book’s configuration: it barely moves, and that says something too. "
+    + "<strong>The conclusion of the module does not depend on this</strong>, because the two "
+    + "destinations are computed exactly.",
+  "t5.m3.notaVisitas":
+    "Monte Carlo is applied in <em>every-visit</em> mode, as in the book’s box: in this walk the "
+    + "states repeat a lot within an episode.",
+  "t5.m3.notaGammaMu":
+    "Changing \\(\\gamma\\) also changes \\(\\mu\\): the book asks for discounting to be treated "
+    + "as a form of termination, so \\(\\gamma\\) enters the computation of the expected visits.",
+  "t5.m3.alphaLabel": "Step size (\\(\\alpha\\))",
+  "t5.m3.gammaLabel": "Discount (\\(\\gamma\\))",
+  "t5.m3.episodiosLabel": "Episodes drawn",
+  "t5.m3.marcas": "0 · 100 · 1000 · 5000",
+  "t5.m3.reiniciar": "Default values",
+  "t5.m3.viz1": "Error against experience, and the two destinations",
+  "t5.m3.viz2": "The ten weights, and which staircase each method tends to",
+  "t5.m3.mMin": "\\(\\sqrt{\\overline{VE}}\\) of the global optimum",
+  "t5.m3.mTD": "\\(\\sqrt{\\overline{VE}}\\) of the TD fixed point",
+  "t5.m3.mRazon": "Ratio \\(\\overline{VE}(w_{TD})/\\min\\overline{VE}\\)",
+  "t5.m3.mCota": "The book’s bound, \\(1/(1-\\gamma)\\)",
+  "t5.m3.lectura":
+    "Look at the two horizontal lines before the curves. <strong>TD does not converge where MC "
+    + "converges</strong>: it converges to the fixed point \\(w_{TD}\\), which sits above the "
+    + "minimum. Now move \\(\\alpha\\): the curves change shape, but <strong>the two lines do not "
+    + "move</strong>. The step size decides the speed; the destination is decided by the "
+    + "environment, the representation and \\(\\gamma\\).",
+  "t5.m3.notaEscaleraTD":
+    "Look at the blue staircase: it is <strong>almost glued to zero</strong>, and its four central "
+    + "steps are indistinguishable from the zero line. With this step size and 5,000 episodes, "
+    + "<strong>TD has barely moved from \\(w_0 = 0\\)</strong> —its ten weights run from −0.31 to "
+    + "0.31, while Monte Carlo’s already run from −0.77 to 0.74—. Its error is not large because it "
+    + "has converged somewhere bad: it is large because <strong>it has not converged "
+    + "anywhere</strong>. Raise \\(\\alpha\\) to the default value and watch the blue staircase "
+    + "stretch towards its own dashed line, <strong>without reaching the black one</strong>: that "
+    + "last part is what the TD fixed point really is.",
+  "t5.m3.notaOrdenInvertido":
+    "You have just inverted the order, and it is worth understanding why. With this step size, MC "
+    + "stays at <strong>0.147</strong> and TD at <strong>0.116</strong>: the red curve is now "
+    + "<strong>above</strong> the blue one, the opposite of what Figures 9.1 and 9.2 of the book "
+    + "show. It is not that MC has stopped converging to the global optimum —its horizontal line "
+    + "is still at 0.0544—, it is that <strong>with constant \\(\\alpha\\) neither of the two gets "
+    + "there: both fluctuate around their destination with an amplitude that grows with "
+    + "\\(\\alpha\\)</strong>, and MC’s noise floor grows faster because its target —the full "
+    + "return— has far more variance than TD’s. MC’s asymptotic advantage holds in the limit of "
+    + "decreasing \\(\\alpha\\), which is exactly the condition under which the book states the "
+    + "result.",
+  "t5.m3.notaCota":
+    "With \\(\\gamma = 1\\) the bound \\(1/(1-\\gamma)\\) is <strong>infinite</strong>: it says "
+    + "nothing. That is not a flaw of the computation, it is what the book warns about —“because "
+    + "\\(\\gamma\\) is often near one, this expansion factor can be quite large, so there is "
+    + "substantial potential loss in asymptotic performance with the TD method”—. Lower "
+    + "\\(\\gamma\\) to 0.9 and compare the actual ratio with the bound. And one more point: "
+    + "<strong>the bound is stated for continuing tasks</strong>; for episodic tasks like this one "
+    + "the book says it is “slightly different but related”, so here it is shown as a reference "
+    + "and not as a guarantee.",
+  "t5.m3.notaDivergencia":
+    "With this \\(\\alpha\\), some run has blown up: the weights have exceeded \\(10^{6}\\) and it "
+    + "has been cut off. This is <strong>not</strong> the divergence of module 4 —here training is "
+    + "on-policy and the only problem is that the step size is too large—, it is the usual "
+    + "numerical instability of gradient descent. Lower \\(\\alpha\\).",
+  "t5.m3.notaSingular":
+    "The matrix \\(A\\) came out nearly singular and was regularised with \\(\\varepsilon I\\), as "
+    + "LSTD does. It is a warning, not a result.",
+  "t5.m3.notaTruncados":
+    "{n} episodes reached the cap of 10,000 steps and were discarded, generating another one with "
+    + "the same generator. None was expected: it is stated, not hidden.",
+  "t5.m3.serieMC": "Gradient MC",
+  "t5.m3.serieTD": "Semi-gradient TD(0)",
+  "t5.m3.error": "The computation failed: {m}",
+  "t5.m3.viz1vacio": "Computing the 10 runs…",
+  "t5.m3.viz1x": "Episodes",
+  "t5.m3.viz1y": "√VE",
+  "t5.m3.asintotaMC": "global optimum of VE",
+  "t5.m3.asintotaTD": "TD fixed point",
+  "t5.m3.viz1runs": "<strong>10 independent runs</strong> · seeds {a}…{b}",
+  "t5.m3.serieVerdadero": "true \\(v_\\pi\\)",
+  "t5.m3.serieMCahora": "\\(\\hat v\\) of MC",
+  "t5.m3.serieTDahora": "\\(\\hat v\\) of TD",
+  "t5.m3.serieMCfin": "global optimum",
+  "t5.m3.serieTDfin": "\\(w_{TD}\\)",
+  "t5.m3.viz2x": "State",
+  "t5.m3.viz2y": "Value",
+  "t5.m3.viz2vacio": "Move the episodes slider.",
+  "t5.m3.viz2runs": "1 run (the first) · seed {s} · episode {e}",
+
+  /* --- cuestionario del módulo 3 ----------------------------------------- */
+  "t5.m3.quiz.0.enunciado":
+    "The two horizontal lines of the chart do not move when \\(\\alpha\\) changes. Why?",
+  "t5.m3.quiz.0.opciones": [
+    "Because they are the convergence points, and they depend on the environment, the "
+      + "representation and \\(\\gamma\\), not on the step size: \\(\\alpha\\) decides speed and "
+      + "oscillation, not the destination.",
+    "Because they are computed with the default \\(\\alpha\\) and the implementation does not "
+      + "recompute them when the slider moves.",
+    "Because with small \\(\\alpha\\) the method converges to the same point as with large "
+      + "\\(\\alpha\\) only if the problem is linear, and here it is.",
+    "Because the horizontal lines are the error of the initialisation \\(w=0\\), which does not "
+      + "depend on \\(\\alpha\\).",
+  ],
+  "t5.m3.quiz.0.explicacion":
+    "The minimum of \\(\\overline{VE}\\) comes from differentiating the objective and setting it "
+    + "to zero, and the TD fixed point from solving \\(A\\,w=b\\): \\(\\alpha\\) appears in neither "
+    + "expression. The step size affects how one gets there —speed, oscillation, and whether the "
+    + "process is numerically stable— but not where. It is not a flaw of the implementation: they "
+    + "are recomputed when \\(\\gamma\\) changes, which is what does move them. And they are not "
+    + "the initial error: that is the common starting point of the two curves, top left.",
+  "t5.m3.quiz.1.enunciado":
+    "The lecture slide says that TD(0) “converges to a point close to the global optimum”. What "
+    + "exactly measures that closeness?",
+  "t5.m3.quiz.1.opciones": [
+    "The asymptotic error of TD is no more than \\(1/(1-\\gamma)\\) times the smallest possible "
+      + "error; with \\(\\gamma\\) near one that factor is enormous and the bound says little.",
+    "The Euclidean distance between \\(w_{TD}\\) and \\(w^*\\), which is bounded by "
+      + "\\(\\alpha/(1-\\gamma)\\).",
+    "Nothing quantitative: “close” means the two solutions coincide up to a sampling error that "
+      + "goes to zero with the number of episodes.",
+    "The number of groups: with more groups the two points get closer, and with fewer they move "
+      + "apart, regardless of \\(\\gamma\\).",
+  ],
+  "t5.m3.quiz.1.explicacion":
+    "The book’s bound is on the objective, not on the weights, and the factor is "
+    + "\\(1/(1-\\gamma)\\): the asymptotic error of TD is no more than that times the minimum. The "
+    + "book itself warns that with \\(\\gamma\\) near one the factor is large and there is "
+    + "substantial potential loss in asymptotic performance. It is not a sampling matter: the two "
+    + "points are different even with infinitely many episodes, which is why they are drawn as "
+    + "two lines. And although with one group per state the two points do coincide —because then "
+    + "there is no approximation—, in general the difference depends on \\(\\gamma\\) and on the "
+    + "representation at once.",
+  "t5.m3.quiz.2.enunciado":
+    "With one weight per state —<em>one-hot</em>, a thousand groups— what happens to the two "
+    + "convergence points?",
+  "t5.m3.quiz.2.opciones": [
+    "They coincide, and both equal \\(v_\\pi\\): in the tabular case there is no approximation "
+      + "error to share out and the TD fixed point <strong>is</strong> the true value.",
+    "They remain different, because TD bootstraps and the bias of <em>bootstrapping</em> does not "
+      + "vanish by having more weights.",
+    "They coincide only if in addition \\(\\gamma<1\\), because with \\(\\gamma=1\\) the bound is "
+      + "infinite and nothing is guaranteed.",
+    "TD stops converging, because with a thousand weights the matrix \\(A\\) is singular.",
+  ],
+  "t5.m3.quiz.2.explicacion":
+    "With <em>one-hot</em> the approximation can reproduce \\(v_\\pi\\) exactly: the minimum of "
+    + "the objective is zero, and solving \\(A\\,w=b\\) yields the same \\(v_\\pi\\). The bias of "
+    + "<em>bootstrapping</em> does not vanish during learning —TD is still biased along the way—, "
+    + "but the point it converges to is the right one when there is no representation error to "
+    + "share out. The infinite bound with \\(\\gamma=1\\) is a bound, not a result: it does not "
+    + "prevent the two points from coinciding in the tabular case. And \\(A\\) is not singular: "
+    + "with <em>one-hot</em> it is diagonal with positive entries.",
+
+  /* --- MÓDULO 4 · el ejemplo w → 2w (assets/tema5.js) --------------------- */
+  "t5.m4.explicacion":
+    "Two states and <strong>a single weight</strong>. The first has estimated value \\(w\\) and "
+    + "the second \\(2w\\) —that is, scalar features \\(x=1\\) and \\(x=2\\)—, and from the first "
+    + "there is a single action leading to the second with reward 0. The true value of both is "
+    + "<strong>zero</strong>, and with \\(w=0\\) it is represented exactly: there is no "
+    + "approximation error to share out. Even so, <strong>the weights can go to infinity</strong>, "
+    + "and here you see why in three lines.",
+  "t5.m4.notaExacto":
+    "This module is deterministic: <strong>there is no simulation and no randomness</strong>, and "
+    + "the seed does not affect it. Everything shown is the exact iteration of a formula.",
+  "t5.m4.gammaLabel": "Discount (\\(\\gamma\\))",
+  "t5.m4.alphaLabel": "Step size (\\(\\alpha\\))",
+  "t5.m4.regimenLabel": "Update regime",
+  "t5.m4.regimenOff": "off-policy",
+  "t5.m4.regimenOn": "on-policy",
+  "t5.m4.reiniciar": "Default values",
+  "t5.m4.viz1": "The fragment: two states, one weight",
+  "t5.m4.viz2": "The weight, update by update",
+  "t5.m4.mFactor": "Growth factor",
+  "t5.m4.mVeredicto": "Verdict",
+  "t5.m4.mPasos": "Updates until \\(\\lvert w\\rvert>1000\\)",
+  "t5.m4.mUmbral": "Threshold of \\(\\gamma\\)",
+  "t5.m4.trazaCab":
+    "\\(t\\) · \\(w_t\\) · \\(\\hat v(s_1)\\) · \\(\\hat v(s_2)\\) · \\(\\delta_t\\) · "
+    + "\\(\\Delta w\\) · \\(w_{t+1}\\)",
+  "t5.m4.tablaAlphaCab": "\\(\\alpha\\) · Factor · Verdict",
+  "t5.m4.lecturaAlpha":
+    "This is the table to look at twice. With \\(\\gamma\\) above 0.5, <strong>all four</strong> "
+    + "step sizes give a factor greater than 1: the instability occurs <strong>for any "
+    + "\\(\\alpha>0\\), however small</strong>. A smaller step only changes the speed at which "
+    + "\\(w\\) goes to infinity, not whether it goes.",
+  "t5.m4.notaUmbral":
+    "Right at the threshold: \\(2\\gamma-1 = 0\\), the TD error is zero for any \\(w\\), and the "
+    + "weights <strong>never move</strong>. Every \\(w\\) is a fixed point, even though only "
+    + "\\(w=0\\) is the true value. Raise \\(\\gamma\\) by one hundredth and watch what happens.",
+  "t5.m4.notaDentro":
+    "Now the full episode is traversed: the transition from the first state to the second "
+    + "<strong>and</strong> the one from the second to the terminal. The second update uses "
+    + "\\(x=2\\) and its TD error is \\(0+\\gamma\\cdot 0-2w = -2w\\) —because "
+    + "\\(\\hat v(\\text{terminal})=0\\)—, so \\(\\Delta w = \\alpha(-2w)\\cdot 2 = -4\\alpha w\\). "
+    + "The factor per episode becomes \\((1+\\alpha(2\\gamma-1))(1-4\\alpha)\\), and with the four "
+    + "step sizes of the list and \\(\\gamma=1\\) its modulus is <strong>less than 1</strong>: the "
+    + "system is kept in check. <strong>This closing of the example is not in the book</strong>: "
+    + "this resource adds it so that the contrast can be seen, and it is the direct application "
+    + "of the convergence theorem of on-policy linear TD(0) —indeed, with this distribution the "
+    + "matrix \\(A\\) equals \\((5-2\\gamma)/2 > 0\\) and \\(b = 0\\), so the TD fixed point is "
+    + "\\(w_{TD}=0\\), which is the true value—.",
+  "t5.m4.notaAlphaGrande":
+    "That on-policy is stable does not come for free: with a large enough \\(\\alpha\\) it breaks "
+    + "too. But that is the usual too-large step size, not the triad: it is fixed by lowering "
+    + "\\(\\alpha\\), and the off-policy divergence is not.",
+  "t5.m4.notaDesborde":
+    "The computation has been stopped at \\(10^{12}\\): going on adds no information. In the "
+    + "limit, \\(w\\) goes to infinity.",
+  "t5.m4.porQueOff":
+    "The key to the example is that <strong>this transition occurs repeatedly without \\(w\\) "
+    + "being updated on the other transitions</strong>. Off-policy that is possible: the behaviour "
+    + "policy can choose, on the other transitions, actions the target policy would never choose, "
+    + "and for them the importance-sampling ratio is zero and nothing is updated. On-policy, that "
+    + "ratio is always one. As the book puts it: <strong>in the end, the piper must be "
+    + "paid</strong>. On-policy, the promise of future reward has to be kept and the system is "
+    + "kept in check; off-policy one can promise and then, after taking an action the target "
+    + "policy would never take, forget and forgive.",
+  "t5.m4.panelA":
+    "And this connects with the TD fixed point of module 3. The stability condition of linear "
+    + "TD(0) is that the matrix \\(A = \\mathbb E[x_t(x_t-\\gamma x_{t+1})^\\top]\\) be positive "
+    + "definite. Here it is a single number: off-policy, updating only the first transition, "
+    + "\\(A = 1\\cdot(1-2\\gamma) = 1-2\\gamma\\), which is <strong>negative</strong> as soon as "
+    + "\\(\\gamma>0.5\\). On-policy, with both transitions, \\(A = (5-2\\gamma)/2 > 0\\). "
+    + "<strong>The threshold 0.5 is exactly the sign change of \\(A\\).</strong>",
+  "t5.m4.bairdIntro":
+    "What the lecture slide projects is the full version of this same phenomenon, and the slide "
+    + "gives none of its data. Here they all are, so that the figure can be read:",
+  "t5.m4.bairdResumen": "Data sheet of Baird’s counterexample",
+  "t5.m4.bairdCab": "Element · Value",
+  "t5.m4.baird1": "MDP",
+  "t5.m4.baird1v": "episodic, <strong>seven states and two actions</strong>",
+  "t5.m4.baird2": "Dashed action",
+  "t5.m4.baird2v":
+    "leads to one of the <strong>six upper states with equal probability</strong> (1/6 each)",
+  "t5.m4.baird3": "Solid action",
+  "t5.m4.baird3v": "leads to the <strong>seventh</strong> state (the lower one)",
+  "t5.m4.baird4": "Behaviour policy",
+  "t5.m4.baird4v":
+    "\\(b(\\text{dashed}\\mid\\cdot) = 6/7\\), \\(b(\\text{solid}\\mid\\cdot) = 1/7\\); with that, "
+    + "the next-state distribution is <strong>uniform</strong>, and it is also the initial "
+    + "distribution of each episode",
+  "t5.m4.baird5": "Target policy",
+  "t5.m4.baird5v":
+    "\\(\\pi(\\text{solid}\\mid\\cdot) = 1\\): <strong>always</strong> the solid one. Its "
+    + "distribution is concentrated on the seventh state",
+  "t5.m4.baird6": "Reward",
+  "t5.m4.baird6v": "<strong>zero on every transition</strong>",
+  "t5.m4.baird7": "Discount",
+  "t5.m4.baird8": "Weights",
+  "t5.m4.baird8v": "<strong>eight</strong>, for <strong>seven</strong> non-terminal states",
+  "t5.m4.baird9": "Parameterisation",
+  "t5.m4.baird9v":
+    "the six upper states are worth \\(2w_1+w_8, \\dots, 2w_6+w_8\\); the seventh is worth "
+    + "\\(w_7+2w_8\\). For instance \\(x(1) = (2,0,0,0,0,0,0,1)^\\top\\)",
+  "t5.m4.baird10": "Exact solution",
+  "t5.m4.baird10v":
+    "\\(v_\\pi(s)=0\\) for every \\(s\\), and <strong>it is represented exactly</strong> with "
+    + "\\(w=0\\). There are <strong>many</strong> solutions, because there are more weights than "
+    + "states, and the features are <strong>linearly independent</strong>: everything is favourable",
+  "t5.m4.baird11": "Parameters of Figure 11.2",
+  "t5.m4.baird11v":
+    "\\(\\alpha = 0.01\\), \\(w_0 = (1,1,1,1,1,1,10,1)^\\top\\), 1000 steps (TD panel) and 1000 "
+    + "sweeps (DP panel)",
+  "t5.m4.baird12": "What is seen",
+  "t5.m4.baird12v":
+    "the weights <strong>diverge to infinity</strong>: \\(w_1\\) to \\(w_6\\) together, \\(w_8\\) "
+    + "the one growing most, and \\(w_7\\) <strong>flat</strong> at its initial value",
+  "t5.m4.bairdDos":
+    "Two points the book stresses and the slide does not give. <strong>It is not a matter of "
+    + "step size</strong>: the instability occurs for any \\(\\alpha>0\\). And <strong>it is not a "
+    + "matter of sampling or asynchrony</strong>: with semi-gradient DP updates —sweeping every "
+    + "state, with no randomness at all— the system is still unstable. What fixes it is "
+    + "<strong>the distribution</strong>: changing only the distribution of the updates from "
+    + "uniform to the on-policy distribution, convergence is guaranteed with the error bounded by "
+    + "the bound of module 3.",
+  "t5.m4.rotuloR": "r = 0",
+  "t5.m4.rotuloFin": "terminal",
+  "t5.m4.rotuloIgnorada": "this transition is not updated",
+  "t5.m4.anotMil": "|w| > 1000",
+  "t5.m4.serieW": "\\(w_t\\)",
+  "t5.m4.viz2xOn": "Episodes",
+  "t5.m4.viz2x": "Updates",
+  "t5.m4.viz2y": "w",
+  "t5.m4.viz2vacio": "Move \\(\\gamma\\) to see the trajectory.",
+  "t5.m4.rotuloExacto": "Exact computation · no simulation",
+  "t5.m4.divergen": "the weights diverge",
+  "t5.m4.convergen": "the weights die out",
+  "t5.m4.quietos": "the weights do not move",
+  "t5.m4.nunca": "never reached",
+
+  /* --- cuestionario del módulo 4 ----------------------------------------- */
+  "t5.m4.quiz.0.enunciado":
+    "With \\(\\gamma = 0.99\\), you lower \\(\\alpha\\) from 0.3 to 0.01. What changes?",
+  "t5.m4.quiz.0.opciones": [
+    "The speed at which \\(w\\) goes to infinity, but not the fact that it goes: the factor is "
+      + "still greater than 1 for any \\(\\alpha>0\\).",
+    "It stops diverging, because with a small enough step the semi-gradient update becomes "
+      + "stable again.",
+    "It stops diverging only if \\(\\gamma\\) is also reduced below 0.99, because stability "
+      + "depends on the product \\(\\alpha\\gamma\\).",
+    "Nothing, because in this example \\(\\alpha\\) cancels out since the gradient equals 1.",
+  ],
+  "t5.m4.quiz.0.explicacion":
+    "The growth factor is \\(1+\\alpha(2\\gamma-1)\\): with \\(2\\gamma-1>0\\), any positive "
+    + "\\(\\alpha\\) leaves it above 1, and \\(w\\) grows geometrically. The book is explicit: the "
+    + "instability occurs for any positive step size, however small, and the step size only affects "
+    + "the speed. The stability condition is not about the product \\(\\alpha\\gamma\\) but about "
+    + "the sign of \\(2\\gamma-1\\), with the threshold at \\(\\gamma = 0.5\\). And \\(\\alpha\\) "
+    + "does not cancel out: it multiplies the error, and that is why it changes the slope.",
+  "t5.m4.quiz.1.enunciado":
+    "What exactly changes when going from off-policy to on-policy in this example?",
+  "t5.m4.quiz.1.opciones": [
+    "That the outgoing transition of the second state is also updated, and its update pushes "
+      + "\\(w\\) downwards and compensates the first one.",
+    "That the TD error stops depending on \\(w\\), because on-policy the target is computed with "
+      + "the true value instead of the estimate.",
+    "That the importance-sampling ratio stops being 1 and weights the update downwards.",
+    "That the gradient goes from 1 to 2, because on-policy the second state is traversed and its "
+      + "feature is \\(x=2\\).",
+  ],
+  "t5.m4.quiz.1.explicacion":
+    "The key to the example is that off-policy this transition repeats without \\(w\\) being "
+    + "updated on the others; on-policy the full episode is traversed, and the transition to the "
+    + "terminal contributes \\(\\Delta w = -4\\alpha w\\), which is what keeps the system in check. "
+    + "The target is still an estimate in both cases —that is <em>bootstrapping</em>, and it does "
+    + "not change—. The importance-sampling ratio goes the other way: on-policy it is always one, "
+    + "and it is off-policy that it equals zero on the transitions the target policy would never "
+    + "take. And the gradient is 1 on the first transition and 2 on the second: it is not that it "
+    + "“goes to 2”, it is that there are two different updates.",
+  "t5.m4.quiz.2.enunciado":
+    "In Baird’s counterexample, the true value is zero in every state and can be represented "
+    + "exactly with \\(w=0\\). Why do the weights diverge, then?",
+  "t5.m4.quiz.2.opciones": [
+    "Because all three elements of the deadly triad are present: function approximation, "
+      + "<em>bootstrapping</em> and an update distribution that is not the one the target policy "
+      + "produces. That an exact solution exists does not guarantee that the process finds it.",
+    "Because there are eight weights for seven states and the problem is overparameterised, so "
+      + "there is no unique solution to converge to.",
+    "Because the features of the seven states are not linearly independent and the system matrix "
+      + "is singular.",
+    "Because the behaviour policy does not cover all the actions of the target policy, and "
+      + "without coverage no off-policy method converges.",
+  ],
+  "t5.m4.quiz.2.explicacion":
+    "The book presents the example precisely to make clear that all the “favourable” conditions "
+    + "hold —there is an exact solution, there are many, and the features are linearly "
+    + "independent— and that the divergence comes from the combination of the three elements of "
+    + "the triad. Overparameterisation is not the problem: there are many solutions, and any would "
+    + "do. The features <strong>are</strong> linearly independent, and the book stresses it. And "
+    + "coverage holds: the behaviour policy takes the solid action one time in seven, so every "
+    + "action of the target policy has positive probability.",
+
+  /* --- MÓDULO 5 · control en Mountain Car (assets/tema5.js) --------------- */
+  "t5.m5.semillaPie": "Seed {s} · SARSA and Q-learning share the seeds",
+  "t5.m5.explicacion":
+    "An underpowered car in a valley. Gravity is stronger than the engine, so at full throttle it "
+    + "cannot climb the slope: the only solution is <strong>to move away from the goal first</strong>, "
+    + "climb the opposite slope and use the momentum. Each step costs <strong>−1</strong> until it "
+    + "reaches the top on the right, so the value of a state is, with the sign flipped, "
+    + "<strong>how many steps are left</strong>. The state is two continuous numbers —position and "
+    + "velocity— and they are turned into \\(x(s,a)\\) with <strong>eight tilings</strong> of tiles "
+    + "covering one eighth of the range in each dimension, with asymmetric offsets: <strong>eight "
+    + "active features out of 1944</strong>.",
+  "t5.m5.notaOptimismo":
+    "Look at the first snapshot, “step 428”: <strong>not a single episode</strong> has been "
+    + "completed, and the car has been oscillating at the bottom of the valley for a while. Every "
+    + "state it has been through is worth <strong>less</strong> than those it has never visited, "
+    + "because the actual rewards have been worse than was —unrealistically— expected: with "
+    + "\\(w = 0\\) and reward \\(-1\\) at every step, <strong>every unvisited state looks "
+    + "perfect</strong>. That pushes the agent to keep leaving where it has been, and it is "
+    + "<strong>optimistic initialisation</strong> —the one from Unit 1— with function "
+    + "approximation. It works so well here that Figure 10.1 of the book is obtained with "
+    + "\\(\\varepsilon = 0\\).",
+  "t5.m5.notaEpsilon":
+    "\\(\\varepsilon = 0.1\\), fixed. <strong>The book does not publish the \\(\\varepsilon\\) of "
+    + "Figure 10.2</strong>; Figure 10.1, on the other hand, uses \\(\\varepsilon = 0\\) with the "
+    + "optimistic initialisation above. Here \\(\\varepsilon > 0\\) is needed for a concrete reason: "
+    + "<strong>with \\(\\varepsilon = 0\\) the two algorithms are the same rule</strong> —the greedy "
+    + "action is the \\(\\arg\\max\\), and SARSA’s target coincides with the maximum at every "
+    + "step—, so what would be compared <strong>is not on-policy against off-policy</strong>, but "
+    + "the <strong>moment</strong> at which each box chooses the action. That is not the lesson. "
+    + "The comparison that matters only exists if there is exploration.",
+  "t5.m5.notaEpsilonRegla":
+    "A fine point, and one of the kind that gets examined. With \\(\\varepsilon = 0\\), SARSA and "
+    + "Q-learning are <strong>the same rule</strong>, because the greedy action <strong>is</strong> "
+    + "the \\(\\arg\\max\\) and evaluating \\(\\hat q\\) at it is taking the maximum. But <strong>they "
+    + "are not the same execution</strong>, and the difference lies in <strong>when the action is "
+    + "chosen</strong>: in the SARSA box, \\(A'\\) is chosen <strong>before</strong> the weights are "
+    + "updated; in Q-learning it is chosen at the start of the next step, that is "
+    + "<strong>after</strong>. When the update lowers the \\(\\hat q\\) of the action just taken "
+    + "—and with reward \\(-1\\) always, that happens all the time—, the \\(\\arg\\max\\) at "
+    + "\\(S'\\) changes between the two moments, and the two trajectories split. In this "
+    + "environment it happens at the <strong>third step of the first episode</strong>, with the same "
+    + "state and the same target. The moral does not change: what separates the two algorithms is "
+    + "<strong>the target</strong>, and \\(\\varepsilon > 0\\) is what makes that difference show in "
+    + "the learning and not only in the order of two lines of pseudocode.",
+  "t5.m5.notaFigura102":
+    "And a warning about Figure 10.2 of the book, from its own footnote: <strong>those data are "
+    + "not from one-step SARSA, they are from “semi-gradient SARSA(λ)”, from Chapter 12</strong>, "
+    + "which is not covered in this unit. This module uses <strong>one-step semi-gradient "
+    + "SARSA</strong>, which is the box of the lecture slide, so <strong>the curves do not exactly "
+    + "match the book’s</strong> and should not be compared figure by figure. The shape —dropping "
+    + "fast and levelling off— is the same.",
+  "t5.m5.notaSimplificacion":
+    "Three differences from the book, all for computational budget and all declared. One: the "
+    + "book averages <strong>100 runs</strong> in Figure 10.2 and here <strong>10</strong> are "
+    + "averaged. Two: Figure 10.1 goes up to <strong>episode 9000</strong> and here it goes up to "
+    + "<strong>500</strong>. Three: the book hashes the feature space to 4096 positions with the "
+    + "<code>IHT(4096)</code> utility; here it is indexed directly, because "
+    + "\\(8\\times 9\\times 9\\times 3 = 1944\\) weights fit comfortably within 4096 and "
+    + "<strong>with no collisions the approximator is exactly the same</strong>. The third changes "
+    + "nothing; the first two only change the smoothing of the curves and how much the surface "
+    + "flattens.",
+  "t5.m5.notaGamma":
+    "\\(\\gamma = 1\\): episodic, undiscounted task. <strong>The book does not write it</strong> for "
+    + "Mountain Car; it is the only thing consistent with the cost-to-go of Figure 10.1 reaching "
+    + "120, of the order of the number of steps.",
+  "t5.m5.notaEmpates":
+    "When two or three actions tie in \\(\\hat q\\), one of them is chosen at random. With "
+    + "\\(w=0\\) all three tie at the start, so the choice matters; the book does not specify what "
+    + "it does.",
+  "t5.m5.alphaLabel": "\\(\\alpha\\times\\) number of tilings (8)",
+  "t5.m5.algoLabel": "Algorithm",
+  "t5.m5.trazaLabel": "Trace",
+  "t5.m5.trazaCero": "\\(\\lambda = 0\\) (no trace)",
+  "t5.m5.trazaReemplazo": "\\(\\lambda = 0.9\\) · replacing",
+  "t5.m5.trazaAcumulativa": "\\(\\lambda = 0.9\\) · accumulating",
+  "t5.m5.instantaneaLabel": "Snapshot of the surface",
+  "t5.m5.instPaso428": "step 428",
+  "t5.m5.instEp12": "episode 12",
+  "t5.m5.instEp104": "episode 104",
+  "t5.m5.instEp500": "episode 500",
+  "t5.m5.reiniciar": "Default values",
+  "t5.m5.viz1": "Cost-to-go, \\(-\\max_a \\hat q(s,a,w)\\)",
+  "t5.m5.viz2": "How many steps it takes to reach the top",
+  "t5.m5.mFinal": "Steps per episode, last 50 episodes",
+  "t5.m5.mFinalOtro": "The other algorithm, same episodes",
+  "t5.m5.mPrimeros": "Steps per episode, first 50 (the axis of Figure 10.4)",
+  "t5.m5.mMaxCoste": "Maximum of the surface",
+  "t5.m5.mTraza": "Nonzero components of \\(z\\) (mean)",
+  "t5.m5.notaLambda":
+    "Traces on, \\(\\lambda = 0.9\\). Now each step updates <strong>every weight with a nonzero "
+    + "trace</strong>, not just the eight active ones, and the credit of the TD error is shared "
+    + "backwards along the episode. Two things that do <strong>not</strong> change: it is still a "
+    + "<strong>semi-gradient</strong> method, and the trace still has <strong>dimension "
+    + "\\(d = 1944\\)</strong>, that of the weights —not that of the state space, which here is "
+    + "continuous—. With \\(\\lambda = 0\\) this is, exactly, the one-step algorithm of the book’s "
+    + "box. The development is in the notes block on traces, further up.",
+  "t5.m5.notaLambdaEjecuciones":
+    "With traces, the curves are averaged over <strong>5 runs</strong> instead of 10: each step "
+    + "costs more because the nonzero components of the trace have to be traversed. It is said "
+    + "here because it changes <strong>the smoothing</strong> of the curves, not the conclusions.",
+  "t5.m5.notaPoda":
+    "Declared simplification: the trace is stored as a <strong>list of nonzero components</strong>, "
+    + "not as a vector of 1944 numbers traversed in full at every step —that would multiply the "
+    + "cost by \\(1944/8\\)—. Components that drop below \\(10^{-8}\\) in absolute value "
+    + "<strong>are removed from the list</strong>: with \\(\\gamma\\lambda \\le 0.9\\) that is "
+    + "rounding noise next to the magnitude of the update.",
+  "t5.m5.notaNoReproduce":
+    "And let it be clear, because it is the easy inference and it is false: <strong>switching the "
+    + "traces on does not make Figure 10.2 reproducible</strong>. It is true that its data are from "
+    + "“semi-gradient SARSA(λ)”, but <strong>the book does not publish the \\(\\lambda\\) it "
+    + "used</strong>, and the footnote itself adds that “semi-gradient SARSA would behave "
+    + "similarly”. The comparison with that figure remains <strong>qualitative</strong> with "
+    + "\\(\\lambda = 0\\) and with \\(\\lambda = 0.9\\).",
+  "t5.m5.notaExcluir":
+    "With traces, the slider <strong>does not offer \\(\\alpha\\times m = 1.5\\)</strong>: that "
+    + "step is large enough that what would be seen is the step blowing up and not what the trace "
+    + "does, and it is also the most expensive of the five to compute. With \\(\\lambda = 0\\) it "
+    + "is still there, because there the lesson <strong>is</strong> that the step blows up.",
+  "t5.m5.notaTrazaAcumulativa":
+    "With an <strong>accumulating</strong> trace and \\(\\alpha\\times m \\ge 0.5\\), the five runs "
+    + "blow up numerically. <strong>The culprit is not the step size</strong>: it is the "
+    + "accumulating trace on <strong>overlapping binary features</strong>. Eight overlapping "
+    + "tilings make the same component activate again step after step, and the accumulating trace "
+    + "adds a 1 every time with no ceiling, so its trace grows while the car oscillates in the "
+    + "valley and the update gets multiplied by that number. <strong>This is exactly why the book "
+    + "uses replacing traces with <em>tile coding</em></strong>: replacing sets the component to 1 "
+    + "and puts a ceiling on it. Try the same configuration with replacing and compare.",
+  "t5.m5.notaDivergePesos":
+    "With this step size, some run has blown up numerically: the weights have exceeded "
+    + "\\(10^{6}\\). It is the too-large step, not the triad —SARSA here is on-policy—. Lower "
+    + "\\(\\alpha\\times m\\).",
+  "t5.m5.cajaQ":
+    "Episodic semi-gradient Q-learning — what changes with respect to SARSA\n"
+    + "\n"
+    + "    Loop for each step of the episode:\n"
+    + "        Choose A as a function of q̂(S,·,w)   (e.g. ε-greedy)   ← the choice is made HERE\n"
+    + "        Take action A; observe R, S′\n"
+    + "        If S′ is terminal:\n"
+    + "            w ← w + α[R − q̂(S,A,w)] ∇q̂(S,A,w)\n"
+    + "            go to the next episode\n"
+    + "        w ← w + α[R + γ max_a q̂(S′,a,w) − q̂(S,A,w)] ∇q̂(S,A,w)   ← the target is the MAXIMUM\n"
+    + "        S ← S′\n",
+  "t5.m5.explicaCajas":
+    "That is the whole difference, and it is the answer to the exercise on the lecture slide: the "
+    + "line “Choose \\(A'\\)” <strong>disappears as the choice of the action to execute</strong> —in "
+    + "Q-learning the next step’s action is chosen at the start of the next step, not here— and the "
+    + "target goes from \\(\\hat q(S',A',w)\\), the action <strong>actually chosen</strong>, to "
+    + "\\(\\max_a \\hat q(S',a,w)\\). That \\(\\max\\) is what makes the method "
+    + "<strong>off-policy</strong>, and therefore what adds the third element of the deadly triad. "
+    + "In the linear case both rules are written the same, \\(\\Delta w = "
+    + "\\alpha\\,\\delta\\,x(S,A)\\), with the corresponding \\(\\delta\\).",
+  "t5.m5.notaXSA":
+    "\\(x(s,a)\\), the feature vector of the state–action <strong>pair</strong>, is the notation "
+    + "that gets examined and the one that <strong>is not seen</strong> in class: on the SARSA "
+    + "slide the formula containing it is covered by the pseudocode box. Here it is literal: "
+    + "\\(x(s,a)\\) has 1944 components, of which <strong>eight</strong> equal 1 —one per tiling— "
+    + "and <strong>depend on the action</strong>: the tiles of the three actions are different, so "
+    + "training the “full throttle forward” action in a state does not change the value of “full "
+    + "throttle reverse” in that same state.",
+  "t5.m5.viz1x": "Position p",
+  "t5.m5.viz1y": "Velocity ṗ",
+  "t5.m5.frio": "0 (little left)",
+  "t5.m5.caliente": "{max} (a lot left)",
+  "t5.m5.error": "The computation failed: {m}",
+  "t5.m5.viz1vacio": "Training the agent to draw the surface…",
+  "t5.m5.viz1runs": "1 run (the first) · seed {s}",
+  "t5.m5.serieAlpha": "\\(\\alpha\\times m = \\) {v}",
+  "t5.m5.serieOtro": "{otro}, \\(\\alpha\\times m = \\) {v}",
+  "t5.m5.viz2x": "Episode",
+  "t5.m5.viz2y": "Steps per episode",
+  "t5.m5.viz2vacio": "Computing the five step sizes…",
+  "t5.m5.viz2runs5": "<strong>5 independent runs</strong> (with traces) · seeds {a}…{b}",
+  "t5.m5.viz2runs": "<strong>10 independent runs</strong> · seeds {a}…{b}",
+  "t5.m5.notaTope":
+    "{n} episodes out of the {total} simulated reached the cap of 5,000 steps and were cut off. "
+    + "They count as 5,000 steps in the mean and are marked on the chart. The book sets no cap; "
+    + "here one is needed so that the loop terminates.",
+
+  /* --- cuestionario del módulo 5 ----------------------------------------- */
+  "t5.m5.quiz.0.enunciado":
+    "With the initialisation \\(w = 0\\) and reward \\(-1\\) at every step, what happens to a state "
+    + "the agent has never visited?",
+  "t5.m5.quiz.0.opciones": [
+    "It looks perfect: its estimated value is 0 and the true one is negative, so the agent is "
+      + "pushed to explore where it has not been, even with \\(\\varepsilon = 0\\).",
+    "It looks terrible: having no information, the linear approximation extrapolates towards very "
+      + "negative values and the agent avoids that region.",
+    "It looks like nothing: unvisited states have no defined value until they are visited at "
+      + "least once.",
+    "It looks exactly like the visited ones, because the generalisation of <em>tile coding</em> "
+      + "assigns them the average of their neighbours.",
+  ],
+  "t5.m5.quiz.0.explicacion":
+    "With \\(w=0\\) the estimated value of any state–action pair is exactly 0, and since each "
+    + "step costs \\(-1\\), the true value of every non-terminal pair is at most \\(-1\\): the "
+    + "initial estimate is optimistic <strong>everywhere</strong>. The states the agent has already "
+    + "been through have gone down, so the unvisited ones stand out upwards and the agent seeks "
+    + "them; the book describes it in the first snapshot of Figure 10.1, and that is why that "
+    + "figure is obtained with \\(\\varepsilon=0\\). There is no extrapolation towards negative "
+    + "values: the untouched weights stay at zero. And the value of an unvisited state is "
+    + "defined: it is the sum of the weights of its tiles, which may or may not be zero depending "
+    + "on what the neighbours have moved.",
+  "t5.m5.quiz.1.enunciado":
+    "Which line of the semi-gradient SARSA box has to change to obtain semi-gradient Q-learning?",
+  "t5.m5.quiz.1.opciones": [
+    "The target line: \\(\\hat q(S',A',w)\\) —the action actually chosen— becomes "
+      + "\\(\\max_a \\hat q(S',a,w)\\); and with it the choice of \\(A'\\) stops being the action "
+      + "that will be executed.",
+    "The gradient line: \\(\\nabla\\hat q(S,A,w)\\) becomes \\(\\nabla\\hat q(S',A^*,w)\\), "
+      + "evaluated at the greedy action of the next state.",
+    "The policy line: \\(\\varepsilon\\)-greedy has to be replaced by a purely greedy policy, "
+      + "because Q-learning does not explore.",
+    "The terminal-case line: in Q-learning \\(\\max_a \\hat q(S',a,w)\\) has to be included also "
+      + "when \\(S'\\) is terminal, because the maximum is always defined.",
+  ],
+  "t5.m5.quiz.1.explicacion":
+    "It is exactly one line, the target one, and its consequence: using the maximum, the action "
+    + "\\(A'\\) is no longer needed to update, and the choice of the action to execute moves to the "
+    + "start of the next step. The gradient is still evaluated at the pair that was experienced, "
+    + "\\((S,A)\\): that does not change. Q-learning explores just the same —its behaviour policy "
+    + "is still \\(\\varepsilon\\)-greedy—; what happens is that it learns about the greedy policy, "
+    + "and that is precisely what makes it off-policy. And the terminal case still has no "
+    + "continuation term in either algorithm, because \\(\\hat q(\\text{terminal},\\cdot,w)=0\\).",
+  "t5.m5.quiz.2.enunciado":
+    "With 8 tilings, you train one step at one state. What happens to the estimated value of a "
+    + "neighbouring state?",
+  "t5.m5.quiz.2.opciones": [
+    "It moves, in proportion to the number of tiles it shares with the trained state, and only "
+      + "for the action that was trained.",
+    "It does not move, because each state activates its own eight tiles and the weights are "
+      + "independent.",
+    "It moves exactly as much as the trained state, because the eight weights are updated equally.",
+    "It moves for every action, because the tiles encode the state and the action comes in "
+      + "afterwards as a multiplicative factor.",
+  ],
+  "t5.m5.quiz.2.explicacion":
+    "The generalisation of <em>tile coding</em> is exactly that: two nearby states share some "
+    + "tiles, and the neighbour moves in proportion to how many it shares —hence the ramp profile "
+    + "of module 2—. The weights are not independent between neighbouring states: if they were, "
+    + "there would be no generalisation and this would be aggregation with single-state tiles. And "
+    + "it does not move as much as the trained state, unless it shares all eight. On the action: "
+    + "\\(x(s,a)\\) indexes the pair, so the tiles of the three actions are disjoint and training "
+    + "one action does not touch the value of the others in the same state.",
+  "t5.m5.quiz.3.enunciado":
+    "You switch the traces on with \\(\\lambda = 0.9\\) on this Mountain Car, where there are 1944 "
+    + "weights and 8 active features per step. What is the dimension of \\(z\\)?",
+  "t5.m5.quiz.3.opciones": [
+    "1944, the same as \\(w\\): the trace carries one number per weight, and many of them are "
+      + "zero —storing it sparsely is an implementation decision, not a change of dimension—.",
+    "Eight, one per active tiling, because only those features contribute at each step.",
+    "The number of state–action pairs, which with two continuous variables is infinite; that is "
+      + "why replacing traces are needed instead of accumulating ones.",
+    "Eighteen, three actions times the six variables describing the state.",
+  ],
+  "t5.m5.quiz.3.explicacion":
+    "The trace lives in weight space: with function approximation there are \\(d\\) weights and "
+    + "the trace carries one number for each, saying how much that weight contributed to what was "
+    + "recently experienced. Here \\(d = 1944\\). The eight active components are the ones that "
+    + "get <strong>incremented</strong> at the current step, not the size of the vector: the "
+    + "others are not nonexistent, they are fading. The number of state–action pairs is precisely "
+    + "what approximation stops needing, and confusing it with the dimension of the trace is the "
+    + "mistake the exam penalises; the type of trace —replacing or accumulating— has nothing to "
+    + "do with that. And 18 is the dimension of the worked example in the notes block, with six "
+    + "variables and three actions, not that of this module.",
+
+  /* --- MÓDULO 6 · las dos tablas (assets/tema5.js) ------------------------ */
+  "t5.m6.algoMC": "MC",
+  "t5.m6.algoTD": "TD(0)",
+  "t5.m6.algoMCcontrol": "MC control",
+  "t5.m6.aproxTab": "tabular",
+  "t5.m6.aproxLin": "linear",
+  "t5.m6.aproxNoLin": "nonlinear",
+  "t5.m6.politicaOn": "on-policy",
+  "t5.m6.politicaOff": "off-policy",
+  "t5.m6.avisoFuente":
+    "<strong>These two tables are not in Sutton &amp; Barto.</strong> Nowhere in the book is there "
+    + "a table crossing tabular / linear / nonlinear with on- and off-policy. They come from "
+    + "<strong>David Silver’s UCL lecture slides</strong>, which the course deck itself declares as "
+    + "its second source. What the book does have is the evidence behind each cell, spread over "
+    + "four chapters, and that is what this module puts back together: <strong>each cell carries "
+    + "the exact citation that supports it, or the warning that the book does not cover "
+    + "it</strong>.",
+  "t5.m6.explicacion":
+    "The book’s rule is a single sentence: <strong>if any two elements of the deadly triad are "
+    + "present, but not all three, instability can be avoided</strong>. So in principle the table "
+    + "should follow from counting. Count for yourself: move the three switches, see how many "
+    + "elements light up and compare with the verdict of the cell. It matches in <strong>ten</strong> "
+    + "of the twelve prediction cells. The two that do not match are both in the <strong>same "
+    + "column</strong>, and that is where the detail the table hides lies.",
+  "t5.m6.politicaLabel": "Policy",
+  "t5.m6.aproxLabel": "Approximator",
+  "t5.m6.algoLabel": "Algorithm",
+  "t5.m6.reiniciar": "Default values",
+  "t5.m6.tablaPred": "Prediction",
+  "t5.m6.tablaCtrl": "Control",
+  "t5.m6.si": "YES",
+  "t5.m6.casi": "(YES)",
+  "t5.m6.no": "NO",
+  "t5.m6.ind1": "Function approximation",
+  "t5.m6.ind2": "<em>Bootstrapping</em>",
+  "t5.m6.ind3": "Off-policy training",
+  "t5.m6.cuentaEtiq": "Triad elements present",
+  "t5.m6.notaCasilla":
+    "This is one of the two cells that do <strong>not</strong> follow from counting triad "
+    + "elements, and both are in the “nonlinear” column. The explanation is that in that column "
+    + "<strong>“NO” does not mean the same as in the linear column</strong>: in the linear one, "
+    + "“NO” means “there is a divergence counterexample” —Baird’s—; in the nonlinear one it means "
+    + "“<strong>there is no guarantee</strong>”, which is much weaker. And there the table is, "
+    + "moreover, <strong>internally inconsistent</strong>: it marks “MC · on-policy · nonlinear” "
+    + "with YES and “MC · off-policy · nonlinear” with NO, and the only difference between the two "
+    + "is off-policy training, which without <em>bootstrapping</em> does not trigger instability. "
+    + "<strong>The book does not cover that cell</strong>; the strongest thing it says is that RL "
+    + "theory “is mostly limited to tabular or linear function approximation methods”. The "
+    + "defensible reading is twofold: on the one hand, in the whole nonlinear column all that is "
+    + "lost is the guarantee of a <strong>global</strong> optimum (the local one remains); on the "
+    + "other, off-policy MC with ordinary importance sampling can have <strong>infinite "
+    + "variance</strong>, which is a very real failure mode even if it is not divergence of the "
+    + "weights. What is <strong>not</strong> defensible is reading that “NO” as “the weights "
+    + "diverge”.",
+  "t5.m6.notaLocal":
+    "Careful with this “YES”: it is a <strong>local optimum</strong>, not a global one. The book "
+    + "says so in as many words and qualifies it on top: “although this guarantee is only slightly "
+    + "reassuring, it is typically the best that can be said for nonlinear function approximators, "
+    + "and it is often enough”. In the linear column, by contrast, MC’s “YES” <strong>is</strong> "
+    + "the global optimum, because in the linear case there is only one optimum.",
+  "t5.m6.notaControl":
+    "And a counterpoint from the book for this whole table: <strong>the danger comes neither from "
+    + "control nor from generalised policy iteration</strong>. The instability is already there in "
+    + "the prediction case whenever the three elements come together; control is harder to "
+    + "analyse, but it does not add the problem. <strong>Nor does it come from learning or from "
+    + "not knowing the environment</strong>: it shows up just as strongly in planning methods such "
+    + "as dynamic programming, where the environment is completely known.",
+  "t5.m6.notaQoff":
+    "Q-learning is <strong>off-policy by construction</strong>: its target is the maximum, not the "
+    + "action the behaviour policy took. The policy switch stays fixed, and that is why its row of "
+    + "the control table has no “on-policy” version. It is also the reason the book, when asking "
+    + "which element of the triad to give up, answers: <strong>use SARSA instead of "
+    + "Q-learning</strong>.",
+  "t5.m6.notaCtrlPolitica":
+    "The control table of the slide does not separate on- and off-policy: MC control and SARSA "
+    + "are on-policy by construction, and Q-learning is off-policy. The policy switch still counts "
+    + "triad elements, but the row of the table is the same.",
+  "t5.m6.enlaces":
+    "Three of these cells can be seen running: on-policy linear TD(0) in <a href=\"#m3\">module "
+    + "3</a>, off-policy linear TD(0) in <a href=\"#m4\">module 4</a> and linear SARSA in "
+    + "<a href=\"#m5\">module 5</a>.",
+  "t5.m6.rotuloExacto": "Lookup table · no simulation",
+  "t5.m6.predCab": "Search · Algorithm · Tabular · Linear · Nonlinear",
+  "t5.m6.ctrlCab": "Algorithm · Tabular · Linear · Nonlinear",
+  "t5.m6.recuadroSi": "<strong>(YES) ➜ close, but not still</strong>",
+  "t5.m6.presente": "present",
+  "t5.m6.ausente": "absent",
+  "t5.m6.cuenta": "{n} of 3",
+  "t5.m6.reglaInestable": "With all three, <strong>the weights may diverge</strong>",
+  "t5.m6.reglaEstable": "With two or fewer, <strong>instability can be avoided</strong>",
+  "t5.m6.veredictoTitulo": "{algo} · {aprox} · {pol}",
+
+  /* --- las 21 casillas (clave fabricada por aproximacion.js) ------------- */
+  "t5.m6.celda.mc.tabular.dentro":
+    "No element of the triad. Averaging observed returns converges to the true value, and that "
+    + "is the whole of chapter 5 of the book. With one weight per state, moreover, the minimum of "
+    + "the objective is <strong>zero</strong>: there is no approximation error to share out.",
+  "t5.m6.celda.mc.lineal.dentro":
+    "One element: function approximation. The return is an <strong>unbiased</strong> estimate of "
+    + "the value, so the rule is genuine gradient descent; and in the linear case there is "
+    + "<strong>a single optimum</strong>, so converging to a local optimum is converging to the "
+    + "<strong>global</strong> one of \\(\\overline{VE}\\). <strong>Careful: to the global optimum "
+    + "of the objective, not to the true value</strong>: the minimum error is usually positive.",
+  "t5.m6.celda.mc.noLineal.dentro":
+    "One element. With an unbiased target there is convergence to a <strong>local "
+    + "optimum</strong>, under the usual conditions on \\(\\alpha\\). This “YES” is "
+    + "<strong>weaker</strong> than the one of the linear column, and the book qualifies it.",
+  "t5.m6.celda.td0.tabular.dentro":
+    "One element: <em>bootstrapping</em>. It is the convergence of tabular TD(0) from Unit 4.",
+  "t5.m6.celda.td0.lineal.dentro":
+    "Two elements, and still stable: linear TD(0) converges to the <strong>TD fixed point</strong>, "
+    + "\\(w_{TD}=A^{-1}b\\), because \\(A\\) is positive definite under the <strong>on-policy</strong> "
+    + "distribution. <strong>It does not converge to the global optimum</strong>: its error can be "
+    + "up to \\(1/(1-\\gamma)\\) times the minimum. It is what module 3 shows.",
+  "t5.m6.celda.td0.noLineal.dentro":
+    "<strong>Here “NO” means “no guarantee”, not “diverges”.</strong> With two elements, the rule "
+    + "of the triad does not predict instability, and <strong>the book gives no divergence "
+    + "counterexample for this case</strong>: all its counterexamples are <strong>off-policy</strong>. "
+    + "What it does say is that the available theory does not reach this far.",
+  "t5.m6.celda.mc.tabular.fuera":
+    "One element: off-policy. With importance sampling the distribution is corrected and it "
+    + "converges; the price is <strong>variance</strong>, not divergence.",
+  "t5.m6.celda.mc.lineal.fuera":
+    "Two elements, and stable: <strong>MC does not bootstrap</strong>, so the second of the three "
+    + "is missing, and the book’s rule says that with two, instability can be avoided. The price, "
+    + "again, is variance.",
+  "t5.m6.celda.mc.noLineal.fuera":
+    "<strong>A debatable cell, and the book does not cover it.</strong> There are only two "
+    + "elements —MC does not bootstrap—, so the rule of the triad does <strong>not</strong> predict "
+    + "divergence; and the table itself marks “MC · nonlinear · on-policy” with YES, the only "
+    + "difference being off-policy training. Defensible readings: in the whole nonlinear column "
+    + "the guarantee of a <strong>global</strong> optimum is lost, and ordinary importance sampling "
+    + "can give <strong>infinite variance</strong>. What is not defensible is reading it as “the "
+    + "weights diverge”.",
+  "t5.m6.celda.td0.tabular.fuera":
+    "Two elements: <em>bootstrapping</em> and off-policy. Function approximation is missing, and "
+    + "in the tabular case the values are decoupled: it is the tabular Q-learning of Unit 4, with "
+    + "the best guarantees of the whole course.",
+  "t5.m6.celda.td0.lineal.fuera":
+    "<strong>All three elements.</strong> And here “NO” really is “diverges”: it is "
+    + "<strong>Baird’s counterexample</strong>, where the weights go to infinity even though the "
+    + "true value is zero and can be represented exactly. It diverges <strong>for any "
+    + "\\(\\alpha>0\\)</strong> and also with DP updates, with no randomness at all. It is module 4.",
+  "t5.m6.celda.td0.noLineal.fuera":
+    "All three elements, and no theory on top. If the linear case already diverges, the nonlinear "
+    + "one cannot have a better guarantee.",
+  "t5.m6.celda.mcControl.tabular.dentro":
+    "No element of the triad. It is the Monte Carlo control of Unit 4, with exploring starts or "
+    + "\\(\\varepsilon\\)-soft policies.",
+  "t5.m6.celda.mcControl.lineal.dentro":
+    "One element. The “(YES)” of the box —“close, but not still”— is not because of the "
+    + "approximation itself, it is because <strong>the policy changes</strong>: the convergence "
+    + "guarantee for prediction is stated <strong>for a constant policy</strong>.",
+  "t5.m6.celda.mcControl.noLineal.dentro":
+    "One element, and still “NO”: the same case as the nonlinear column. It means “no guarantee "
+    + "of a global optimum”, not “diverges”.",
+  "t5.m6.celda.sarsa.tabular.dentro":
+    "One element: <em>bootstrapping</em>. It is the tabular SARSA of Unit 4.",
+  "t5.m6.celda.sarsa.lineal.dentro":
+    "Two elements, and the parenthesis has an exact citation: <strong>linear semi-gradient SARSA "
+    + "with \\(\\varepsilon\\)-greedy selection does not converge in the usual sense, but it enters "
+    + "a bounded region near the best solution.</strong> With a <strong>constant</strong> policy it "
+    + "does converge, just as TD(0) does and with the same kind of bound.",
+  "t5.m6.celda.sarsa.noLineal.dentro":
+    "Two elements. The nonlinear column once more: no guarantee, no proven divergence.",
+  "t5.m6.celda.qLearning.tabular.fuera":
+    "Two elements: <em>bootstrapping</em> and off-policy. Function approximation is missing, and "
+    + "in the tabular case Q-learning has the best convergence guarantees of all control methods.",
+  "t5.m6.celda.qLearning.lineal.fuera":
+    "<strong>All three elements.</strong> There are counterexamples analogous to Baird’s showing "
+    + "the divergence of Q-learning, and the book says it is cause for concern <strong>precisely "
+    + "because, otherwise, Q-learning would have the best guarantees of all control "
+    + "methods</strong>. The book’s honest nuance: convergence might be guaranteed if the behaviour "
+    + "policy is sufficiently close to the target policy —for instance, \\(\\varepsilon\\)-greedy—; "
+    + "<strong>Q-learning has never been found to diverge in that case, but there is no theoretical "
+    + "analysis</strong>. And there is a counterexample by Bradtke (1993) in which linear "
+    + "Q-learning converges to a <strong>destabilising</strong> policy.",
+  "t5.m6.celda.qLearning.noLineal.fuera":
+    "All three elements and no theory. It is the DQN cell, and it explains why DQN needs "
+    + "<strong>two pieces of engineering</strong> —experience replay and a target network— to work "
+    + "in practice.",
+
+  /* --- cuestionario del módulo 6 ----------------------------------------- */
+  "t5.m6.quiz.0.enunciado":
+    "In the prediction table, the cell for off-policy MC with linear approximation is “YES”, and "
+    + "the one for off-policy TD(0) with linear approximation is “NO”. What explains the "
+    + "difference?",
+  "t5.m6.quiz.0.opciones": [
+    "That MC does not bootstrap: one of the three triad elements is missing, and with two "
+      + "instability can be avoided. Off-policy linear TD(0) has all three.",
+    "That MC uses importance sampling and TD(0) does not, and importance sampling corrects the "
+      + "state distribution completely.",
+    "That MC has lower variance and is therefore numerically more stable than TD(0) in the linear "
+      + "case.",
+    "That MC does not use \\(\\gamma\\) and the divergence of TD(0) requires \\(\\gamma>0.5\\).",
+  ],
+  "t5.m6.quiz.0.explicacion":
+    "The book’s rule is the counting one: with two of the three elements, instability can be "
+    + "avoided; with all three, there is no guarantee and there are counterexamples. Off-policy "
+    + "linear MC has function approximation and off-policy, but <strong>not</strong> "
+    + "<em>bootstrapping</em>, so it stays at two. Importance sampling exists in both off-policy "
+    + "families and is not what decides. Variance goes the other way: MC has <strong>more</strong> "
+    + "variance than TD, and is still more stable in this sense. And MC does use \\(\\gamma\\) —in "
+    + "the discounted return—: the threshold \\(\\gamma>0.5\\) belongs to the specific example of "
+    + "module 4, not to a general condition.",
+  "t5.m6.quiz.1.enunciado":
+    "The cell for on-policy TD(0) with nonlinear approximation is “NO”. What exactly does that "
+    + "“NO” mean?",
+  "t5.m6.quiz.1.opciones": [
+    "That there is no convergence guarantee, not that the weights diverge: the book gives no "
+      + "on-policy divergence counterexample, and all the ones it gives are off-policy.",
+    "That the weights diverge, just as in Baird’s counterexample, only without a figure because "
+      + "the neural network cannot be drawn.",
+    "That it converges, but to a local optimum instead of the global one, which is the same "
+      + "thing that happens to MC in that column.",
+    "That it converges only if the network is small enough, with the bound "
+      + "\\(d \\ll \\lvert\\mathcal S\\rvert\\).",
+  ],
+  "t5.m6.quiz.1.explicacion":
+    "The “NO” of the nonlinear column is weaker than that of the linear one: there it means the "
+    + "theory does not reach, and the book is explicit that RL theory is mostly limited to tabular "
+    + "or linear methods. <strong>All</strong> the divergence counterexamples in the book are "
+    + "off-policy —Baird’s and that of Tsitsiklis and Van Roy—, so claiming divergence here would "
+    + "be going further than the source. Nor is it “local optimum”: that is what is claimed for "
+    + "nonlinear MC, and that is why its cell says “YES” and this one “NO”; the difference between "
+    + "the two is <em>bootstrapping</em>. And there is no bound on network size that guarantees "
+    + "anything.",
+  "t5.m6.quiz.2.enunciado":
+    "The book asks which element of the triad could be given up. Which one does it say can be "
+    + "given up, and with what concrete recipe for model-free RL?",
+  "t5.m6.quiz.2.opciones": [
+    "Off-policy training: “one could simply use SARSA instead of Q-learning”. Function "
+      + "approximation cannot be given up, and <em>bootstrapping</em> is too valuable.",
+    "<em>Bootstrapping</em>: Monte Carlo can be used instead of TD, and the cost in efficiency is "
+      + "negligible.",
+    "Function approximation: it is enough to use state aggregation, which is tabular over groups "
+      + "and does not trigger instability.",
+    "None: all three are indispensable, and that is why methods like Gradient-TD are needed.",
+  ],
+  "t5.m6.quiz.2.explicacion":
+    "The book goes through all three. Function approximation is the one that can least be given "
+    + "up, because scaling is needed —and it warns that aggregation and least-squares methods are "
+    + "too weak or too expensive—. <em>Bootstrapping</em> can be given up, but at a cost in "
+    + "computational and data efficiency, and it concludes that it is extremely valuable. That "
+    + "leaves off-policy, which for model-free RL is given up with a one-line recipe: use SARSA "
+    + "instead of Q-learning. That methods like Gradient-TD exist does not mean all three are "
+    + "indispensable: it means some prefer to give up none of them, and that is outside this "
+    + "course.",
 };

@@ -19,7 +19,7 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 /* Toda pagina nueva tiene que entrar AQUI. En el Tema 3 se nos paso y sus 289
    claves no se comprobaron hasta que alguien lo noto a mano. */
 const HTML = ["index.html", "tema1.html", "tema2.html", "tema3.html",
-              "tema4.html", "tema4b.html"];
+              "tema4.html", "tema4b.html", "tema5.html"];
 const JS = readdirSync(join(RAIZ, "assets"))
   .filter((f) => f.endsWith(".js") && f !== "en.js" && f !== "i18n.js")
   .map((f) => join("assets", f));
@@ -100,6 +100,7 @@ test("todas las preguntas de los cuestionarios están traducidas", () => {
 const PREFIJOS_DINAMICOS = [
   "t2.accion.",   // nombreAccion() en tema2.js
   "t2.dir.",      // nombreDir() en tema2.js
+  "t5.m6.celda.", // fichaCasilla().clave en aproximacion.js, pedida con t(ficha.clave) en tema5.js
 ];
 
 test("no hay claves inglesas huérfanas", () => {
@@ -217,6 +218,7 @@ function soloInterfaz(src) {
     .replace(/\\\([\s\S]*?\\\)/g, " ")                   // LaTeX en línea
     .replace(/<!--[\s\S]*?-->/g, " ")                    // comentarios HTML
     .replace(/<pre[\s\S]*?<\/pre>/g, " ")                // cajas de pseudocódigo
+    .replace(/<code>[\s\S]*?<\/code>/g, " ")             // identificadores literales (5_Tema_5_1, IHT(4096))
     .replace(/\/\*[\s\S]*?\*\//g, " ")                   // comentarios JS de bloque
     .replace(/(^|[^:])\/\/.*$/gm, "$1")                  // comentarios JS de línea
     .replace(/\b[A-Z][A-Z0-9]*(_[A-Z0-9]+)+\b/g, " ");   // IDENTIFICADORES_ASI
