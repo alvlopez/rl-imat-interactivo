@@ -23,6 +23,7 @@
       <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
       <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
       <a href="tema5.html" data-t="nav.tema5">Tema 5 · Aproximación de funciones</a>
+      <a href="tema5b.html" data-t="nav.tema5b">Tema 5 (cont.) · Gradiente de política</a>
     </nav>
     <div class="herramientas"></div>
   </div>
@@ -179,6 +180,16 @@
         Ahí se ve por qué \(\sum \alpha_n^2 &lt; \infty\) <em>no</em> se cumple con α
         constante, y por qué eso es una ventaja y no un defecto.</li>
     </ul>
+
+    <p class="explicacion" data-t="t1.m3.puente">
+      Una de las estrategias de la lista no se parece a las demás. El <em>gradient bandit</em>
+      no estima ningún \(q_*(a)\): aprende un vector de <strong>preferencias</strong> \(H_t(a)\),
+      lo convierte en una política con una <em>softmax</em> y lo mueve comparando la recompensa
+      contra una <strong>línea base</strong>. Eso ya es un método de <strong>gradiente de
+      política</strong> — el del <a href="tema5b.html">Tema 5 (cont.)</a>, con un solo estado y
+      sin episodios. Si alguna vez te preguntan en clase «¿dónde hemos visto esto antes?»,
+      la respuesta es esta casilla.
+    </p>
 
     <div class="controles">
       <div class="control">

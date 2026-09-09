@@ -17,6 +17,14 @@ import { barajarOpciones, generador } from "../assets/nucleo.js";
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const RAIZ = join(AQUI, "..");
 
+/* TODAS las páginas con cuestionario, no solo las tres primeras. Hasta el T5 (2.ª
+   parte) este fichero solo miraba `tema1`, `tema2` y `tema3`, así que la mitad del
+   sitio no estaba vigilada: mismo olvido que el del array `HTML` de i18n en el T3.
+   Una página nueva entra AQUÍ. */
+const PAGINAS = ["assets/tema1.js", "assets/tema2.js", "assets/tema3.js",
+                 "assets/tema4.js", "assets/tema4b.js", "assets/tema5.js",
+                 "assets/tema5b.js"];
+
 const PREGUNTA = {
   enunciado: "¿Qué mide el regret?",
   opciones: ["la correcta", "distractor 1", "distractor 2", "distractor 3"],
@@ -114,7 +122,7 @@ test("ninguna pregunta del sitio cita sus opciones por letra o por posición", (
   const prohibido =
     /\b(opci[óo]n(es)?\s+[a-d]\)?|la\s+[a-d]\)|primera\s+opci[óo]n|segunda\s+opci[óo]n|tercera\s+opci[óo]n|[úu]ltima\s+opci[óo]n|respuesta\s+[a-d]\))/i;
 
-  for (const fichero of ["assets/tema1.js", "assets/tema2.js", "assets/tema3.js"]) {
+  for (const fichero of PAGINAS) {
     const fuente = readFileSync(join(RAIZ, fichero), "utf8");
     fuente.split("\n").forEach((linea, i) => {
       if (!/enunciado:|explicacion:|^\s*["`']/.test(linea)) return;
@@ -127,4 +135,68 @@ test("ninguna pregunta del sitio cita sus opciones por letra o por posición", (
       );
     });
   }
+});
+
+/* ---------------------------------------------------------------------------
+ * Los bancos de preguntas en español, comprobados sobre el fuente.
+ *
+ * Los tests de arriba prueban que `barajarOpciones` conserva la correcta para
+ * CUALQUIER pregunta; lo que no vigilaba nadie es que las preguntas escritas
+ * estén bien formadas. `tests/i18n.test.js` exige cuatro opciones a las listas
+ * INGLESAS, pero el español vive en el código y no se comprobaba: una pregunta
+ * española con tres opciones y su traducción con cuatro renderiza distinto en
+ * cada idioma, y ningún test lo veía.
+ * ------------------------------------------------------------------------- */
+
+/** Cuenta los elementos de nivel 1 de un literal de array, saltando cadenas.
+ *  El sitio escribe **coma final** en estos literales, así que un elemento solo
+ *  cuenta si se ha abierto contenido desde la coma anterior. */
+function elementosDelArray(src, aperturaCorchete) {
+  let profundidad = 0, elementos = 0, abierto = false, comilla = null;
+  for (let i = aperturaCorchete; i < src.length; i++) {
+    const c = src[i];
+    if (comilla) {
+      if (c === "\\") i++;
+      else if (c === comilla) comilla = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") { comilla = c; abierto = true; continue; }
+    if (c === "[" || c === "(" || c === "{") { profundidad++; abierto = true; continue; }
+    if (c === ")" || c === "}") { profundidad--; continue; }
+    if (c === "]") {
+      profundidad--;
+      if (profundidad === 0) return abierto ? elementos + 1 : elementos;
+      continue;
+    }
+    if (c === "," && profundidad === 1) {
+      if (abierto) elementos++;
+      abierto = false;
+      continue;
+    }
+    if (!/\s/.test(c)) abierto = true;
+  }
+  return -1;   // corchete sin cerrar
+}
+
+test("toda pregunta española tiene cuatro opciones y una `correcta` que existe", () => {
+  const malas = [];
+  for (const fichero of PAGINAS) {
+    const src = readFileSync(join(RAIZ, fichero), "utf8");
+    for (const m of src.matchAll(/opciones:\s*\[/g)) {
+      const n = elementosDelArray(src, m.index + m[0].length - 1);
+      const linea = src.slice(0, m.index).split("\n").length;
+      if (n !== 4) malas.push(`${fichero}:${linea} tiene ${n} opciones, se esperaban 4`);
+    }
+    for (const m of src.matchAll(/correcta:\s*(-?\d+)/g)) {
+      const v = Number(m[1]);
+      const linea = src.slice(0, m.index).split("\n").length;
+      if (v < 0 || v > 3) malas.push(`${fichero}:${linea} tiene correcta: ${v}, fuera de 0-3`);
+    }
+    const nOpciones = [...src.matchAll(/opciones:\s*\[/g)].length;
+    const nCorrectas = [...src.matchAll(/correcta:\s*-?\d+/g)].length;
+    if (nOpciones !== nCorrectas) {
+      malas.push(`${fichero}: ${nOpciones} listas de opciones y ${nCorrectas} campos correcta`);
+    }
+  }
+  assert.deepEqual(malas, [], `bancos mal formados:\n  ${malas.join("\n  ")}`);
 });

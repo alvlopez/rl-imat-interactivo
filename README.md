@@ -50,6 +50,13 @@ diapositiva deje abierto, sobra.
 | `5_Tema_5_1#slide-15` | La figura de Baird divergiendo, con **67 caracteres de texto**: ni qué MDP es, ni que es fuera de política, ni por qué | T5 · módulo 4 |
 | `5_Tema_5_1#slide-19`, `#slide-20` | La caja del libro **sin un hiperparámetro y sin entorno**, y la diapositiva-ejercicio en blanco | T5 · módulo 5 |
 | `5_Tema_5_1#slide-16`, `#slide-21` | Veintiuna casillas de convergencia **como hechos**, con los tres inductores al lado y sin conectarlos | T5 · módulo 6 |
+| `5_Tema_5_2#slide-6` | «Masas de probabilidad arbitrarias ➜ política estocástica sin estructuras impuestas» — cuatro ventajas de corrido **y ni un caso** | T5 (cont.) · módulo 1 |
+| `5_Tema_5_2#slide-8`, `#slide-9` | Dos **recuadros de color** que nunca se explican, un \(\mu(s)\) que no se define, y un \(\propto\) que pasa a \(=\) sin comentario | T5 (cont.) · módulo 2 |
+| `5_Tema_5_2#slide-11` | La Figura 13.1 proyectada con **cero caracteres de texto**: ni de qué entorno es, ni qué es \(v_*(s_0)\) | T5 (cont.) · módulo 3 |
+| `5_Tema_5_2#slide-12` | «¿Bajo qué condiciones? ¿Por qué?» y «¿cuál es el papel de la línea base?» — respondidas **solo en las notas del ponente** | T5 (cont.) · módulo 4 |
+| `5_Tema_5_2#slide-14`, `#slide-17` | «Varianza reducida, **rendimiento claramente mejor**» — y no hay ni una curva de actor-crítico en las barajas ni en el libro | T5 (cont.) · módulo 5 |
+| `5_Tema_5_2#slide-18`, `#slide-19` | «Un mal movimiento **destroza** la aproximación» y «la KL lo frena»: lo más examinado del tema, sin un dato detrás | T5 (cont.) · módulo 6 |
+| `Tema6_PolicyGradient#slide-6` | **«¿dónde hemos visto esto antes?»** — preguntado al aula y nunca respondido. Es el bandido de gradiente del T1, que el sitio ya ejecutaba **sin nombrarlo** | T5 (cont.) · bloque B3 ↔ T1 · módulo 3 |
 
 ---
 

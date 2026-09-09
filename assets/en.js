@@ -190,6 +190,14 @@ export const EN = {
     "the optimum. That is where you see why \\(\\sum \\alpha_n^2 &lt; \\infty\\) is " +
     "<em>not</em> satisfied by a constant α, and why that is an advantage rather than a " +
     "defect.</li>",
+  "t1.m3.puente":
+    "One of the strategies in the list is unlike the others. The <em>gradient bandit</em> "
+    + "estimates no \\(q_*(a)\\) at all: it learns a vector of <strong>preferences</strong> "
+    + "\\(H_t(a)\\), turns it into a policy with a <em>softmax</em>, and moves it by "
+    + "comparing the reward against a <strong>baseline</strong>. That is already a "
+    + "<strong>policy gradient</strong> method — the subject of "
+    + "<a href=\"tema5b.html\">Unit 5 (cont.)</a> — with a single state and no episodes. "
+    + "See Sutton &amp; Barto §2.8 and §13.1.",
   "t1.m3.pasos": "Steps",
   "t1.m3.runs": "Runs",
   "t1.m3.semilla": "Seed",
@@ -2396,6 +2404,7 @@ export const EN = {
   "nav.tema4": "Unit 4 · Model-free RL",
   "nav.tema4b": "Unit 4 (cont.) · In-between formulas",
   "nav.tema5": "Unit 5 · Function approximation",
+  "nav.tema5b": "Unit 5 (cont.) · Policy gradient",
   "t3.pie.siguiente": "Unit 4 · Model-free RL →",
 
   /* --- tarjetas del índice ---------------------------------------------- */
@@ -2432,6 +2441,18 @@ export const EN = {
     + "<li>Linear MC and TD(0): where each one converges</li>"
     + "<li>When the weights diverge, and the convergence tables</li>"
     + "<li>Control: semi-gradient SARSA on Mountain Car</li>",
+
+  "index.t5b.num": "Unit 5 (cont.) · Sutton, ch. 13",
+  "index.t5b.h2": "Policy gradient methods",
+  "index.t5b.suave":
+    "Until now the policy came out of the values. From here on the policy <em>is</em> "
+    + "what gets learnt: it has its own parameters, its own gradient and its own rule.",
+  "index.t5b.lista":
+    "<li>A corridor where <strong>no deterministic policy works</strong></li>"
+    + "<li>The policy gradient theorem, term by term</li>"
+    + "<li>REINFORCE: why it is correct and why it is slow</li>"
+    + "<li>The baseline and the critic: one number, two roles</li>"
+    + "<li>Policy collapse, and what holds it back</li>",
 
   /* --- pie --------------------------------------------------------------- */
   "t3.pie.anterior": "← Unit 2 · Markov Decision Processes",
@@ -7847,4 +7868,2359 @@ export const EN = {
     + "instead of Q-learning. That methods like Gradient-TD exist does not mean all three are "
     + "indispensable: it means some prefer to give up none of them, and that is outside this "
     + "course.",
+
+  /* ===================================================================== *
+   * Unit 5 (cont.) — Policy gradient methods
+   *
+   * Same rule as in Units 3, 4 and 5: the deck references of the Spanish
+   * page become Sutton & Barto sections, equations, examples and figures.
+   * Terminology is the book's own (return, performance, on-policy
+   * distribution, eligibility vector, baseline, bootstrapping, actor-critic).
+   *
+   * ⚠ THE THREE PSEUDOCODE BOXES ARE NOT TRANSLATED, THEY ARE RESTORED.
+   * `t5b.b7.caja`, `t5b.b8.caja` and `t5b.b9.caja` are the boxes on pp. 350,
+   * 352 and 354 of the book. The Spanish page carries them translated —the
+   * site rule is Spanish as the source— so the English layer puts back the
+   * original wording, word for word, and does not re-translate the Spanish.
+   * The only edit is `R_k` with braces instead of `R_k`, so that the raw
+   * subscript test of tests/i18n.test.js does not trip on it (the Spanish
+   * side is inside a <pre> and the test skips those).
+   * ===================================================================== */
+
+  "meta.titulo.tema5b": "Unit 5 (cont.) · Policy gradient methods — RL IMAT",
+  "t5b.kicker": "Unit 5 (cont.) · Sutton &amp; Barto, chapter 13",
+  "t5b.h1": "Policy gradient methods",
+  "t5b.entradilla":
+    "Up to here the policy did not exist without \\(q\\): values were learnt and the policy "
+    + "came out of them. Here <strong>the policy itself is learnt</strong>, with its own "
+    + "parameters \\(\\theta\\), by ascending the gradient of \\(J(\\theta)\\). This page "
+    + "answers the questions the lecture slides of this unit leave open: <strong>which "
+    + "environment</strong> the two figures projected without a name belong to, <strong>what "
+    + "\\(\\mu(s)\\) is</strong> and why the gradient theorem says \\(\\propto\\) and not "
+    + "\\(=\\), <strong>why REINFORCE is slow</strong> even though its estimator is correct, "
+    + "<strong>under what exact condition</strong> a baseline does not bias and what happens if "
+    + "it depends on the action, <strong>what actor-critic gains and what it pays</strong> with "
+    + "respect to REINFORCE with baseline, and what it really means that “one bad policy move "
+    + "wrecks the training”.",
+  "t5b.subtitulo":
+    "It covers the whole policy-gradient part of the lecture deck, from the first slide to the "
+    + "one before the <strong>AlphaGo</strong> block, which <strong>is not here</strong>: it "
+    + "will be a separate resource.",
+  "t5b.semillaLabel": "Seed",
+  "t5b.semilla": "Seed 2026 · everything random on this page is reproduced from it",
+  "t5b.avisoEntornos":
+    "In this unit the lecture slides carry not a single numerical example: no environment, no "
+    + "trace, no table of values, no exercise. The only quantitative content is two figures "
+    + "from the book, and it is never said which environment they come from. Two are used "
+    + "here: the <strong>short corridor</strong> of Example 13.1 of Sutton &amp; Barto —which "
+    + "is, precisely, the environment of those two figures— and a <strong>cross "
+    + "gridworld</strong> designed for this course, which is <strong>not in the book</strong> "
+    + "and is declared as ours every time it appears.",
+  "t5b.avisoEstocastico":
+    "Wherever there is simulation, each chart says how many independent runs it averages. The "
+    + "exact values —the optimum of the corridor, the distribution \\(\\mu\\), the gradient of "
+    + "\\(J\\), and the exact panels of modules 4, 5 and 6— <strong>are not simulated: they are "
+    + "computed in closed form</strong>, so they do not depend on the seed and come out the same "
+    + "on any computer.",
+  "t5b.indice.m1": "Can a stochastic policy be optimal?",
+  "t5b.indice.m2": "The policy gradient theorem, term by term",
+  "t5b.indice.m3": "REINFORCE: the correct and slow estimator",
+  "t5b.indice.m4": "The baseline: what it touches and what it does not",
+  "t5b.indice.m5": "Actor-critic: the same number, as a baseline and as a critic",
+  "t5b.indice.m6": "Policy collapse, and the brake",
+  "t5b.indice.nota":
+    "Six hands-on stops. <strong>Continuous actions</strong> —the Gaussian policy of the last "
+    + "slide of the unit— are not a stop: they are explained in the last notes block, with "
+    + "their formula and their gradient, because the material contains no experiment that can "
+    + "be reproduced.",
+
+  /* --- A3 · mapa del tema ------------------------------------------------ */
+  "t5b.mapa.h2": "Map of the unit",
+  "t5b.mapa.cab": "<th>Concept</th><th>Where it comes from</th><th>Where it leads</th>",
+  "t5b.mapa.f1":
+    "<td>Parameterising the policy</td>"
+    + "<td>\\(q\\) was already being approximated in order to obtain \\(\\pi\\); the middleman "
+    + "is skipped</td>"
+    + "<td>\\(\\pi(a\\mid s,\\theta)\\) and the ascent \\(\\theta_{t+1} = \\theta_t + "
+    + "\\alpha\\widehat{\\nabla J(\\theta_t)}\\)</td>",
+  "t5b.mapa.f2":
+    "<td>Preferences and softmax</td>"
+    + "<td>\\(h(s,a,\\theta)\\) turned into a distribution</td>"
+    + "<td>You already ran it in Unit 1 with \\(H_t(a)\\) → <strong>B3</strong></td>",
+  "t5b.mapa.f3":
+    "<td>When a stochastic policy wins</td>"
+    + "<td>When the features <strong>do not tell the states apart</strong></td>"
+    + "<td>The short corridor and the cross gridworld → <strong>module 1</strong></td>",
+  "t5b.mapa.f4":
+    "<td>\\(J(\\theta) \\doteq v_{\\pi_\\theta}(s_0)\\)</td>"
+    + "<td>Performance depends on the actions <strong>and on the state "
+    + "distribution</strong></td>"
+    + "<td>And the distribution is set by the environment, which we do not know → "
+    + "<strong>B5</strong></td>",
+  "t5b.mapa.f5":
+    "<td>Policy gradient theorem</td>"
+    + "<td>On the right-hand side <strong>there is no \\(\\nabla\\mu\\)</strong></td>"
+    + "<td>It can be estimated by sampling → <strong>module 2</strong></td>",
+  "t5b.mapa.f6":
+    "<td>\\(\\propto\\) and not \\(=\\)</td>"
+    + "<td>The constant is <strong>the average length of the episode</strong></td>"
+    + "<td>It is absorbed into \\(\\alpha\\); but it matters if you check the theorem → "
+    + "<strong>module 2</strong></td>",
+  "t5b.mapa.f7":
+    "<td>From the expectation to the sample</td>"
+    + "<td>Multiplying and dividing by \\(\\pi(a\\mid S_t,\\theta)\\)</td>"
+    + "<td>The REINFORCE rule and the eligibility vector → <strong>module 3</strong></td>",
+  "t5b.mapa.f8":
+    "<td>Monte Carlo</td>"
+    + "<td>It uses the full return: <strong>unbiased and high variance</strong></td>"
+    + "<td>It learns slowly → <strong>module 3</strong></td>",
+  "t5b.mapa.f9":
+    "<td>Baseline \\(b(S_t)\\)</td>"
+    + "<td>\\(\\sum_a b(s)\\nabla\\pi(a\\mid s,\\theta) = b(s)\\nabla 1 = 0\\)</td>"
+    + "<td>It does not change the expectation, it does change the variance → "
+    + "<strong>module 4</strong></td>",
+  "t5b.mapa.f10":
+    "<td><em>Bootstrapping</em></td>"
+    + "<td>Replacing \\(G_t\\) by \\(G_{t:t+1}\\) introduces <strong>bias</strong></td>"
+    + "<td>And a dependence on the quality of the critic → <strong>module 5</strong></td>",
+  "t5b.mapa.f11":
+    "<td>The policy jump</td>"
+    + "<td>The policy decides which experience it is trained on</td>"
+    + "<td>A bad jump feeds back on itself; the KL holds it → <strong>module 6</strong></td>",
+
+  /* --- B1 · de los valores a la política --------------------------------- */
+  "t5b.b1.h2": "Up to here, the policy did not exist without \\(q\\)",
+  "t5b.b1.fuente": "Sutton &amp; Barto, §13.1, p. 343",
+  "t5b.b1.texto":
+    "The slide says it in three sentences: we have built the agent's behaviour out of the "
+    + "action values, and <strong>policies do not even exist without \\(q\\)</strong>; but "
+    + "since the previous unit we have been using parameterised approximations of \\(q\\) to "
+    + "solve <strong>indirectly</strong> what we really want, which is the policy. Hence the "
+    + "question that opens the unit: <strong>what if we learn a parameterised policy "
+    + "directly?</strong>",
+  "t5b.b1.ecuacion":
+    "\\[ \\pi(a\\mid s,\\theta) \\;=\\; \\Pr\\{A_t = a \\mid S_t = s,\\; \\theta_t = \\theta\\} \\]",
+  "t5b.b1.texto2":
+    "A <strong>policy gradient</strong> method learns \\(\\theta\\) by ascending the gradient "
+    + "of a scalar performance measure \\(J(\\theta)\\). Note the sign: it is "
+    + "<strong>ascent</strong>, and it is <strong>maximised</strong>. When it also relies on a "
+    + "learned estimate of a value function, the method is called "
+    + "<strong>actor-critic</strong>. The deck adds a rider worth keeping: some authors treat "
+    + "actor-critic as a <strong>third family</strong> of methods, and <strong>there is no "
+    + "consensus</strong>.",
+  "t5b.b1.ecuacion2":
+    "\\[ \\theta_{t+1} \\;=\\; \\theta_t + \\alpha\\,\\widehat{\\nabla J(\\theta_t)} \\]",
+  "t5b.b1.glosa":
+    "\\(\\widehat{\\nabla J(\\theta_t)}\\) is a <strong>stochastic estimate</strong> whose "
+    + "expectation approximates the gradient of \\(J\\). That gloss is <strong>only in the "
+    + "second lecture deck of the course</strong>, and it is what explains the hat.",
+  "t5b.b1.aviso":
+    "A nuance about “policies do not even exist without \\(q\\)”: it is a rhetorical device, "
+    + "and there is a counterexample in this very course. The <strong>gradient bandits</strong> "
+    + "of Unit 1 build a policy out of preferences \\(H_t(a)\\) <strong>with no value function "
+    + "at all</strong>, and with a baseline. You have it running on the Unit 1 page.",
+
+  /* --- B2 · la familia, y dónde encaja actor-crítico --------------------- */
+  "t5b.b2.h2": "The family, and the diagram that is only in one of the two decks",
+  "t5b.b2.fuente": "Sutton &amp; Barto, §13.1, p. 343",
+  "t5b.b2.texto":
+    "The book's definition is exact and worth having verbatim: a method is policy gradient if "
+    + "it learns \\(\\theta\\) by ascent on \\(J\\); and it is <strong>actor-critic</strong> if "
+    + "it <em>also</em> learns a value function <strong>that is used to "
+    + "<em>bootstrap</em></strong>. Watch that last part, because it is the line that separates "
+    + "REINFORCE with baseline from actor-critic and it is developed in block B9.",
+  "t5b.b2.texto2":
+    "The second deck of the course draws the three families as a Venn diagram with eleven "
+    + "algorithms. This is the <strong>current</strong> version of that diagram —the one in the "
+    + "February 2026 <code>.pptx</code>—; if you work from the PDF exported in November 2025 "
+    + "you will see <strong>TRPO and PPO classified as <em>policy based</em></strong>, and the "
+    + "lecturer has already moved them into the intersection.",
+  "t5b.b2.cab": "<th>Family</th><th>Algorithms</th>",
+  "t5b.b2.f1":
+    "<td>Value based</td><td>DQN · DDQN · Dueling DQN · Rainbow</td>",
+  "t5b.b2.f2":
+    "<td><strong>Actor-critic</strong> (intersection)</td>"
+    + "<td><strong>A2C/A3C · TRPO · PPO · DDPG · TD3 · SAC</strong></td>",
+  "t5b.b2.f3":
+    "<td>Policy based</td><td>REINFORCE</td>",
+  "t5b.b2.aviso":
+    "Of all of those, this course covers <strong>REINFORCE</strong>, <strong>REINFORCE with "
+    + "baseline</strong> and <strong>one-step actor-critic</strong>; of <strong>TRPO</strong> "
+    + "and <strong>PPO</strong> it covers the idea behind them (block B11), not their "
+    + "formulation. The ones in the first row belong to the previous unit.",
+
+  /* --- B3 · preferencias y softmax --------------------------------------- */
+  "t5b.b3.h2": "Action preferences and softmax",
+  "t5b.b3.fuente":
+    "Sutton &amp; Barto, §13.1, equations (13.2) and (13.3), p. 344",
+  "t5b.b3.texto":
+    "The policy can be parameterised any way you like <strong>as long as it is differentiable "
+    + "with respect to \\(\\theta\\)</strong>, that is, as long as \\(\\nabla\\pi(a\\mid "
+    + "s,\\theta)\\) exists and is finite. And in practice something more is required: that it "
+    + "<strong>never becomes deterministic</strong>, because exploration is no longer added "
+    + "from outside —there is no \\(\\varepsilon\\) here— but lives <strong>inside</strong> the "
+    + "policy itself. For discrete action spaces, the usual parameterisation is "
+    + "<strong>numerical preferences</strong> \\(h(s,a,\\theta)\\in\\mathbb R\\) passed through "
+    + "a softmax.",
+  "t5b.b3.ecuacion":
+    "\\[ \\pi(a\\mid s,\\theta) \\;\\doteq\\; \\frac{e^{\\,h(s,a,\\theta)}}{\\sum_{a'} "
+    + "e^{\\,h(s,a',\\theta)}} \\qquad\\text{and, in the linear case,}\\qquad h(s,a,\\theta) = "
+    + "\\theta^\\top x(s,a) \\]",
+  "t5b.b3.texto2":
+    "\\(h\\) is what gets learnt, and it can be anything from a linear function of the "
+    + "features to a deep network. The softmax is only a converter: <strong>from preferences "
+    + "to a distribution</strong>. And, as in every softmax, <strong>only the differences "
+    + "between preferences matter</strong>, not their absolute value.",
+  "t5b.b3.pregunta":
+    "Next to this formula the second deck of the course puts a question to the class: "
+    + "<strong>“where have we seen this before?”</strong>, and never answers it on any slide. "
+    + "The answer is in <strong>Unit 1</strong>: <strong>gradient bandits</strong> use exactly "
+    + "the same construction, \\(\\Pr\\{A_t=a\\}\\doteq e^{H_t(a)}/\\sum_b "
+    + "e^{H_t(b)}\\doteq\\pi_t(a)\\) (Sutton &amp; Barto, §2.8, equation (2.11)), with its "
+    + "<strong>baseline</strong> \\(\\bar R_t\\) one step later. The only difference is the "
+    + "state: there the preferences were \\(H_t(a)\\), here they are \\(h(s,a,\\theta)\\). "
+    + "<strong>You already have it running</strong> in the "
+    + "<a href=\"tema1.html#m3\">strategy comparison of Unit 1</a>, as the “gradient” strategy.",
+  "t5b.b3.texto3":
+    "And one observation from the book that is worth having written down this year: taking a "
+    + "softmax <strong>over the action values</strong> is not the same thing. Action values "
+    + "converge to their true values, which differ by a finite amount, and that translates "
+    + "into specific probabilities other than 0 and 1. <strong>Preferences</strong> converge "
+    + "to nothing: they go wherever they need to, and if the optimal policy is deterministic "
+    + "the preferences of the optimal actions go infinitely above the rest.",
+
+  /* --- B4 · las ventajas -------------------------------------------------- */
+  "t5b.b4.h2":
+    "The four advantages from the slide, a fifth from the book, and which of them has a case "
+    + "behind it",
+  "t5b.b4.fuente":
+    "Sutton &amp; Barto, §13.1, pp. 344-346, and §13.2, p. 346",
+  "t5b.b4.texto":
+    "The slide lists <strong>four</strong> advantages, one after another and with no example. "
+    + "Here are those four with what the book says about each, which is not the same for all of "
+    + "them, and <strong>a fifth one that appears in neither deck</strong>: “sometimes the "
+    + "optimum is stochastic”, which is the book’s (§13.1, p. 344). It comes second, and it is "
+    + "no minor addition — it is precisely <strong>the only one with numerical evidence</strong> "
+    + "in the chapter, and the one module 1 rests on.",
+  "t5b.b4.cab":
+    "<th>Advantage</th><th>What the book says</th><th>With what evidence?</th>",
+  "t5b.b4.f1":
+    "<td><strong>Flexibility</strong>: arbitrary probability masses, a stochastic policy with "
+    + "no imposed structure, <strong>which can become almost deterministic</strong></td>"
+    + "<td>With \\(\\varepsilon\\)-<em>greedy</em> there is always a probability "
+    + "\\(\\varepsilon\\) of a random action; with preferences there is not, because they do "
+    + "not converge to specific values</td>"
+    + "<td>An argument, not a theorem (§13.1, p. 344)</td>",
+  "t5b.b4.f2":
+    "<td><strong>Sometimes the optimum is stochastic</strong> — ⚠ <strong>this one appears in "
+    + "neither deck</strong>: it is the book’s</td>"
+    + "<td>“In problems with significant function approximation, <strong>the best approximate "
+    + "policy may be stochastic</strong>”</td>"
+    + "<td><strong>The only one with numerical evidence</strong>: Example 13.1 and its graph → "
+    + "<strong>module 1</strong></td>",
+  "t5b.b4.f3":
+    "<td><strong>The policy may be simpler to approximate than the value</strong></td>"
+    + "<td>“For some, the action-value function is simpler […] For others, the policy is "
+    + "simpler”, with Tetris as an external reference</td>"
+    + "<td>Qualitative; the book does not illustrate it, and the slide itself takes it back "
+    + "(“it will depend on the problem”)</td>",
+  "t5b.b4.f4":
+    "<td><strong>Prior knowledge can be injected</strong> into the policy, <strong>not</strong> "
+    + "into the reward</td>"
+    + "<td>“This is often <strong>the most important reason</strong> for using a policy-based "
+    + "learning method”</td>"
+    + "<td>Qualitative. The book gives it the rank of most important reason and still does not "
+    + "illustrate it</td>",
+  "t5b.b4.f5":
+    "<td><strong>Smoother convergence</strong></td>"
+    + "<td>With a continuous parameterisation the probabilities change smoothly; with "
+    + "\\(\\varepsilon\\)-<em>greedy</em> they can change abruptly on a minimal change of the "
+    + "estimated values</td>"
+    + "<td>A <strong>continuity</strong> argument, and it is in <strong>§13.2</strong>, not in "
+    + "§13.1. The book <strong>states no convergence theorem here</strong></td>",
+  "t5b.b4.aviso":
+    "Watch out with the fourth one: the exam has asked it with the sense inverted —“injecting "
+    + "prior knowledge is avoided, which can be done better in the reward”— and that is "
+    + "<strong>false</strong>. The advantage is that it <strong>can</strong> be injected into "
+    + "the policy, and the slide underlines it in brackets: <strong>not</strong> in the design "
+    + "of the reward signal.",
+  "t5b.b4.aviso2":
+    "And watch the first and the fifth together: “never deterministic” and “almost "
+    + "deterministic” do not contradict each other. The softmax <strong>approaches</strong> "
+    + "determinism without ever reaching it: the probabilities tend to 0 and 1 but never get "
+    + "there, because the preferences would have to be infinite.",
+  "t5b.b4.modulo":
+    "→ module 1: move \\(p\\) in two environments where no deterministic policy terminates, "
+    + "and see where the optimum falls.",
+
+  /* --- MÓDULO 1 · cabecera ------------------------------------------------ */
+  "t5b.m1.etiqueta": "MODULE 1",
+  "t5b.m1.h2": "Can a stochastic policy be optimal?",
+  "t5b.m1.fuente":
+    "Sutton &amp; Barto, §13.1, Example 13.1 and the graph in its box; Exercise 13.1",
+  "t5b.m1.explicacion":
+    "Three cells in a row, goal on the right, \\(-1\\) per step. Two actions, <em>right</em> "
+    + "and <em>left</em>, with the effect you expect… <strong>except in the middle cell, where "
+    + "they are switched</strong>: there <em>right</em> takes you left. And one detail that "
+    + "changes everything: <strong>the three cells have the same features</strong>, "
+    + "\\(x(s,\\text{right}) = [1,0]^\\top\\) and \\(x(s,\\text{left}) = [0,1]^\\top\\) for all "
+    + "three. The agent <strong>cannot tell them apart</strong>, so it can only have "
+    + "<strong>one</strong> probability \\(p\\) of going right, the same in all three. Move "
+    + "\\(p\\) and see where the maximum falls.",
+
+  /* --- B5 · J(theta) ------------------------------------------------------ */
+  "t5b.b5.h2": "Performance, and why its gradient is hard",
+  "t5b.b5.fuente": "Sutton &amp; Barto, §13.2, equation (13.4), p. 346",
+  "t5b.b5.texto":
+    "For episodic tasks, performance is <strong>the true value of the start state under the "
+    + "policy</strong>: the expected value of following \\(\\pi_\\theta\\) from \\(s_0\\). The "
+    + "book also assumes that every episode starts in the same \\(s_0\\) and that there is "
+    + "<strong>no discounting (\\(\\gamma=1\\))</strong> in the episodic case; the "
+    + "\\(\\gamma^t\\) that shows up in the pseudocode boxes is for the general discounted "
+    + "case, and is discussed in B7.",
+  "t5b.b5.ecuacion": "\\[ J(\\theta) \\;\\doteq\\; v_{\\pi_\\theta}(s_0) \\]",
+  "t5b.b5.texto2":
+    "And here is the obstacle. Performance depends on <strong>two</strong> things: on which "
+    + "actions the policy chooses —which we know how to differentiate, because we know the "
+    + "parameterisation— and on <strong>in which states</strong> it chooses them, that is, on "
+    + "the state distribution the policy induces. That second part is a <strong>function of "
+    + "the environment</strong>, whose dynamics we do not know: <strong>we cannot "
+    + "differentiate it</strong>. The sentence that spells this out is only in the second deck "
+    + "of the course.",
+  "t5b.b5.pregunta":
+    "The question of the unit is posed like this: <strong>how do we estimate the gradient of "
+    + "performance with respect to \\(\\theta\\) if it depends on an effect of \\(\\theta\\) "
+    + "on the state distribution that we do not know?</strong> The answer is the next block.",
+
+  /* --- B6 · el teorema del gradiente -------------------------------------- */
+  "t5b.b6.h2": "The policy gradient theorem",
+  "t5b.b6.fuente":
+    "Sutton &amp; Barto, §13.2, equation (13.5), p. 348; proof in the box on p. 347; "
+    + "\\(\\mu\\) and \\(\\eta\\) in §9.2, box on p. 221",
+  "t5b.b6.texto":
+    "This is the only hard result of the unit, and neither of the two decks proves it or says "
+    + "where the proof is. The expression is this one, \\(\\propto\\) included:",
+  "t5b.b6.ecuacion":
+    "\\[ \\nabla J(\\theta) \\;\\propto\\; \\sum_{s} \\mu(s) \\sum_{a} "
+    + "q_\\pi(s,a)\\,\\nabla\\pi(a\\mid s,\\theta) \\]",
+  "t5b.b6.texto2":
+    "What has to be seen is <strong>what is not there</strong>: on the right-hand side "
+    + "<strong>there is no \\(\\nabla\\mu\\)</strong>. That is the achievement of the theorem, "
+    + "and the sentence that says so —“this result does <strong>NOT</strong> involve "
+    + "differentiating the state distribution”— is only in the second deck of the course. The "
+    + "lecture deck instead draws a red box around \\(\\sum_s\\mu(s)\\sum_a q_\\pi(s,a)\\) and "
+    + "a green one around \\(\\nabla\\pi(a\\mid s,\\theta)\\), <strong>and explains "
+    + "neither</strong>: the red one is what is going to be estimated by sampling, the green "
+    + "one is the only thing that has to be differentiated.",
+  "t5b.b6.texto3":
+    "Two things the slides do not say and that are needed to understand the formula. The "
+    + "first: <strong>what \\(\\mu(s)\\) is</strong>. It is the <strong>on-policy "
+    + "distribution</strong>, the fraction of time spent in each state while following "
+    + "\\(\\pi\\). It is computed by counting visits: if \\(\\eta(s)\\) is the expected number "
+    + "of steps in \\(s\\) per episode, then \\(\\mu(s) = \\eta(s)/\\sum_{s'}\\eta(s')\\). It "
+    + "is not an arbitrary distribution nor a design choice: <strong>it is set by the "
+    + "environment together with the policy</strong>.",
+  "t5b.b6.ecuacion2":
+    "\\[ \\mu(s) \\;=\\; \\frac{\\eta(s)}{\\sum_{s'}\\eta(s')}, \\qquad \\eta(s) \\;=\\; h(s) "
+    + "+ \\sum_{\\bar s}\\eta(\\bar s)\\sum_a \\pi(a\\mid \\bar s,\\theta)\\,p(s\\mid \\bar "
+    + "s,a) \\]",
+  "t5b.b6.texto4":
+    "The second: <strong>why \\(\\propto\\) and not \\(=\\)</strong>. Because a constant is "
+    + "missing, and the book says which one: in the episodic case, <strong>the average length "
+    + "of the episode</strong>; in the continuing case, 1, and there the relation is an "
+    + "equality. For the algorithm it makes no difference —“any constant of proportionality "
+    + "can be absorbed into the step size \\(\\alpha\\), which is otherwise arbitrary”—, but "
+    + "<strong>it does make a difference if you want to check the theorem with numbers</strong>, "
+    + "which is exactly what module 2 does.",
+  "t5b.b6.aviso":
+    "⚠ Beware of an easy reading: the theorem does <strong>not</strong> avoid sampling states. "
+    + "What it avoids is <strong>differentiating</strong> the distribution. \\(\\mu(s)\\) is "
+    + "still in the formula, and the next step is exactly to sample states by following "
+    + "\\(\\pi\\): “if \\(\\pi\\) is followed, states will be encountered in these "
+    + "proportions”. <strong>That is what makes these methods on-policy.</strong>",
+  "t5b.b6.modulo":
+    "→ module 2: the two sides of the equation, with their numbers, and the constant that "
+    + "makes them equal.",
+
+  /* --- MÓDULO 2 · cabecera ------------------------------------------------ */
+  "t5b.m2.etiqueta": "MODULE 2",
+  "t5b.m2.h2": "The policy gradient theorem, term by term",
+  "t5b.m2.fuente":
+    "Sutton &amp; Barto, §13.2, equation (13.5); \\(\\mu\\) and \\(\\eta\\) in §9.2; the "
+    + "eligibility vector, Exercise 13.3 and equation (13.9)",
+  "t5b.m2.explicacion":
+    "The formula of the theorem has three pieces and in class it is projected whole, with two "
+    + "coloured boxes that are never explained. Here are the three, with their numbers, on the "
+    + "short corridor: <strong>\\(\\mu(s)\\)</strong>, the fraction of time spent in each cell; "
+    + "<strong>\\(q_\\pi(s,a)\\)</strong>, what each action is worth; and "
+    + "<strong>\\(\\nabla\\pi(a\\mid s,\\theta)\\)</strong>, the only thing that has to be "
+    + "differentiated. And next to them, the gradient of \\(J\\) computed <strong>by another "
+    + "route</strong>: finite differences on the closed form of the previous module, without "
+    + "using the theorem at all. The two numbers have to agree… <strong>up to a "
+    + "constant</strong>.",
+
+  /* --- B7 · REINFORCE ----------------------------------------------------- */
+  "t5b.b7.h2": "REINFORCE",
+  "t5b.b7.fuente":
+    "Sutton &amp; Barto, §13.3, equations (13.6) to (13.9) and the box on p. 350",
+  "t5b.b7.texto":
+    "The right-hand side of the theorem is a sum over states <strong>weighted by how often "
+    + "they occur under \\(\\pi\\)</strong>. If \\(\\pi\\) is followed, states occur in exactly "
+    + "those proportions, so the sum over states is already an expectation and can be replaced "
+    + "by samples.",
+  "t5b.b7.ecuacion":
+    "\\[ \\nabla J(\\theta) \\;\\propto\\; \\sum_s\\mu(s)\\sum_a q_\\pi(s,a)\\nabla\\pi(a\\mid "
+    + "s,\\theta) \\;=\\; \\mathbb E_\\pi\\!\\left[\\sum_a q_\\pi(S_t,a)\\,\\nabla\\pi(a\\mid "
+    + "S_t,\\theta)\\right] \\]",
+  "t5b.b7.texto2":
+    "If you stop here and replace \\(q_\\pi\\) by a learned value \\(\\hat q(S_t,a,w)\\), you "
+    + "get an algorithm with a name of its own, the <em>all-actions</em> method, which updates "
+    + "using <strong>all</strong> the actions and not only the one taken. The book mentions it "
+    + "and moves on; <strong>it does not appear in the lecture deck, only in the second deck of "
+    + "the course</strong>.",
+  "t5b.b7.ecuacion2":
+    "\\[ \\theta_{t+1} \\doteq \\theta_t + \\alpha\\sum_a \\hat q(S_t,a,w)\\,\\nabla\\pi(a\\mid "
+    + "S_t,\\theta) \\]",
+  "t5b.b7.texto3":
+    "To keep only the action taken you need the trick on the slide: <strong>multiply and divide "
+    + "by \\(\\pi(a\\mid S_t,\\theta)\\)</strong>. With that, the sum over actions becomes an "
+    + "expectation over the action the policy takes, and the return \\(G_t\\) enters as a "
+    + "sample of \\(q_\\pi(S_t,A_t)\\).",
+  "t5b.b7.ecuacion3":
+    "\\[ \\nabla J(\\theta) = \\mathbb E_\\pi\\!\\left[\\sum_a \\pi(a\\mid "
+    + "S_t,\\theta)\\,q_\\pi(S_t,a)\\frac{\\nabla\\pi(a\\mid S_t,\\theta)}{\\pi(a\\mid "
+    + "S_t,\\theta)}\\right] = \\mathbb E_\\pi\\!\\left[q_\\pi(S_t,A_t)\\frac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta)}{\\pi(A_t\\mid S_t,\\theta)}\\right] = \\mathbb "
+    + "E_\\pi\\!\\left[G_t\\,\\frac{\\nabla\\pi(A_t\\mid S_t,\\theta)}{\\pi(A_t\\mid "
+    + "S_t,\\theta)}\\right] \\]",
+  "t5b.b7.glosa":
+    "The second step replaces \\(a\\) by the sample \\(A_t\\sim\\pi\\); the third uses that "
+    + "\\(\\mathbb E_\\pi[G_t\\mid S_t,A_t] = q_\\pi(S_t,A_t)\\).",
+  "t5b.b7.ecuacion4":
+    "\\[ \\theta_{t+1} \\;\\doteq\\; \\theta_t + \\alpha\\,G_t\\,\\frac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)} \\]",
+  "t5b.b7.texto4":
+    "The deck marks two things in this formula with a red circle and a green ellipse, and "
+    + "<strong>explains neither of them in any text</strong>: the explanation is in the "
+    + "speaker's notes. They are these two. <strong>The return \\(G_t\\)</strong>: the increment "
+    + "is proportional to the return, so the parameters move more in the directions that favour "
+    + "actions with a high return. <strong>The denominator \\(\\pi(A_t\\mid "
+    + "S_t,\\theta_t)\\)</strong>: dividing by the probability of the action taken "
+    + "<strong>normalises</strong> the increment; without that division, actions that are chosen "
+    + "often would have an advantage —they would be updated more times in their own direction— "
+    + "and could end up winning even if they do not yield the highest return. It is also what "
+    + "<strong>mitigates the loss of exploration</strong>.",
+  "t5b.b7.aviso":
+    "The second deck of the course describes that denominator as “reducing the bias by which "
+    + "seldom-selected actions end up never being chosen”. Careful with the word: there “bias” "
+    + "is used colloquially, and <strong>three slides later</strong> it is used in the "
+    + "statistical sense and in the opposite direction (“it introduces no bias”). REINFORCE "
+    + "<strong>is an unbiased estimator</strong>; what the denominator does is compensate for "
+    + "the sampling frequency, not for a bias.",
+  "t5b.b7.texto5":
+    "That ratio has a name. In the literature you will see it as <em>score function</em>, which "
+    + "is what both decks call it; <strong>in Sutton &amp; Barto it is called the <em>eligibility "
+    + "vector</em></strong> (p. 349), and the phrase “score function” does not appear once in "
+    + "chapter 13. They are the same object, and the identity that links them —\\(\\nabla\\ln x = "
+    + "\\nabla x/x\\)— <strong>is written by neither deck</strong>:",
+  "t5b.b7.ecuacion5":
+    "\\[ \\nabla\\ln\\pi(A_t\\mid S_t,\\theta_t) \\;=\\; \\frac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)} \\]",
+  "t5b.b7.aviso2":
+    "And do not confuse it with the eligibility <strong>traces</strong> of Unit 4: the "
+    + "eligibility <strong>vector</strong> is an instantaneous gradient, the <strong>trace</strong> "
+    + "\\(z_t\\) is its discounted accumulation. In the one-step algorithm there is a vector and "
+    + "there is no trace.",
+  "t5b.b7.texto6":
+    "For the linear softmax, the eligibility vector has a closed form that is needed to program "
+    + "any of this, and that <strong>is on no slide of either collection</strong>. The book poses "
+    + "it as Exercise 13.3: it is the <strong>feature of the action taken minus the average "
+    + "feature under the policy</strong>.",
+  "t5b.b7.ecuacion6":
+    "\\[ \\nabla\\ln\\pi(a\\mid s,\\theta) \\;=\\; x(s,a) - \\sum_{a'} \\pi(a'\\mid "
+    + "s,\\theta)\\,x(s,a') \\]",
+  "t5b.b7.caja":
+    "REINFORCE: Monte-Carlo Policy-Gradient Control (episodic) for π*\n"
+    + "\n"
+    + "Input: a differentiable policy parameterization π(a|s,θ)\n"
+    + "Algorithm parameter: step size α &gt; 0\n"
+    + "Initialize policy parameter θ ∈ R^{d'} (e.g., to 0)\n"
+    + "\n"
+    + "Loop forever (for each episode):\n"
+    + "    Generate an episode S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T, following π(·|·,θ)\n"
+    + "    Loop for each step of the episode t = 0, 1, …, T−1:\n"
+    + "        G ← Σ_{k=t+1}^{T} γ^{k−t−1} R_k                                  (G_t)\n"
+    + "        θ ← θ + α γ^t G ∇ln π(A_t|S_t,θ)",
+  "t5b.b7.texto7":
+    "Three things about this box. <strong>The \\(\\gamma^t\\)</strong> is not in the update rule "
+    + "projected two slides earlier, and nobody comments on it: it is there because the text "
+    + "works without discounting (\\(\\gamma=1\\)) and the boxes give the general discounted "
+    + "version. With \\(\\gamma=1\\) —which is the case of the short corridor— <strong>it is 1 "
+    + "and disappears</strong>; with \\(\\gamma&lt;1\\), <strong>dropping it gives a different "
+    + "algorithm</strong>, not a simplification. <strong>The loop over \\(t\\)</strong> comes "
+    + "after generating the whole episode: REINFORCE uses the full return, so all its updates "
+    + "are made <strong>in hindsight</strong>, once the episode has finished. And <strong>the "
+    + "initialisation</strong> says “e.g., to 0”, which has consequences you can see in module 3.",
+  "t5b.b7.respuesta":
+    "The lecture deck asks the class: <strong>“on-policy or off-policy? online or "
+    + "offline?”</strong> and does not answer on screen. The answer, in the speaker's notes: "
+    + "<strong>it is on-policy and offline</strong>. On-policy because the episode is generated "
+    + "by following the same \\(\\pi\\) that is being updated —that is what the step from the sum "
+    + "over \\(\\mu\\) to the expectation requires—; offline because you have to wait until the "
+    + "end of the episode to have \\(G_t\\).",
+  "t5b.b7.modulo":
+    "→ module 3: the estimator is correct and still learns slowly. Here you can see how much, "
+    + "and why.",
+
+  /* --- MÓDULO 3 · cabecera ------------------------------------------------ */
+  "t5b.m3.etiqueta": "MODULE 3",
+  "t5b.m3.h2": "REINFORCE: the correct and slow estimator",
+  "t5b.m3.fuente":
+    "Sutton &amp; Barto, §13.3, equation (13.8), the box on p. 350 and Figure 13.1",
+  "t5b.m3.explicacion":
+    "This is the figure projected in class without a word of text, now with everything it is "
+    + "missing: <strong>the environment is the short corridor of module 1</strong>, the dashed "
+    + "line is \\(v_*(s_0) = -(6+4\\sqrt2) \\approx -11.66\\) —the best value reachable within "
+    + "this class of policies—, and the vertical axis is the <strong>total reward on the "
+    + "episode</strong>, \\(G_0\\), averaged over as many independent runs as you choose —a "
+    + "hundred, as in the book, or fewer: the control is right below and the caption under the "
+    + "chart always says how many. With \\(\\gamma = 1\\) and \\(-1\\) per step, \\(G_0\\) is "
+    + "precisely <strong>minus the length of the episode</strong>.",
+  "t5b.m3.explicacion2":
+    "The REINFORCE estimator <strong>is correct</strong>: its expectation points in the "
+    + "direction of the performance gradient, and the previous module guarantees that for you. "
+    + "So look at how long it takes, and above all look at what happens when you drop the "
+    + "number of averaged runs to 1.",
+
+  /* --- B8 · REINFORCE con línea base -------------------------------------- */
+  "t5b.b8.h2": "REINFORCE with baseline",
+  "t5b.b8.fuente":
+    "Sutton &amp; Barto, §13.4, equations (13.10) and (13.11) and the box on p. 352; "
+    + "Figure 13.2, p. 352",
+  "t5b.b8.texto":
+    "A <strong>baseline</strong> \\(b(s)\\) can be subtracted from the theorem without it "
+    + "ceasing to be true:",
+  "t5b.b8.ecuacion":
+    "\\[ \\nabla J(\\theta) \\;\\propto\\; \\sum_s\\mu(s)\\sum_a\\big(q_\\pi(s,a) - "
+    + "b(s)\\big)\\nabla\\pi(a\\mid s,\\theta) \\]",
+  "t5b.b8.texto2":
+    "<strong>The exact condition —and it is the one asked in the exam— is that \\(b\\) must not "
+    + "vary with the action.</strong> It can be any function of the state, even a random "
+    + "variable, as long as it does not depend on \\(a\\). The reason fits in one line, and "
+    + "<strong>neither deck writes it</strong>: the probabilities add up to one in each state, so "
+    + "the sum of their gradients is the gradient of a constant.",
+  "t5b.b8.ecuacion2":
+    "\\[ \\sum_a b(s)\\,\\nabla\\pi(a\\mid s,\\theta) \\;=\\; b(s)\\,\\nabla\\sum_a \\pi(a\\mid "
+    + "s,\\theta) \\;=\\; b(s)\\,\\nabla 1 \\;=\\; \\mathbf 0 \\]",
+  "t5b.b8.ecuacion3":
+    "\\[ \\theta_{t+1} \\;\\doteq\\; \\theta_t + \\alpha\\big(G_t - "
+    + "b(S_t)\\big)\\frac{\\nabla\\pi(A_t\\mid S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)} \\]",
+  "t5b.b8.texto3":
+    "Since the baseline can be identically zero, this rule is a <strong>strict "
+    + "generalisation</strong> of REINFORCE. And the consequence is the sentence you have to be "
+    + "able to say: <strong>the baseline leaves the expected value of the update unchanged, but "
+    + "it can have a large effect on its variance</strong>.",
+  "t5b.b8.respuesta":
+    "The lecture deck asks the class two things and answers neither on screen: <strong>“under "
+    + "what conditions? why?”</strong> and <strong>“what is the role of the baseline? how do we "
+    + "deal with it?”</strong>. The three answers are in the speaker's notes. "
+    + "<strong>Condition:</strong> the baseline cannot depend on the actions; if it does not, it "
+    + "is immediate to see that it does not affect the mean value of the expression. "
+    + "<strong>Role:</strong> it is a sort of <strong>normalisation</strong>, it makes the return "
+    + "term more uniform across states, <strong>reduces the variance</strong> of the estimator "
+    + "and with it speeds up learning. <strong>How to deal with it:</strong> it has to be "
+    + "<strong>learnt</strong>, and that is done by choosing an approximator that depends on "
+    + "<strong>a different set of parameters from the policy's</strong>. That is exactly where "
+    + "\\(w\\) and \\(\\alpha^{w}\\) come from.",
+  "t5b.b8.texto4":
+    "Why it has to vary with the state: in some states <strong>all</strong> the actions are "
+    + "worth a lot and a high reference is needed to tell the good ones from the less good "
+    + "ones; in others they are all worth little and the right reference is low. In the bandits "
+    + "of Unit 1 the baseline was a single number, \\(\\bar R_t\\), because there were no "
+    + "states; here it is a function of the state. The natural choice is an <strong>estimate of "
+    + "the state value</strong>, \\(\\hat v(S_t,w)\\), learnt by Monte Carlo —just like the "
+    + "policy.",
+  "t5b.b8.caja":
+    "REINFORCE with Baseline (episodic), for estimating π_θ ≈ π*\n"
+    + "\n"
+    + "Input: a differentiable policy parameterization π(a|s,θ)\n"
+    + "Input: a differentiable state-value function parameterization v̂(s,w)\n"
+    + "Algorithm parameters: step sizes α^θ &gt; 0, α^w &gt; 0\n"
+    + "Initialize policy parameter θ ∈ R^{d'} and state-value weights w ∈ R^d (e.g., to 0)\n"
+    + "\n"
+    + "Loop forever (for each episode):\n"
+    + "    Generate an episode S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T, following π(·|·,θ)\n"
+    + "    Loop for each step of the episode t = 0, 1, …, T−1:\n"
+    + "        G ← Σ_{k=t+1}^{T} γ^{k−t−1} R_k                                  (G_t)\n"
+    + "        δ ← G − v̂(S_t,w)\n"
+    + "        w ← w + α^w δ ∇v̂(S_t,w)\n"
+    + "        θ ← θ + α^θ γ^t δ ∇ln π(A_t|S_t,θ)",
+  "t5b.b8.aviso":
+    "⚠ <strong>That \\(\\delta\\) is not the TD error.</strong> Here \\(\\delta = G - \\hat "
+    + "v(S_t,w)\\) is a <strong>Monte Carlo error</strong>: it compares the <strong>actual</strong> "
+    + "return of the episode with the estimate. The \\(\\delta_t\\) of actor-critic compares "
+    + "against an estimate of the future. They are written the same and <strong>they are not the "
+    + "same thing</strong>; the difference between the two <strong>is</strong> the content of the "
+    + "next block.",
+  "t5b.b8.texto5":
+    "“We have two hyperparameters”, says the slide, and leaves it there. They are "
+    + "\\(\\alpha^\\theta\\) and \\(\\alpha^{w}\\), and they are not interchangeable. The book "
+    + "warns: choosing the step size for the <strong>value</strong> is relatively easy, there are "
+    + "rules of thumb for the linear case; <strong>it is much less clear how to choose the one "
+    + "for the policy</strong>, whose best value depends on the range of variation of the rewards "
+    + "and on the parameterisation. And the consequence is visible in the book's figure, though "
+    + "nobody comments on it: the \\(\\alpha^\\theta\\) that works well <strong>with</strong> a "
+    + "baseline is \\(2^{-9}\\), <strong>sixteen times larger</strong> than the best \\(\\alpha\\) "
+    + "without one, \\(2^{-13}\\). The figure has it in plain sight, in its labels.",
+  "t5b.b8.modulo":
+    "→ module 4: the same batch with a baseline, without one, and with a baseline that does "
+    + "depend on the action.",
+
+  /* --- MÓDULO 4 · cabecera ------------------------------------------------ */
+  "t5b.m4.etiqueta": "MODULE 4",
+  "t5b.m4.h2": "The baseline: what it touches and what it does not",
+  "t5b.m4.fuente":
+    "Sutton &amp; Barto, §13.4, equations (13.10) and (13.11), the box on p. 352 and Figure 13.2",
+  "t5b.m4.explicacion":
+    "Subtracting a reference \\(b(S_t)\\) from the return does not change the expected value of "
+    + "the update, <strong>provided that reference does not depend on the action</strong>. The "
+    + "reason fits in one line: the probabilities add up to one in each state, so \\(\\sum_a "
+    + "b(s)\\nabla\\pi(a\\mid s,\\theta) = b(s)\\nabla 1 = 0\\). What does change, and a lot, is "
+    + "<strong>the variance</strong>. Here you can see the two things separately: the mean of the "
+    + "estimator, which does not move, and its distribution, which narrows.",
+  "t5b.m4.explicacion2":
+    "And you can do what the condition forbids: put in <strong>one baseline per action</strong>. "
+    + "It is a perfectly reasonable baseline at first sight —the average of the returns observed "
+    + "after each action— and it is the one that appears in the exam as a distractor. Look at "
+    + "what happens to the curve.",
+
+  /* --- B9 · actor-crítico -------------------------------------------------- */
+  "t5b.b9.h2": "Actor-critic",
+  "t5b.b9.fuente":
+    "Sutton &amp; Barto, §13.5, equations (13.12) to (13.14) and the box on p. 354",
+  "t5b.b9.texto":
+    "Here is <strong>the most important sentence of the unit</strong>, and neither deck says it: "
+    + "REINFORCE with baseline learns a policy <strong>and</strong> a value function, and even so "
+    + "<strong>it is not an actor-critic method</strong>. The criterion is not learning a value: "
+    + "it is <strong>what it is used for</strong>. In REINFORCE with baseline the value is used "
+    + "only as a <strong>reference</strong> for the state being updated; it is not used to "
+    + "<em>bootstrap</em>, that is, to update the estimate of a state from the estimates of the "
+    + "following ones. And that distinction is useful because <strong>only through "
+    + "<em>bootstrapping</em> are bias and an asymptotic dependence on the quality of the "
+    + "approximation introduced</strong>.",
+  "t5b.b9.texto2":
+    "One-step actor-critic does exactly that: it replaces the full return of REINFORCE by the "
+    + "<strong>one-step return</strong>, and uses the learned value both as the target and as the "
+    + "reference. The three lines of the derivation are the ones on the slide:",
+  "t5b.b9.ecuacion":
+    "\\[\n"
+    + "\\begin{aligned}\n"
+    + "\\theta_{t+1} &amp;\\doteq \\theta_t + \\alpha\\Big(G_{t:t+1} - \\hat "
+    + "v(S_t,w)\\Big)\\frac{\\nabla\\pi(A_t\\mid S_t,\\theta_t)}{\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}\\\\[2pt]\n"
+    + "&amp;= \\theta_t + \\alpha\\Big(R_{t+1} + \\gamma\\,\\hat v(S_{t+1},w) - \\hat "
+    + "v(S_t,w)\\Big)\\frac{\\nabla\\pi(A_t\\mid S_t,\\theta_t)}{\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}\\\\[2pt]\n"
+    + "&amp;= \\theta_t + \\alpha\\,\\delta_t\\,\\frac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)}\n"
+    + "\\end{aligned}\n"
+    + "\\]",
+  "t5b.b9.texto3":
+    "What is gained and what is paid, point by point. <strong>What is gained</strong> is an "
+    + "algorithm that is <strong>fully online and incremental</strong>: states, actions and "
+    + "rewards are processed as they occur and never looked at again, so there is no need to "
+    + "wait until the end of the episode and it also works for continuing tasks. And "
+    + "<strong>variance</strong> is gained: the one-step target is far less noisy than a full "
+    + "return. <strong>Bias is paid</strong>, because the target uses an estimate; and an "
+    + "<strong>asymptotic dependence on the quality of the critic</strong> is paid, which "
+    + "REINFORCE with baseline does not have: that one is unbiased and converges to a local "
+    + "optimum, but it learns slowly and is awkward to implement online.",
+  "t5b.b9.cab":
+    "<th></th><th>REINFORCE with baseline</th><th>One-step actor-critic</th>",
+  "t5b.b9.f1":
+    "<td>It uses the value to…</td><td>subtract a reference</td>"
+    + "<td><strong><em>bootstrap</em></strong></td>",
+  "t5b.b9.f2": "<td>Bias?</td><td>no</td><td><strong>yes</strong></td>",
+  "t5b.b9.f3": "<td>Variance</td><td>high, Monte Carlo</td><td>lower</td>",
+  "t5b.b9.f4":
+    "<td>Does it depend on the quality of the approximator?</td><td>asymptotically no</td>"
+    + "<td><strong>yes</strong></td>",
+  "t5b.b9.f5":
+    "<td>Online?</td><td>no: it waits until the end of the episode</td>"
+    + "<td><strong>yes, fully incremental</strong></td>",
+  "t5b.b9.f6": "<td>Continuing tasks</td><td>awkward</td><td>yes</td>",
+  "t5b.b9.texto4":
+    "The second deck of the course also writes down the <strong>advantage function</strong> and "
+    + "relates it to the TD error. The advantage measures <strong>how much the expected return "
+    + "improves or worsens by taking \\(a\\) in \\(s\\)</strong> with respect to <strong>following "
+    + "the current policy</strong> from that state:",
+  "t5b.b9.ecuacion2":
+    "\\[ A(s,a) \\;\\doteq\\; q_\\pi(s,a) - v_\\pi(s), \\qquad\\text{and, with an exact "
+    + "critic,}\\qquad \\mathbb E_\\pi\\big[\\delta_t \\mid S_t = s,\\,A_t = a\\big] \\;=\\; "
+    + "A(s,a) \\]",
+  "t5b.b9.aviso":
+    "Two warnings about this formula. The first: <strong>the advantage function is not defined "
+    + "in Sutton &amp; Barto</strong>, neither in chapter 13 nor anywhere else. The book only "
+    + "names it in the bibliographical notes, saying that actor-critic methods “are sometimes "
+    + "called <strong>advantage</strong> actor-critic methods” (p. 360). The symbol and the name "
+    + "come from the literature and from the course's notation reference, not from the book: if "
+    + "you look for it there, you will not find it. The second: the relation between "
+    + "\\(\\delta_t\\) and \\(A(s,a)\\) holds <strong>in expectation</strong>. You will see it "
+    + "written as \\(\\delta_t \\approx A(s,a)\\), which is the short way of saying just this: "
+    + "the one-step TD error is a <strong>sample</strong> of the advantage.",
+  "t5b.b9.dosVersiones":
+    "⚠ <strong>There are two different actor-critic pseudocodes in the course material, and "
+    + "neither deck says so.</strong> The lecture deck projects a version taken from van Hasselt "
+    + "and Silver presentations: it is <strong>continuing</strong> (a single loop over \\(t\\), "
+    + "no episodes), it uses \\(\\beta\\) for the critic step size, <strong>it does not carry the "
+    + "\\(\\gamma^t\\) factor</strong>, <strong>it does not say what to do in the terminal "
+    + "state</strong> and <strong>it does not initialise \\(w\\)</strong>. The second deck of the "
+    + "course projects the one from the book, which is <strong>episodic</strong>, uses "
+    + "\\(\\alpha^\\theta\\) and \\(\\alpha^{w}\\), carries the accumulator \\(I\\) and does "
+    + "handle the terminal state. <strong>They are not incompatible</strong> —they are the same "
+    + "algorithm in a continuing and an episodic variant—, but they cannot be mixed. <strong>This "
+    + "page runs the one from the book</strong>, because the short corridor is episodic and has a "
+    + "terminal state, and because it is the only one of the two that can be cited by page.",
+  "t5b.b9.caja":
+    "One-step Actor–Critic (episodic), for estimating π_θ ≈ π*\n"
+    + "\n"
+    + "Input: a differentiable policy parameterization π(a|s,θ)\n"
+    + "Input: a differentiable state-value function parameterization v̂(s,w)\n"
+    + "Parameters: step sizes α^θ &gt; 0, α^w &gt; 0\n"
+    + "Initialize policy parameter θ ∈ R^{d'} and state-value weights w ∈ R^d (e.g., to 0)\n"
+    + "\n"
+    + "Loop forever (for each episode):\n"
+    + "    Initialize S (first state of episode)\n"
+    + "    I ← 1\n"
+    + "    Loop while S is not terminal (for each time step):\n"
+    + "        A ~ π(·|S,θ)\n"
+    + "        Take action A, observe S', R\n"
+    + "        δ ← R + γ v̂(S',w) − v̂(S,w)          (if S' is terminal, then v̂(S',w) ≐ 0)\n"
+    + "        w ← w + α^w δ ∇v̂(S,w)\n"
+    + "        θ ← θ + α^θ I δ ∇ln π(A|S,θ)\n"
+    + "        I ← γI\n"
+    + "        S ← S'",
+  "t5b.b9.aviso2":
+    "Two readings of the box that usually get lost. <strong>\\(I\\) is not an identity "
+    + "matrix</strong>: it is the \\(\\gamma^t\\) carried incrementally, and with \\(\\gamma=1\\) "
+    + "it is always 1 and disappears. And <strong>\\(\\alpha^\\theta\\) and \\(\\alpha^{w}\\) are "
+    + "independent</strong>, just as \\(\\lambda^\\theta\\) and \\(\\lambda^{w}\\) are in the "
+    + "version with traces: the book <strong>does not require</strong> them to coincide.",
+  "t5b.b9.figura":
+    "The block diagram on the slide says, without a line of text, the essence of the method: the "
+    + "<strong>actor</strong> sends actions to the environment; the <strong>critic</strong> "
+    + "receives the reward; the state reaches both; and a single signal goes from the critic to "
+    + "the actor, \\(\\delta\\), the TD error. The critic <strong>does not choose actions</strong> "
+    + "and the actor <strong>does not evaluate</strong>. ⚠ On that slide, and on its equivalent in "
+    + "the other deck, <strong>the yellow balloon highlighting \\(\\delta_t\\) covers the "
+    + "\\(\\alpha\\)</strong> of the formula at the foot: if you copy it from there, you take away "
+    + "a rule with the learning rate missing.",
+  "t5b.b9.modulo":
+    "→ module 5: the same number, used as a baseline and used as a critic. They do not do the "
+    + "same thing.",
+
+  /* --- MÓDULO 5 · cabecera ------------------------------------------------ */
+  "t5b.m5.etiqueta": "MODULE 5",
+  "t5b.m5.h2": "The same number, as a baseline and as a critic",
+  "t5b.m5.fuente": "Sutton &amp; Barto, §13.5, p. 353, and the box on p. 354",
+  "t5b.m5.explicacion":
+    "The two variants learn <strong>the same number</strong> with <strong>the same rule</strong>: "
+    + "a weight \\(w\\) that estimates the value of the states. The only difference is what is "
+    + "done with it. In REINFORCE with baseline, \\(w\\) is <strong>subtracted</strong> from the "
+    + "actual return of the episode and nothing else. In actor-critic, \\(w\\) is also used as "
+    + "the <strong>target</strong>: the full return is replaced by \\(R_{t+1} + \\gamma\\hat "
+    + "v(S_{t+1},w)\\). That is <em>bootstrapping</em>, and it is the only thing that separates "
+    + "the two methods — the book is explicit: REINFORCE with baseline is <strong>not</strong> "
+    + "actor-critic because its value function “is used only as a baseline, not as a critic”.",
+  "t5b.m5.explicacion2":
+    "And that difference has a consequence the slide does not mention: <strong>only through "
+    + "<em>bootstrapping</em> are bias and an asymptotic dependence on the quality of the "
+    + "approximation introduced</strong>. Here you can see both halves of that sentence. With the "
+    + "book's approximator —<strong>a single number for three states of very different "
+    + "value</strong>— watch what happens to each variant. And then give it one weight per state "
+    + "and look again.",
+
+  /* --- B10 · notas y precauciones ----------------------------------------- */
+  "t5b.b10.h2": "Notes and cautions",
+  "t5b.b10.fuente":
+    "Sutton &amp; Barto, §13.5, p. 354 (traces); the collapse, nowhere in the book",
+  "t5b.b10.texto":
+    "The deck closes the development with four cautions. The first two are about scope. "
+    + "<strong>The \\(\\lambda\\)-return can be used</strong> and implemented with "
+    + "<strong>eligibility traces</strong>: it is enough to replace the one-step return "
+    + "\\(G_{t:t+1}\\) by \\(G_{t:t+n}\\) or by \\(G_t^\\lambda\\), and in the backward view "
+    + "<strong>two independent traces</strong> are used, one for the actor and one for the "
+    + "critic, with their two \\(\\lambda\\)s and their two \\(\\alpha\\)s. It is one sentence "
+    + "in class and one here too: the mechanism of traces is on the "
+    + "<a href=\"tema4b.html#m2\">second page of Unit 4</a>. And <strong>the idea is already "
+    + "very general</strong>: most of the methods regarded as state of the art are extensions "
+    + "or variations of it.",
+  "t5b.b10.texto2":
+    "The last two cautions are of another kind, and they are <strong>the strongest claim of the "
+    + "unit</strong>. When a policy gradient method is used, <strong>the policy strongly "
+    + "conditions the experience the agent is trained on</strong>. And then: you can be making "
+    + "good progress and <strong>one bad policy move</strong> can mean that from there on only "
+    + "<strong>irrelevant experience</strong> is obtained, which <strong>will wreck the policy "
+    + "approximation</strong> over time.",
+  "t5b.b10.aviso":
+    "⚠ That claim <strong>does not appear in Sutton &amp; Barto</strong>. The book does not "
+    + "discuss policy collapse from an over-large step anywhere in chapter 13; the closest thing "
+    + "is a bibliographical citation on entropy regularisation (p. 360). It is a warning from "
+    + "the lecturer, and <strong>it is the part of the unit that the exam asks about most</strong>. "
+    + "It is also the only one that in the material has <strong>no example, no curve and no "
+    + "simulation</strong> behind it. Module 6 turns it into data.",
+  "t5b.b10.texto3":
+    "It is worth seeing why this is different from a plain over-large step. In supervised "
+    + "learning, a bad step spoils the weights and the next batch —which has not changed— pulls "
+    + "them back. Here <strong>the next batch is generated by the policy you have just "
+    + "spoiled</strong>: if the policy turns bad, the episodes it produces are worse and longer, "
+    + "and the next update is computed from them. The loop <strong>feeds back</strong>, and that "
+    + "is the point.",
+  "t5b.b10.modulo":
+    "→ module 6: raise \\(\\alpha^\\theta\\) until the loop closes, and then put the brake on.",
+
+  /* --- B11 · limitar el salto --------------------------------------------- */
+  "t5b.b11.h2": "Limiting the policy jump",
+  "t5b.b11.fuente":
+    "Sutton &amp; Barto does not cover this point; it only cites “entropy regularization” in "
+    + "the bibliographical notes, p. 360",
+  "t5b.b11.texto":
+    "The intuition on the slide: <strong>abrupt jumps in the policy are the usual suspects "
+    + "behind training collapse</strong>. And the key idea: add a <strong>regularisation "
+    + "term</strong>, in the style of L2 in supervised learning, but one that instead of "
+    + "penalising the size of the weights penalises <strong>how much the policy has "
+    + "moved</strong>. As a measure of that movement the <strong>Kullback-Leibler "
+    + "divergence</strong> between the current policy and its update is used, and it would be "
+    + "enough to define an objective that takes it into account.",
+  "t5b.b11.ecuacion": "\\[ J(\\theta) - \\eta_{KL}\\,D_{KL} \\]",
+  "t5b.b11.texto2":
+    "\\(\\eta_{KL}\\) is the hyperparameter that modulates the regularisation. <strong>That "
+    + "hyperparameter appears only in the lecture deck</strong>; the second deck of the course "
+    + "says “define an objective function that takes it into account” and does not write it. And "
+    + "these are the ideas behind algorithms such as <strong>TRPO</strong> and "
+    + "<strong>PPO</strong>.",
+  "t5b.b11.texto3":
+    "The slide does not define \\(D_{KL}\\) nor say between which two distributions it is "
+    + "computed. For two policies over the same action set, and averaging over states with the "
+    + "on-policy distribution, it is this:",
+  "t5b.b11.ecuacion2":
+    "\\[ D_{KL}(\\pi_{\\theta_{\\text{old}}} \\,\\|\\, \\pi_\\theta) \\;=\\; \\sum_s \\mu(s) "
+    + "\\sum_a \\pi(a\\mid s,\\theta_{\\text{old}})\\,\\ln\\frac{\\pi(a\\mid "
+    + "s,\\theta_{\\text{old}})}{\\pi(a\\mid s,\\theta)} \\]",
+  "t5b.b11.aviso":
+    "⚠ A detail worth knowing before programming it, and one the slide cannot fit into a bullet: "
+    + "<strong>with a single gradient step per batch, the penalty \\(J - \\eta_{KL}D_{KL}\\) does "
+    + "nothing</strong>. The divergence is measured from the previous policy, so at the starting "
+    + "point it is zero <strong>and so is its gradient</strong>: the step comes out identical to "
+    + "the REINFORCE one. The penalty starts to bite when <strong>several</strong> steps are "
+    + "taken on the same batch, moving away from the previous policy, which is what PPO does. "
+    + "That is why module 6 implements the other face of the same idea, the one the exam calls a "
+    + "<strong>trust region strategy</strong>: the step is computed and, if it moves the policy "
+    + "more than allowed, <strong>it is clipped back until it fits</strong>.",
+  "t5b.b11.ecuacion3":
+    "\\[ \\theta \\leftarrow \\theta_{\\text{old}} + \\tau\\,\\Delta\\theta, \\qquad \\tau = "
+    + "\\max\\{\\tau\\in(0,1] \\;:\\; "
+    + "D_{KL}(\\pi_{\\theta_{\\text{old}}}\\|\\pi_{\\theta_{\\text{old}}+\\tau\\Delta\\theta}) "
+    + "\\le \\delta \\} \\]",
+  "t5b.b11.texto4":
+    "What separates TRPO from PPO is out of the scope of this course: <strong>TRPO</strong> "
+    + "imposes the constraint as such, with a second-order approximation; <strong>PPO</strong> "
+    + "achieves a similar effect far more cheaply, by <strong>clipping</strong> the ratio between "
+    + "the new and the old policy in the objective itself. The exam asks you to recognise the "
+    + "idea —that there are strategies that <strong>bound the region in which the policy can "
+    + "move</strong>, and that PPO is one of them—, not the formulations.",
+
+  /* --- MÓDULO 6 · cabecera ------------------------------------------------ */
+  "t5b.m6.etiqueta": "MODULE 6",
+  "t5b.m6.h2": "Policy collapse, and the brake",
+  "t5b.m6.fuente":
+    "Sutton &amp; Barto <strong>does not cover this</strong>: chapter 13 does not discuss policy "
+    + "collapse from an over-large step",
+  "t5b.m6.explicacion":
+    "No baseline and no critic here: plain REINFORCE, on the same corridor, with the policy step "
+    + "size in your hands. What is drawn <strong>is not an average</strong>: it is the runs one by "
+    + "one, because collapse happens to a particular run and an average would hide it. Raise the "
+    + "step size and see how many go up against the ceiling or down against the floor.",
+  "t5b.m6.explicacionBucle":
+    "Why this is not “too large a step” of the usual kind is explained above, in "
+    + "<a href=\"#b10\">Notes and cautions</a>: <strong>the next batch is generated by the policy "
+    + "you have just spoiled</strong>. What is added here is <strong>the size</strong>. In this "
+    + "environment the factor multiplying the eligibility vector is the return, which with "
+    + "\\(-1\\) per step is minus the length of the episode, and the increment of an episode of "
+    + "length \\(T\\) adds up to \\(T(T+1)/2\\) in magnitude: <strong>the jump grows with the "
+    + "square of the episode length, and the episode length grows when the policy gets "
+    + "worse</strong>. The panel further down puts that in numbers for whichever step size you "
+    + "have set.",
+
+  /* --- B12 · acciones continuas ------------------------------------------- */
+  "t5b.b12.h2": "Continuous actions",
+  "t5b.b12.fuente":
+    "Sutton &amp; Barto, §13.7, equations (13.19) and (13.20), pp. 357-358",
+  "t5b.b12.texto":
+    "First, what the slide says and is worth not forgetting: <strong>discretising continuous "
+    + "actions, even coarsely, usually works well</strong>. That said, policy gradient methods "
+    + "admit continuous action spaces naturally, and this is the practical advantage value "
+    + "methods do not have: you cannot work with a \\(\\max_a\\) over a continuum. The idea is "
+    + "that <strong>instead of learning one probability per action you learn the statistics of a "
+    + "continuous distribution</strong>. With a normal, the policy is its density:",
+  "t5b.b12.ecuacion":
+    "\\[ \\pi(a\\mid s,\\theta) \\;\\doteq\\; \\frac{1}{\\sigma(s,\\theta)\\sqrt{2\\pi}}\\,"
+    + "\\exp\\!\\left(-\\frac{\\big(a - m(s,\\theta)\\big)^2}{2\\,\\sigma(s,\\theta)^2}\\right) \\]",
+  "t5b.b12.aviso":
+    "⚠ <strong>The book calls the mean of this Gaussian \\(\\mu(s,\\theta)\\)</strong>, and "
+    + "\\(\\mu(s)\\) the on-policy distribution of the gradient theorem — both things, in the same "
+    + "chapter. Here the mean is written \\(m(s,\\theta)\\) so that \\(\\mu(s)\\) keeps meaning "
+    + "the same as in block B6 and on the previous unit's page. If you read the book, the "
+    + "\\(\\mu\\) of equation (13.19) is this \\(m\\).",
+  "t5b.b12.texto2":
+    "The slide shows the shape of the policy and nothing else. What is missing, and is needed to "
+    + "use it, is <strong>how the two statistics are parameterised</strong>. The vector is split "
+    + "in two, \\(\\theta = [\\theta_m, \\theta_\\sigma]^\\top\\), each with its own feature "
+    + "vector:",
+  "t5b.b12.ecuacion2":
+    "\\[ m(s,\\theta) \\doteq \\theta_m^\\top x_m(s), \\qquad \\sigma(s,\\theta) \\doteq "
+    + "\\exp\\!\\big(\\theta_\\sigma^\\top x_\\sigma(s)\\big) \\]",
+  "t5b.b12.texto3":
+    "And the reason for the exponential, which is the question that always comes up: <strong>the "
+    + "standard deviation has to be positive always</strong>, and a linear function does not "
+    + "guarantee that; the exponential of a linear function does. The mean, on the other hand, "
+    + "can be approximated linearly with no problem.",
+  "t5b.b12.texto4":
+    "The eligibility vector of this policy has two parts, one per half of \\(\\theta\\). The book "
+    + "poses it as Exercise 13.4 and it comes from differentiating the log of the density:",
+  "t5b.b12.ecuacion3":
+    "\\[ \\nabla\\ln\\pi(a\\mid s,\\theta_m) = \\frac{1}{\\sigma(s,\\theta)^2}\\big(a - "
+    + "m(s,\\theta)\\big)\\,x_m(s), \\qquad \\nabla\\ln\\pi(a\\mid s,\\theta_\\sigma) = "
+    + "\\left(\\frac{\\big(a-m(s,\\theta)\\big)^2}{\\sigma(s,\\theta)^2} - 1\\right)x_\\sigma(s) \\]",
+  "t5b.b12.aviso2":
+    "This block <strong>has no module</strong>, for a reason that can be checked: <strong>there is "
+    + "no continuous-action experiment in the book</strong>. §13.7 is purely formal —no "
+    + "environment, no learning curve, no numerical exercise—, and its only illustration is a "
+    + "figure of four normal densities <strong>adapted from Wikipedia</strong>, as the book itself "
+    + "acknowledges in its notes. Reproducing a plot of Gaussian densities would answer no "
+    + "question that the slide leaves open.",
+
+  /* --- B13 · cierre -------------------------------------------------------- */
+  "t5b.b13.h2": "What is left out, and where it is",
+  "t5b.b13.fuente":
+    "Sutton &amp; Barto, §13.6 and the bibliographical notes of chapter 13, p. 360",
+  "t5b.b13.texto":
+    "Four things that border on this unit and are not included, so that you know they exist and "
+    + "do not look for them here. <strong>The continuing case</strong>: the book devotes its §13.6 "
+    + "to tasks without episodes, where performance stops being the value of the start state and "
+    + "becomes the <strong>average reward rate</strong> \\(r(\\pi)\\); the gradient theorem still "
+    + "holds, with constant of proportionality 1, and there it is an equality. Neither deck "
+    + "touches it. <strong>Off-policy policy gradient</strong>: it exists in the literature and "
+    + "the book only cites it in its notes. <strong>Natural gradient</strong>: likewise. And "
+    + "<strong>the proof of the theorem</strong>, which is in the box on p. 347 of the book and "
+    + "which here is checked with numbers instead of reproduced.",
+  "t5b.b13.texto2":
+    "And one last one: after this, the lecture deck goes on with <strong>AlphaGo</strong> as an "
+    + "example of policy gradient combined with planning. <strong>That block will be a separate "
+    + "resource</strong> and is not on this page.",
+
+  /* --- A5 · ecuaciones clave ---------------------------------------------- */
+  "t5b.ecuaciones.h2": "Key equations of the unit",
+  "t5b.ecuaciones.cab":
+    "<th>Equation</th><th>What it says</th><th>Where it is used</th>",
+  "t5b.ecuaciones.f1":
+    "<td>\\(\\theta_{t+1} = \\theta_t + \\alpha\\,\\widehat{\\nabla J(\\theta_t)}\\)</td>"
+    + "<td>Gradient ascent on performance: it is <strong>added</strong> and it is "
+    + "<strong>maximised</strong></td>"
+    + "<td>B1, every module</td>",
+  "t5b.ecuaciones.f2":
+    "<td>\\(\\pi(a\\mid s,\\theta) \\doteq "
+    + "\\dfrac{e^{h(s,a,\\theta)}}{\\sum_{a'}e^{h(s,a',\\theta)}}\\)</td>"
+    + "<td>Preferences turned into a distribution; only the differences matter</td>"
+    + "<td>B3, modules 1 to 6</td>",
+  "t5b.ecuaciones.f3":
+    "<td>\\(h(s,a,\\theta) = \\theta^\\top x(s,a)\\)</td>"
+    + "<td>The linear case: the preference is an inner product</td>"
+    + "<td>B3, every module</td>",
+  "t5b.ecuaciones.f4":
+    "<td>\\(J(\\theta) \\doteq v_{\\pi_\\theta}(s_0)\\)</td>"
+    + "<td>Episodic performance is the true value of the start state</td>"
+    + "<td>B5, modules 1, 2, 6</td>",
+  "t5b.ecuaciones.f5":
+    "<td>\\(\\nabla J(\\theta) \\propto \\sum_s\\mu(s)\\sum_a q_\\pi(s,a)\\nabla\\pi(a\\mid "
+    + "s,\\theta)\\)</td>"
+    + "<td>The gradient <strong>does not require differentiating \\(\\mu\\)</strong>; the constant "
+    + "is the average episode length</td>"
+    + "<td>B6, module 2</td>",
+  "t5b.ecuaciones.f6":
+    "<td>\\(\\mu(s) = \\eta(s)/\\sum_{s'}\\eta(s')\\)</td>"
+    + "<td>The on-policy distribution comes from counting visits</td>"
+    + "<td>B6, module 2</td>",
+  "t5b.ecuaciones.f7":
+    "<td>\\(\\theta_{t+1} \\doteq \\theta_t + \\alpha\\,G_t\\,\\dfrac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)}\\)</td>"
+    + "<td>REINFORCE: return times eligibility vector</td>"
+    + "<td>B7, modules 3, 4, 6</td>",
+  "t5b.ecuaciones.f8":
+    "<td>\\(\\nabla\\ln\\pi(a\\mid s,\\theta) = x(s,a) - \\sum_{a'}\\pi(a'\\mid "
+    + "s,\\theta)x(s,a')\\)</td>"
+    + "<td>The eligibility vector of the linear softmax</td>"
+    + "<td>B7, modules 2 to 6</td>",
+  "t5b.ecuaciones.f9":
+    "<td>\\(\\sum_a b(s)\\nabla\\pi(a\\mid s,\\theta) = b(s)\\nabla 1 = \\mathbf 0\\)</td>"
+    + "<td>Why a baseline that does not depend on \\(a\\) does not bias</td>"
+    + "<td>B8, module 4</td>",
+  "t5b.ecuaciones.f10":
+    "<td>\\(\\theta_{t+1}\\doteq\\theta_t+\\alpha\\big(G_t - "
+    + "b(S_t)\\big)\\dfrac{\\nabla\\pi(A_t\\mid S_t,\\theta_t)}{\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}\\)</td>"
+    + "<td>REINFORCE with baseline: same expectation, less variance</td>"
+    + "<td>B8, module 4</td>",
+  "t5b.ecuaciones.f11":
+    "<td>\\(\\delta_t = R_{t+1} + \\gamma\\,\\hat v(S_{t+1},w) - \\hat v(S_t,w)\\)</td>"
+    + "<td>The TD error, which is what the critic sends to the actor</td>"
+    + "<td>B9, module 5</td>",
+  "t5b.ecuaciones.f12":
+    "<td>\\(\\theta_{t+1}\\doteq\\theta_t+\\alpha\\,\\delta_t\\,\\dfrac{\\nabla\\pi(A_t\\mid "
+    + "S_t,\\theta_t)}{\\pi(A_t\\mid S_t,\\theta_t)}\\)</td>"
+    + "<td>One-step actor-critic</td>"
+    + "<td>B9, module 5</td>",
+  "t5b.ecuaciones.f13":
+    "<td>\\(A(s,a) \\doteq q_\\pi(s,a) - v_\\pi(s)\\)</td>"
+    + "<td>How much taking \\(a\\) improves on following the current policy</td>"
+    + "<td>B9, module 5</td>",
+  "t5b.ecuaciones.f14":
+    "<td>\\(J(\\theta) - \\eta_{KL}D_{KL}\\)</td>"
+    + "<td>Penalising how much the policy moves, not how large the weights are</td>"
+    + "<td>B11, module 6</td>",
+  "t5b.ecuaciones.f15":
+    "<td>\\(\\pi(a\\mid s,\\theta)\\doteq\\frac{1}{\\sigma\\sqrt{2\\pi}}e^{-(a-m)^2/2\\sigma^2}\\)</td>"
+    + "<td>With continuous actions you learn the statistics, not the probabilities</td>"
+    + "<td>B12</td>",
+
+  /* --- A6 · errores frecuentes -------------------------------------------- */
+  "t5b.errores.h2": "Common mistakes",
+  "t5b.errores.cab": "<th>It is said</th><th>And in fact</th>",
+  "t5b.errores.f1":
+    "<td>“REINFORCE with baseline is already actor-critic, because it learns a value "
+    + "function”</td>"
+    + "<td><strong>No.</strong> The criterion is <em>bootstrapping</em>, not learning a value. In "
+    + "REINFORCE with baseline the value is used <strong>only as a reference</strong> for the "
+    + "state being updated, and that is why that method <strong>introduces no bias</strong>. S&amp;B "
+    + "§13.5, p. 353</td>",
+  "t5b.errores.f2":
+    "<td>“The baseline biases the gradient”</td>"
+    + "<td><strong>No, as long as it does not depend on the action.</strong> It leaves the expected "
+    + "value of the update <strong>unchanged</strong> and changes <strong>the variance</strong>. "
+    + "What does break the guarantee is depending on \\(a\\). S&amp;B §13.4, p. 351</td>",
+  "t5b.errores.f3":
+    "<td>“REINFORCE is an online method”</td>"
+    + "<td><strong>No.</strong> It is Monte Carlo: it uses the full return, so <strong>all</strong> "
+    + "its updates are made in hindsight, once the episode has finished. The one that is online is "
+    + "one-step actor-critic. S&amp;B §13.3, p. 349 and §13.5, p. 353</td>",
+  "t5b.errores.f4":
+    "<td>“The \\(\\gamma^t\\) in the pseudocode is redundant”</td>"
+    + "<td><strong>No.</strong> It is there because the text works without discounting and the "
+    + "boxes give the general version. With \\(\\gamma=1\\) it disappears; with \\(\\gamma&lt;1\\), "
+    + "<strong>dropping it gives another algorithm</strong>. S&amp;B p. 350</td>",
+  "t5b.errores.f5":
+    "<td>“The gradient theorem avoids sampling states”</td>"
+    + "<td><strong>No.</strong> It avoids <strong>differentiating</strong> the state distribution. "
+    + "\\(\\mu(s)\\) is still in the formula, and the next step is precisely to sample states by "
+    + "following \\(\\pi\\) — which is what makes these methods <strong>on-policy</strong>. S&amp;B "
+    + "§13.2, p. 346 and §13.3, p. 348</td>",
+  "t5b.errores.f6":
+    "<td>“In a finite MDP the optimal policy can be stochastic”</td>"
+    + "<td><strong>Not</strong> for this reason. In the short corridor the optimum is stochastic "
+    + "<strong>because the features do not tell the states apart</strong>: the book always speaks "
+    + "of the best <strong>approximate</strong> policy. With distinguishable states, the optimum of "
+    + "the corridor is deterministic and is worth \\(-3\\). S&amp;B §13.1, p. 345, and module 1</td>",
+  "t5b.errores.f7":
+    "<td>“\\(\\delta\\) is always the TD error”</td>"
+    + "<td><strong>No.</strong> In REINFORCE with baseline \\(\\delta = G - \\hat v(S_t,w)\\) is a "
+    + "<strong>Monte Carlo</strong> error; in actor-critic it is the <strong>TD</strong> error. Same "
+    + "symbol, two objects, and the difference between them <strong>is</strong> the subject of "
+    + "§13.5</td>",
+
+  /* --- A7 · qué hay que llevarse ------------------------------------------ */
+  "t5b.cierre.h2": "What to take away",
+  "t5b.cierre.v1":
+    "That <strong>the optimal policy can be stochastic</strong>, and for a concrete reason: when "
+    + "the features do not tell the states apart. You have seen it in two environments where "
+    + "<strong>no</strong> deterministic policy terminates, and with the loss measured: "
+    + "\\(-11.66\\) against \\(-3\\) in the corridor, \\(-4\\) against \\(-1\\) in the cross.",
+  "t5b.cierre.v2":
+    "That the gradient theorem is useful <strong>because \\(\\nabla\\mu\\) is not on its "
+    + "right-hand side</strong>, not because it avoids sampling states. And that the \\(\\propto\\) "
+    + "hides a number: <strong>the average length of the episode</strong>, which you have seen be "
+    + "12 and close the equality.",
+  "t5b.cierre.v3":
+    "That in the REINFORCE rule the return decides <strong>how much</strong> and the eligibility "
+    + "vector decides <strong>which way</strong>, and that you divide by \\(\\pi(A_t\\mid "
+    + "S_t,\\theta)\\) so that frequent actions do not win just by being frequent.",
+  "t5b.cierre.v4":
+    "That <strong>the REINFORCE estimator is correct and still learns slowly</strong>: you have "
+    + "seen the same batch with 1, 10 and 100 runs and the spread hiding behind the average curve.",
+  "t5b.cierre.v5":
+    "That a baseline <strong>does not change the expected direction of the gradient as long as it "
+    + "does not depend on the action</strong>, and that if it does, it does change it: you have "
+    + "seen the distribution shift.",
+  "t5b.cierre.v6":
+    "That the same number, used as a <strong>baseline</strong>, is harmless, and used as a "
+    + "<strong>critic</strong> can wreck the policy: bias <strong>only enters through "
+    + "<em>bootstrapping</em></strong>, and it depends on the quality of the critic.",
+  "t5b.cierre.v7":
+    "That “one bad policy move wrecks the training” <strong>is not a metaphor</strong>: the policy "
+    + "decides which experience it is trained on, and you have seen the loop close and open again "
+    + "once a limit is put on the jump.",
+
+  /* --- A8 · glosario ------------------------------------------------------- */
+  "t5b.glosario.h2": "Notation glossary for the unit",
+  "t5b.glosario.cab": "<th>Symbol</th><th>Meaning</th><th>Where</th><th>Note</th>",
+  "t5b.glosario.f1":
+    "<td>\\(\\theta\\)</td><td>parameter vector of <strong>the policy</strong></td>"
+    + "<td>the whole unit</td>"
+    + "<td>From the course notation reference. In the previous unit the DQN weights were written "
+    + "\\(w\\) precisely to leave \\(\\theta\\) free here</td>",
+  "t5b.glosario.f2":
+    "<td>\\(d'\\)</td><td>number of components of \\(\\theta\\)</td><td>B3, modules 1-6</td>"
+    + "<td>From the book (p. 21). The course notation reference does not have it. Short corridor: "
+    + "\\(d'=2\\); cross gridworld: \\(d'=4\\)</td>",
+  "t5b.glosario.f3":
+    "<td>\\(w\\)</td><td>weights of the <strong>critic</strong> or of the "
+    + "<strong>baseline</strong></td><td>B8, B9, modules 4, 5</td>"
+    + "<td>From the course notation reference, which writes plain \\(w\\). The decks mix \\(w\\) "
+    + "and \\(\\mathbf w\\) with no criterion; here it is <strong>never bold</strong></td>",
+  "t5b.glosario.f4":
+    "<td>\\(d\\)</td><td>number of components of \\(w\\)</td><td>B8, B9, module 5</td>"
+    + "<td>With \\(\\hat v(s,w)=w\\), \\(d=1\\); with one weight per state in the corridor, "
+    + "\\(d=3\\)</td>",
+  "t5b.glosario.f5":
+    "<td>\\(h(s,a,\\theta)\\)</td><td>preference of action \\(a\\) in state \\(s\\)</td>"
+    + "<td>B3</td><td>The \\(H_t(a)\\) of Unit 1 is this same thing without a state</td>",
+  "t5b.glosario.f6":
+    "<td><span style=\"white-space:nowrap\">\\(\\pi(a\\mid s,\\theta)\\)</span></td>"
+    + "<td>parameterised policy</td><td>the whole unit</td>"
+    + "<td></td>",
+  "t5b.glosario.f7":
+    "<td>\\(J(\\theta)\\)</td><td>performance of the policy; <strong>it is maximised</strong></td>"
+    + "<td>B5, modules 1, 2, 6</td>"
+    + "<td>From the course notation reference. In the episodic case, \\(J(\\theta)\\doteq "
+    + "v_{\\pi_\\theta}(s_0)\\)</td>",
+  "t5b.glosario.f8":
+    "<td>\\(\\alpha^\\theta\\), \\(\\alpha^{w}\\)</td><td>the two step sizes, "
+    + "<strong>independent</strong></td><td>B8, B9, modules 4, 5, 6</td>"
+    + "<td>The course notation reference only has \\(\\alpha\\). ⚠ The actor-critic slide of the "
+    + "lecture deck uses <strong>\\(\\beta\\)</strong> for the critic step size: it is notation "
+    + "imported from another presentation and <strong>it is not used here</strong></td>",
+  "t5b.glosario.f9":
+    "<td>\\(\\mu(s)\\)</td><td><strong>on-policy distribution</strong>: fraction of time spent in "
+    + "\\(s\\) while following \\(\\pi\\)</td><td>B6, module 2</td>"
+    + "<td>Not in the course notation reference. It is the one of S&amp;B §9.2 and the same one the "
+    + "previous unit's page uses</td>",
+  "t5b.glosario.f10":
+    "<td>\\(\\eta(s)\\)</td><td>expected number of steps in \\(s\\) per episode</td>"
+    + "<td>B6, module 2</td>"
+    + "<td>Not in the course notation reference. \\(\\mu(s)=\\eta(s)/\\sum_{s'}\\eta(s')\\)</td>",
+  "t5b.glosario.f20":
+    "<td>\\(h(s)\\)</td><td>probability that the episode <strong>starts</strong> in \\(s\\)</td>"
+    + "<td>B6, module 2</td>"
+    + "<td>⚠ <strong>Clashes with \\(h(s,a,\\theta)\\)</strong>, the action preference, which is a "
+    + "different thing and shows up in B3 and in the key equations. <strong>Neither is "
+    + "renamed</strong>: the book calls them both that way (§9.2 and §13.1), and changing them "
+    + "would move the page away from the book. They are told apart by the number of arguments, "
+    + "and they are declared here</td>",
+  "t5b.glosario.f11":
+    "<td>\\(m(s,\\theta)\\)</td><td><strong>mean</strong> of the Gaussian policy</td><td>B12</td>"
+    + "<td>⚠ <strong>The book calls it \\(\\mu(s,\\theta)\\)</strong>, and in the same chapter "
+    + "\\(\\mu(s)\\) is the on-policy distribution. It is renamed here so that \\(\\mu\\) means one "
+    + "single thing</td>",
+  "t5b.glosario.f12":
+    "<td>\\(\\eta_{KL}\\)</td><td>weight of the KL-divergence regularisation</td>"
+    + "<td>B11, module 6</td>"
+    + "<td>⚠ The lecture deck writes it as plain <strong>\\(\\eta\\)</strong>, which clashes with "
+    + "\\(\\eta(s)\\). The subscript belongs to this page</td>",
+  "t5b.glosario.f13":
+    "<td>\\(b(s)\\)</td><td>baseline</td><td>B8, module 4</td>"
+    + "<td>\\(b\\) is also the dummy index of the sum over actions in the book; <strong>here that "
+    + "index is written \\(a'\\)</strong></td>",
+  "t5b.glosario.f14":
+    "<td>\\(\\delta_t\\)</td><td>TD error</td><td>B9, module 5</td>"
+    + "<td>From the course notation reference. ⚠ In the REINFORCE with baseline box, \\(\\delta\\) "
+    + "is a <strong>Monte Carlo</strong> error: not the same thing</td>",
+  "t5b.glosario.f15":
+    "<td>\\(A(s,a)\\)</td><td>advantage function, \\(\\doteq q_\\pi(s,a)-v_\\pi(s)\\)</td>"
+    + "<td>B9, module 5</td>"
+    + "<td>From the course notation reference and from the second deck of the course. ⚠ "
+    + "<strong>Sutton &amp; Barto does not define it</strong>: it only names “advantage "
+    + "actor–critic” on p. 360</td>",
+  "t5b.glosario.f16":
+    "<td>\\(I\\)</td><td>accumulator of \\(\\gamma^t\\) in actor-critic</td><td>B9, module 5</td>"
+    + "<td><strong>It is not the identity.</strong> With \\(\\gamma=1\\) it is always 1</td>",
+  "t5b.glosario.f17":
+    "<td>\\(x(s,a)\\)</td><td>feature vector of the state-action pair</td><td>B3, modules 1-6</td>"
+    + "<td>From the course notation reference. In the corridor, \\([1,0]^\\top\\) and "
+    + "\\([0,1]^\\top\\) <strong>for all three states</strong></td>",
+  "t5b.glosario.f18":
+    "<td>\\(p\\)</td><td><strong>on this page</strong>, \\(\\pi(\\text{right}\\mid s,\\theta)\\) or "
+    + "\\(\\pi(\\text{east}\\mid s,\\theta)\\)</td><td>modules 1, 2, 5, 6</td>"
+    + "<td>⚠ Not to be confused with \\(p(s',r\\mid s,a)\\), the dynamics of the MDP: <strong>the "
+    + "dynamics do not appear in any formula on this page</strong></td>",
+  "t5b.glosario.f19":
+    "<td>\\(\\lambda^\\theta\\), \\(\\lambda^{w}\\)</td><td>the two trace parameters, "
+    + "independent</td><td>B10</td>"
+    + "<td>They are only mentioned; traces are covered in Unit 4 (cont.)</td>",
+
+  /* --- pie ----------------------------------------------------------------- */
+  "t5b.pie.anterior": "← Unit 5 · Value-function approximation",
+  "t5b.pie.1":
+    "Support material for <strong>Reinforcement Learning</strong> (DEAC-IMAT-411), BSc in "
+    + "Mathematical Engineering and Artificial Intelligence · Universidad Pontificia Comillas · "
+    + "ICAI. Based on Sutton &amp; Barto, <em>Reinforcement Learning: An Introduction</em>, 2nd "
+    + "ed., chapter 13.",
+  "t5b.pie.2":
+    "Every simulation is reproducible: the same seed always yields the same result. The exact "
+    + "values —the whole of modules 1 and 2, and the exact panels of modules 4, 5 and 6— are "
+    + "computed in closed form and do not depend on it.",
+
+  /* --- nombres de acción (nombreAccionPolitica en tema5b.js) -------------- *
+   * ⚠ En inglés la brújula es N/S/W/E, como en el resto del sitio.          */
+  "t5b.accion.derecha": "right",
+  "t5b.accion.izquierda": "left",
+  "t5b.accion.norte": "north",
+  "t5b.accion.sur": "south",
+  "t5b.accion.oeste": "west",
+  "t5b.accion.este": "east",
+
+  /* --- MÓDULO 1 ----------------------------------------------------------- */
+  "t5b.m1.explicacionCruz":
+    "Four arms around a central goal, \\(-1\\) per step, four actions. From each arm there is "
+    + "<strong>one</strong> action that leads to the goal; the other three hit the wall and only "
+    + "waste a step. And again the same thing: <strong>the four arms have the same "
+    + "features</strong>, so there is <strong>one</strong> distribution over the four actions for "
+    + "four situations that call for four different actions. The episode starts in one of the four "
+    + "arms with equal probability.",
+  "t5b.m1.notaCruz":
+    "<strong>This gridworld is not in Sutton &amp; Barto nor on the slides: it was designed for "
+    + "this course.</strong> It exists because the short corridor is a very particular case —the "
+    + "switched actions of the middle cell— and with a single case it is easy to think that a "
+    + "stochastic optimum is a curiosity. Here the mechanism is a different one, symmetry, and the "
+    + "result is the same.",
+  "t5b.m1.notaExacto":
+    "This module <strong>simulates nothing</strong>: every number is exact, solved in closed form. "
+    + "They do not depend on the seed and come out the same on any computer.",
+  "t5b.m1.pLabel": "\\(p\\): probability of the marked action",
+  "t5b.m1.entornoLabel": "Environment",
+  "t5b.m1.entornoPasillo": "Short corridor (Sutton &amp; Barto)",
+  "t5b.m1.entornoCruz": "Cross gridworld (from this course)",
+  "t5b.m1.estadosLabel": "State features",
+  "t5b.m1.estadosAlias": "aliased",
+  "t5b.m1.estadosDist": "distinguishable",
+  "t5b.m1.reiniciar": "Defaults",
+  "t5b.m1.viz1": "The environment, and the policy at the current \\(p\\)",
+  "t5b.m1.viz1vacio": "Drawing the environment…",
+  "t5b.m1.viz2": "Performance as a function of the probability",
+  "t5b.m1.viz2vacio": "Move \\(p\\) to see the curve.",
+  "t5b.m1.mJ": "\\(J(\\theta)\\) at the current \\(p\\)",
+  "t5b.m1.mOptimo": "Optimal \\(p^\\star\\)",
+  "t5b.m1.mValorOptimo": "\\(J(p^\\star)\\)",
+  "t5b.m1.mPerdida": "Loss from not telling the states apart",
+  "t5b.m1.notaExtremo":
+    "The optimum is at the edge of the interval: the optimal policy is deterministic.",
+  "t5b.m1.fichaCab":
+    "Exact values at the current \\(p\\): \\(\\eta(s)\\), \\(\\mu(s)\\), \\(v_\\pi(s)\\) and "
+    + "\\(q_\\pi(s,a)\\)",
+  "t5b.m1.tablaEntornosCab": "The two environments, side by side",
+  "t5b.m1.colPasillo": "Short corridor",
+  "t5b.m1.colCruz": "Cross gridworld",
+  "t5b.m1.filaOrigen": "Origin",
+  "t5b.m1.propio": "designed for this course",
+  "t5b.m1.filaEstados": "Non-terminal states",
+  "t5b.m1.filaAcciones": "Actions",
+  "t5b.m1.filaAlias": "Where the <em>aliasing</em> comes from",
+  "t5b.m1.aliasPasillo":
+    "the three cells share features <strong>and one of them has its actions switched</strong>",
+  "t5b.m1.aliasCruz":
+    "the four cells share features <strong>and each one calls for a different action</strong>",
+  "t5b.m1.filaOptimo": "Optimum within the class, with <strong>aliased</strong> states",
+  "t5b.m1.filaOptimoDist": "Optimum with <strong>distinguishable</strong> states",
+  "t5b.m1.detMenos3": "deterministic, \\(J = -3\\)",
+  "t5b.m1.detMenos1": "deterministic, \\(J = -1\\)",
+  "t5b.m1.filaPerdida":
+    "Loss from <em>aliasing</em>: what it costs to go from one row to the other",
+  "t5b.m1.frenteA": "against",
+  "t5b.m1.filaDeterministas": "Deterministic policies, with <strong>aliased</strong> states",
+  "t5b.m1.aInfinito": "\\(J\\to-\\infty\\) at both ends",
+  "t5b.m1.panelDeterministas":
+    "Take \\(p\\) to both ends and look at the number. With \\(p\\to1\\) the agent bounces between "
+    + "the first cell and the second <strong>forever</strong>, because in the second one "
+    + "<em>right</em> sends it back to the first. With \\(p\\to0\\) it stays stuck to the first "
+    + "cell, against the wall. \\(J(p)\\to-\\infty\\) in both cases: <strong>under this "
+    + "parameterisation no deterministic policy terminates</strong>, and the optimum has to be "
+    + "stochastic. That is the whole argument, and it is stronger than the one the book gives.",
+  "t5b.m1.panelDeterministasCruz":
+    "Any deterministic policy picks <strong>one</strong> of the four actions, and then three of "
+    + "the four arms never get out: \\(J = -\\infty\\). And the stochastic optimum is exactly "
+    + "<strong>the uniform policy</strong>, \\(p = 1/4\\), with \\(J = -4\\): four steps on "
+    + "average, one per action tried.",
+  "t5b.m1.panelAlias":
+    "Now the other states use their correct action and \\(p\\) governs only one. Look at what has "
+    + "happened to the curve: <strong>the maximum has moved to the edge</strong>, and the optimal "
+    + "policy has become <strong>deterministic</strong>. The difference between the two maxima "
+    + "—\\(-11.66\\) against \\(-3\\)— is what it costs <strong>not to be able to tell the states "
+    + "apart</strong>. It is important not to take away the wrong conclusion: in a finite MDP with "
+    + "distinguishable states there is <strong>always</strong> a deterministic optimal policy, and "
+    + "the book knows it; that is why it always speaks of the best <strong>approximate</strong> "
+    + "policy. Here only one state is freed: freeing all three would take three sliders.",
+  "t5b.m1.panelAliasCruz":
+    "The same here: with the other three arms solved, the optimum moves to \\(p = 1\\) and is "
+    + "worth \\(-1\\), one step per episode. Against the \\(-4\\) of before.",
+  "t5b.m1.lectura1":
+    "When the features <strong>do not tell the states apart</strong>, the best policy can be "
+    + "stochastic, and not by a small margin: in the short corridor <strong>no</strong> "
+    + "deterministic policy terminates —both branches of the curve fall to \\(-\\infty\\)— and the "
+    + "optimum is at \\(p^\\star = 2-\\sqrt2 \\approx 0.59\\), with \\(J = -(6+4\\sqrt2) \\approx "
+    + "-11.66\\).",
+  "t5b.m1.lectura2":
+    "That does <strong>not</strong> mean that in a finite MDP the optimum can be stochastic: it is "
+    + "a consequence of the <strong>approximation</strong>. With distinguishable states, the same "
+    + "corridor has a deterministic optimum worth \\(-3\\); the difference, almost nine steps per "
+    + "episode, is the price of <em>aliasing</em>.",
+  "t5b.m1.invertido": "switched",
+  "t5b.m1.tituloInvertido": "Here the actions are switched: right moves left",
+  "t5b.m1.meta": "G",
+  "t5b.m1.muro": "wall",
+  "t5b.m1.tituloBrazo": "You get out of here with {a} ({p})",
+  "t5b.m1.anotGreedyDer": "ε-greedy right (p = 0.95)",
+  "t5b.m1.anotGreedyIzq": "ε-greedy left (p = 0.05)",
+  "t5b.m1.serieJ": "\\(J(p)\\)",
+  "t5b.m1.viz2x": "p: probability of the marked action",
+  "t5b.m1.viz2y": "J(θ) = v<sub>π</sub>(s<sub>0</sub>)",
+  "t5b.m1.anotOptimo": "optimum within the class",
+  "t5b.m1.viz2runs": "Exact computation · no simulation",
+  "t5b.m1.mJinfinito": "\\(-\\infty\\): the episode does not terminate",
+  "t5b.m1.mJenorme": "worse than \\(-10\\,000\\)",
+  "t5b.m1.mOptimoExacto": "exact form: {v}",
+  "t5b.m1.mValorOptimoExacto": "exact form: {v}",
+  "t5b.m1.colEstado": "State",
+
+  /* --- MÓDULO 2 ----------------------------------------------------------- */
+  "t5b.m2.notaRango":
+    "The range is narrower than in the previous module: near the ends \\(J\\) blows up and the "
+    + "finite difference stops being reliable.",
+  "t5b.m2.notaSoloPasillo":
+    "This module works only on the <strong>short corridor</strong>; on the cross gridworld the "
+    + "check comes out the same, and the engine knows how to do it.",
+  "t5b.m2.pLabel": "\\(p = \\pi(\\text{right}\\mid s,\\theta)\\)",
+  "t5b.m2.constanteLabel": "Constant of proportionality",
+  "t5b.m2.constanteCon": "with the constant",
+  "t5b.m2.constanteSin": "without the constant",
+  "t5b.m2.reiniciar": "Defaults",
+  "t5b.m2.formulaVivaCab": "The theorem, with its three pieces and their numbers",
+  "t5b.m2.glosaIzq": "by finite differences",
+  "t5b.m2.glosaConstante": "average episode length",
+  "t5b.m2.glosaDerecho": "right-hand side of (13.5)",
+  "t5b.m2.rojo": "what gets estimated by sampling: that is why \\(\\pi\\) has to be followed",
+  "t5b.m2.verde":
+    "the only thing that has to be differentiated: it is where the parameterisation appears",
+  "t5b.m2.viz2": "Term by term, state by state",
+  "t5b.m2.colEstado": "State",
+  "t5b.m2.colAportacion": "contribution to the sum",
+  "t5b.m2.viz3": "The two sides of the equation, point by point",
+  "t5b.m2.viz3vacio": "Move \\(p\\) to draw the two sides.",
+  "t5b.m2.mIzq": "\\(\\nabla J(\\theta)\\), by finite differences",
+  "t5b.m2.mDer": "Right-hand side of (13.5)",
+  "t5b.m2.mConstante": "Constant of proportionality",
+  "t5b.m2.mConstanteGlosa": "= average episode length = \\(-J(\\theta)\\)",
+  "t5b.m2.mCociente": "Ratio between the two sides",
+  "t5b.m2.panelElegibilidad":
+    "The green piece is the only one that depends on the parameterisation, and for the linear "
+    + "softmax it has a closed form: <strong>the feature of the action taken minus the average "
+    + "feature under the policy</strong>. In this corridor, with \\(x(s,\\text{right}) = "
+    + "[1,0]^\\top\\) and \\(x(s,\\text{left}) = [0,1]^\\top\\), it comes out like this:",
+  "t5b.m2.panelElegibilidad2":
+    "Notice something you can see here and nowhere else: <strong>both gradients are multiples of "
+    + "\\([1,-1]^\\top\\)</strong>. That means that, whatever you do, \\(\\theta_r + \\theta_\\ell\\) "
+    + "<strong>never changes</strong> during training, and that the only real degree of freedom is "
+    + "the difference \\(\\theta_r - \\theta_\\ell = \\ln\\frac{p}{1-p}\\). Two parameters, one "
+    + "degree of freedom. In the following modules you will watch that difference move, and only "
+    + "that one.",
+  "t5b.m2.panelDF":
+    "The left-hand side is computed without touching the theorem: \\(J\\) is evaluated with the "
+    + "closed form at \\(\\theta\\pm h\\,e_i\\) and \\((J(\\theta+h e_i) - J(\\theta - h e_i))/2h\\) "
+    + "is taken, with \\(h = 10^{-5}\\). It is a centred finite difference, whose error is of order "
+    + "\\(h^2\\). <strong>If the two sides agree to six decimal places, it is not because they were "
+    + "computed the same way: it is because the theorem is true.</strong>",
+  "t5b.m2.panelSinConstante":
+    "Without the constant, the two sides do <strong>not</strong> agree, and the ratio between them "
+    + "is exactly the average length of the episode. At \\(p = 0.5\\) that is 12 steps, and the "
+    + "ratio is 12. For the algorithm this makes no difference, because any constant is absorbed "
+    + "into \\(\\alpha\\) —which is arbitrary—, and that is why the book writes \\(\\propto\\) and "
+    + "moves on. But if what you want is to check the theorem, the constant is there and has to be "
+    + "put in.",
+  "t5b.m2.panelMu":
+    "\\(\\mu(s)\\) is not a choice of yours: it comes from counting. \\(\\eta(s)\\) is the expected "
+    + "number of steps an episode spends in \\(s\\), and \\(\\mu(s)\\) is \\(\\eta(s)\\) normalised. "
+    + "At \\(p = 0.5\\) the corridor gives \\(\\eta = (6,\\,4,\\,2)\\) and \\(\\mu = "
+    + "(1/2,\\,1/3,\\,1/6)\\): half the time is spent in the first cell, and only a sixth in the "
+    + "third one, which is the one that touches the goal. That is the problem of this environment "
+    + "in a single number.",
+  "t5b.m2.lectura1":
+    "The theorem is useful because <strong>\\(\\nabla\\mu\\) does not appear</strong> on its "
+    + "right-hand side: the state distribution is there, but <strong>undifferentiated</strong>. "
+    + "That is why the gradient can be estimated without knowing the dynamics of the environment — "
+    + "and why <strong>\\(\\pi\\) has to be followed</strong> in order to sample, which is what "
+    + "makes these methods on-policy.",
+  "t5b.m2.lectura2":
+    "The \\(\\propto\\) hides a specific number: <strong>the average length of the episode</strong>. "
+    + "With \\(\\theta = 0\\) the gradient is \\([2,-2]^\\top\\), the right-hand side is "
+    + "\\([1/6,-1/6]^\\top\\), and between them there is exactly 12, which is the 12 steps an "
+    + "episode lasts on average at \\(p = 0.5\\). For the algorithm it makes no difference because "
+    + "it is absorbed into \\(\\alpha\\); for understanding the formula, it does.",
+  "t5b.m2.filaTotal": "total",
+  "t5b.m2.serieIzq": "\\(\\nabla J(\\theta)\\) by finite differences",
+  "t5b.m2.serieDer": "right-hand side of (13.5) × constant",
+  "t5b.m2.serieDerSin": "right-hand side of (13.5), without the constant",
+  "t5b.m2.viz3x": "p",
+  "t5b.m2.viz3y": "first component of the gradient",
+  "t5b.m2.anotCero": "here the gradient is zero: the optimum of module 1",
+  "t5b.m2.viz3runs": "Exact computation · no simulation",
+
+  /* --- MÓDULO 3 ----------------------------------------------------------- */
+  "t5b.m3.serieA12": "\\(\\alpha = 2^{-12}\\)",
+  "t5b.m3.serieA13": "\\(\\alpha = 2^{-13}\\)",
+  "t5b.m3.serieA14": "\\(\\alpha = 2^{-14}\\)",
+  "t5b.m3.serieVentana1": "episodes 1-100",
+  "t5b.m3.serieVentana2": "episodes 451-550",
+  "t5b.m3.serieVentana3": "episodes 901-1000",
+  "t5b.m3.alphaLabel": "Step size \\(\\alpha\\)",
+  "t5b.m3.alphaTres": "all three",
+  "t5b.m3.ejecucionesLabel": "Runs averaged",
+  "t5b.m3.thetaLabel": "Initialisation of \\(\\theta\\)",
+  "t5b.m3.thetaLibro": "\\(p_0 = 0.05\\) (as in the figure)",
+  "t5b.m3.thetaCero": "\\(\\theta = 0\\) (as in the pseudocode)",
+  "t5b.m3.calcular": "Run",
+  "t5b.m3.reiniciar": "Defaults",
+  "t5b.m3.viz1": "Total reward on episode",
+  "t5b.m3.viz1vacio": "Press <strong>Run</strong> to launch the batch.",
+  "t5b.m3.viz2": "The spread the average hides",
+  "t5b.m3.viz2vacio": "Launch the batch to see the distribution of \\(G_0\\).",
+  "t5b.m3.mFinal": "Mean \\(G_0\\) over the last 100 episodes",
+  "t5b.m3.mDesv": "Standard deviation of \\(G_0\\) over the last 100 episodes",
+  "t5b.m3.mCruce": "First episode with the average above \\(-15\\)",
+  "t5b.m3.mPfinal": "Mean \\(p\\) at the end",
+  "t5b.m3.mPfinalGlosa": "the optimum is \\(2-\\sqrt2 = 0.5858\\)",
+  "t5b.m3.mTruncados": "Episodes truncated by the step cap",
+  "t5b.m3.panelTheta":
+    "⚠ <strong>The book does not say which \\(\\theta\\) this figure starts from, and the two "
+    + "options are not compatible.</strong> Its pseudocode says “initialize \\(\\theta\\), "
+    + "<em>e.g.</em>, to 0”, and with \\(\\theta = 0\\) you have \\(p = 0.5\\) and an expected "
+    + "return of <strong>\\(-12\\)</strong>: the curve would start almost glued to the "
+    + "\\(v_*(s_0)\\) line and there would be nothing to learn. But <strong>the book's figure "
+    + "starts at around \\(-90\\)</strong>, and for that you need to start with \\(p_0\\) near "
+    + "\\(0.045\\). This page <strong>chooses</strong> \\(p_0 = 0.05\\) —which is exactly the "
+    + "\\(\\varepsilon\\)-<em>greedy</em>-left policy of Example 13.1, with \\(J = -82.11\\)— and "
+    + "leaves you the other button so that you can see the difference. <strong>With \\(\\theta = "
+    + "0\\) the curves do not look like the book's, and that is not a bug: it is that the book does "
+    + "not declare its initialisation.</strong>",
+  "t5b.m3.panelTope":
+    "Episodes are cut off at <strong>{tope} steps</strong> —the switch is right below. It is "
+    + "needed, because with \\(p\\) very close to 0 or to 1 an episode may never terminate. When "
+    + "one is cut off, the return is computed over the steps actually taken —so it ends up "
+    + "<strong>overestimated</strong>, less negative than it should be— and the counter above says "
+    + "how many times that has happened.",
+  "t5b.m3.panelTopeHallazgo":
+    "⚠ <strong>And here the cap is not an implementation detail: it is the height at which the "
+    + "curve levels off.</strong> The book's experiment has to cut episodes off somewhere, and "
+    + "<strong>its caption does not declare it</strong>. With a cap of 500 steps the three curves "
+    + "come out as in Figure 13.1 —\\(2^{-12}\\) stuck at <strong>−40.1</strong>, \\(2^{-13}\\) "
+    + "the best at <strong>−12.3</strong>, \\(2^{-14}\\) at <strong>−15.0</strong>—; with a cap of "
+    + "10,000 the figure <strong>is not reproduced at all</strong> —<strong>−611</strong>, "
+    + "<strong>−112</strong> and −15.0— and the ordering of the three step sizes even reverses, "
+    + "which is the one thing the book states explicitly in the caption of Figure 13.2. Press the "
+    + "button and check it: <strong>the cap is a hyperparameter of the book's experiment, and it "
+    + "is one of those it does not publish</strong>.",
+  "t5b.m3.topeLabel": "Cap on steps per episode",
+  "t5b.m3.tope500": "500 (reproduces the figure)",
+  "t5b.m3.tope10000": "10,000",
+  "t5b.m3.panelOnPolicy":
+    "The lecture deck asks the class: <strong>“on-policy or off-policy? online or "
+    + "offline?”</strong>. <strong>It is on-policy and offline.</strong> On-policy because the "
+    + "episode is generated by following the same \\(\\pi\\) that is being updated: it is what the "
+    + "step from the theorem to the sample requires, “if \\(\\pi\\) is followed, states occur in "
+    + "those proportions”. Offline because \\(G_t\\) is the <strong>full</strong> return from "
+    + "\\(t\\), so nothing can be updated until the episode finishes.",
+  "t5b.m3.panelAlpha":
+    "The three curves are the ones in the book's figure. The one with the largest step size, "
+    + "\\(2^{-12}\\), moves faster at first <strong>and then stalls</strong> at around \\(-40\\); "
+    + "the one with the smallest, \\(2^{-14}\\), advances slowly but advances. Drop the number of "
+    + "averaged runs to 10 and then to 1 and you will see why the book needs 100: with a single run "
+    + "you cannot decide which of the three is better.",
+  "t5b.m3.panelVarianza":
+    "Here is what the book's figure cannot show. The curve above is an average; the distribution "
+    + "below is what lies <strong>behind</strong> each point of that average. Look at the three "
+    + "windows. The width <strong>does</strong> shrink as learning proceeds —with the "
+    + "\\(\\alpha = 2^{-{k}}\\) you have set, the standard deviation of \\(G_0\\) goes from "
+    + "<strong>{s1}</strong> in the first hundred episodes to <strong>{s3}</strong> in the last "
+    + "hundred—, but look at the comparison that matters: at the end that deviation is still "
+    + "<strong>of the order of the mean return itself, {g0}</strong>. The REINFORCE estimator is "
+    + "not incorrect —its expectation is the direction of the gradient, and you checked that in "
+    + "module 2—, it is <strong>noisy even once it has learnt</strong>: each episode gives a very "
+    + "different return and the parameter moves in jerks. That is why a small step size is needed, "
+    + "and why hundreds of episodes are needed for something that in module 1 was solved by moving "
+    + "a slider.",
+  "t5b.m3.panelVarianzaVacio":
+    "Here is what the book's figure cannot show. The curve above is an average; the distribution "
+    + "below is what lies <strong>behind</strong> each point of that average. Run the batch and "
+    + "compare the width of the three windows.",
+  "t5b.m3.panelEstancamiento":
+    "⚠ That stall at \\(-40\\) that the book draws <strong>is not what it looks like</strong>, and "
+    + "it is worth a close look because it is a finding of this page. It is not that the hundred "
+    + "runs get halfway: the <strong>median</strong> ends at \\(p = 0.578\\), that is, almost at "
+    + "the optimum \\(2-\\sqrt2 = 0.586\\), and the average of <strong>94</strong> of the 100 runs "
+    + "is \\(-11.81\\), <strong>practically</strong> \\(v_*(s_0) = -11.66\\). What there is is "
+    + "<strong>six collapsed runs out of a hundred, and all six towards \\(p\\to1\\)</strong> "
+    + "—four of them at exactly \\(p = 1\\)—. Those six, and only those, drag the average down to "
+    + "\\(-40.09\\). That is: <strong>the step size \\(2^{-12}\\) does not learn worse; it learns "
+    + "just the same and occasionally falls off a cliff</strong>, which is exactly the phenomenon "
+    + "of module 6 — and it is inside the figure projected in class, without anyone saying so. "
+    + "<em>(Measured with the default settings: 1000 episodes, 100 runs, a cap of 500 steps, seed "
+    + "2026.)</em>",
+  "t5b.m3.panelEstancamiento2":
+    "And there is a second half. If instead of applying the \\(T\\) updates of an episode one by "
+    + "one —the order of the book's box— the increment is <strong>accumulated and applied "
+    + "once</strong> per episode, with \\(2^{-12}\\) <strong>no run collapses</strong>: twenty out "
+    + "of twenty get there, averaging \\(-11.98\\). So the stall of Figure 13.1 <strong>is produced "
+    + "by the update order of the box itself</strong>, not by the size of the step. ⚠ <strong>This "
+    + "cannot be checked from here</strong>: this module always updates step by step, as the book "
+    + "does, and the accumulated order —with its own control— is in <a href=\"#m6\">module 6</a>, "
+    + "where it is explained.",
+  "t5b.m3.notaOrden":
+    "The updates of an episode are applied one by one, in the order the book writes them; the "
+    + "return \\(G_t\\), on the other hand, is computed from the rewards <strong>already "
+    + "observed</strong>.",
+  "t5b.m3.notaSoloPasillo":
+    "This module reproduces a specific figure from the book and works only on the <strong>short "
+    + "corridor</strong>: doing it in two environments would double the cost without answering "
+    + "anything new.",
+  "t5b.m3.lectura1":
+    "The REINFORCE estimator points, on average, in the right direction —you checked that in module "
+    + "2— and even so the algorithm takes hundreds of episodes on a three-state problem. "
+    + "<strong>What makes it slow is not a bias, it is the variance</strong>: with the settings you "
+    + "have now, at the end of training the standard deviation of \\(G_0\\) is <strong>{s}</strong> "
+    + "against a mean return of <strong>{g0}</strong>, a coefficient of variation of "
+    + "<strong>{cv}</strong>. With a signal that noisy you have to take small steps, and that is "
+    + "why the curve of a single run does not look like the average of a hundred.",
+  "t5b.m3.lectura1Vacio":
+    "The REINFORCE estimator points, on average, in the right direction —you checked that in module "
+    + "2— and even so the algorithm takes hundreds of episodes on a three-state problem. "
+    + "<strong>What makes it slow is not a bias, it is the variance</strong>: run the batch and "
+    + "compare here the final standard deviation of \\(G_0\\) with the mean return itself. With a "
+    + "signal that noisy you have to take small steps, and that is why the curve of a single run "
+    + "does not look like the average of a hundred.",
+  "t5b.m3.lectura2":
+    "And the average of a hundred hides more than noise. With \\(\\alpha = 2^{-12}\\), the curve "
+    + "stalls at \\(-40\\) <strong>not because all hundred learn halfway, but because six of them "
+    + "collapse towards \\(p\\to1\\)</strong>: the other 94 end at \\(-11.81\\), "
+    + "<strong>practically</strong> the optimum \\(-11.66\\). <strong>The stall the book draws is a "
+    + "policy collapse, and it disappears if the increment of the episode is applied in one go "
+    + "instead of step by step.</strong> It is module 6, inside the figure of module 3.",
+  "t5b.m3.error": "The computation failed: {m}",
+  "t5b.m3.viz1x": "Episode",
+  "t5b.m3.viz1y": "G₀: total reward on episode",
+  "t5b.m3.anotVestrella": "v*(s₀)",
+  "t5b.m3.progreso": "Simulating… {n} runs for each step size",
+  "t5b.m3.viz1runs": "Averaged over {n} runs · seed {s} · cap of {tope} steps",
+  "t5b.m3.viz2unaSola": "Choose a single \\(\\alpha\\) to see its distribution.",
+  "t5b.m3.viz2x": "G₀",
+  "t5b.m3.viz2y": "relative frequency",
+  "t5b.m3.colaIzq": "≤ −200",
+  "t5b.m3.viz2runs":
+    "{n} runs × 100 episodes per window · the annotations mark the mean",
+  "t5b.m3.notaMetricas": "The figures are those of \\(\\alpha = 2^{-{k}}\\).",
+  "t5b.m3.noCruza": "does not get there in 1000 episodes",
+  "t5b.m3.truncGlosa": "out of {total} · cap of {tope} steps",
+  "t5b.m3.cortada": "{n} runs cut short by overflow of \\(\\theta\\).",
+
+  /* --- MÓDULO 4 ----------------------------------------------------------- */
+  "t5b.m4.baseLabel": "Baseline",
+  "t5b.m4.baseNinguna": "none (\\(b = 0\\))",
+  "t5b.m4.baseEstado": "\\(b(S_t) = \\hat v(S_t,w)\\)",
+  "t5b.m4.baseAccion": "\\(b(S_t,A_t)\\): one per action",
+  "t5b.m4.alphaThetaLabel": "Policy step size (\\(\\alpha^\\theta\\))",
+  "t5b.m4.alphaWLabel": "Value step size (\\(\\alpha^{w}\\))",
+  "t5b.m4.calcular": "Run",
+  "t5b.m4.reiniciar": "Defaults",
+  "t5b.m4.notaAproximador":
+    "With the state baseline, \\(\\hat v(s,w) = w\\) is <strong>a single number</strong> for the "
+    + "three states, with \\(d = 1\\) and \\(\\nabla\\hat v(s,w) = 1\\): exactly what the book does "
+    + "in Figure 13.2. \\(w_0 = 0\\), the “e.g., to 0” of its box.",
+  "t5b.m4.notaSemilla":
+    "The variants start from the same seed and the same policy; from the first differing update "
+    + "on, the episodes are no longer the same.",
+  "t5b.m4.viz1": "Total reward on episode, with and without a baseline",
+  "t5b.m4.viz1vacio": "Press <strong>Run</strong> to launch the batch.",
+  "t5b.m4.viz2": "The gradient estimator: where its mean is and how much it spreads",
+  "t5b.m4.viz2vacio": "Launch the batch to see the distributions.",
+  "t5b.m4.viz2nota":
+    "\\(\\theta\\) frozen at its initial value and 10,000 episodes <strong>shared by the three "
+    + "baselines</strong>: what is measured here is <strong>the estimator</strong>, not the "
+    + "algorithm. And \\(w\\) is frozen at its fixed point, not being learnt: with the order of the "
+    + "box on p. 352 the learnt \\(w\\) ends up correlated with the return of its own episode and "
+    + "the comparison would stop measuring what it says it measures.",
+  "t5b.m4.mFinalCon": "Final mean \\(G_0\\), with a baseline",
+  "t5b.m4.mFinalSin": "Final mean \\(G_0\\), without a baseline",
+  "t5b.m4.mCruceCon": "First episode above \\(-15\\), with a baseline",
+  "t5b.m4.mCruceSin": "First episode above \\(-15\\), without a baseline",
+  "t5b.m4.mRatioVar": "Variance of the estimator, with baseline ÷ without it",
+  "t5b.m4.panelExactoIntro":
+    "The part of the answer that needs no simulation. With \\(q_\\pi\\) known, the mean and the "
+    + "variance of the gradient term in each state can be computed by hand. Look at the mean "
+    + "column: <strong>it is the same with \\(b = 0\\) and with \\(b = v_\\pi(s)\\)</strong>, and "
+    + "that is why it has no column of its own.",
+  "t5b.m4.colEstado": "State",
+  "t5b.m4.colMedia": "Mean of the term",
+  "t5b.m4.colVar0": "Variance with \\(b=0\\)",
+  "t5b.m4.colVarV": "Variance with \\(b = v_\\pi(s)\\)",
+  "t5b.m4.colBopt": "\\(b\\) that minimises the variance",
+  "t5b.m4.panelExactoP":
+    "Evaluated at \\(p = p_0 = 0.05\\), the starting policy of the curves above. At \\(p = 0.5\\) "
+    + "—the slider of module 1— the variance with \\(b = v_\\pi(s)\\) is <strong>exactly "
+    + "zero</strong> in all three states, because there, and only there, \\(v_\\pi(s)\\) coincides "
+    + "with the optimal baseline.",
+  "t5b.m4.panelExactoNota":
+    "And a surprise the book does not mention: <strong>the baseline that minimises the variance is "
+    + "not \\(v_\\pi(s)\\)</strong>, but \\((1-p)\\,q_\\pi(s,\\text{right}) + "
+    + "p\\,q_\\pi(s,\\text{left})\\) — an average of the action values weighted the other way "
+    + "round. They coincide only when \\(p = 1/2\\). \\(v_\\pi(s)\\) is not the optimal baseline: it "
+    + "is one that can be learnt easily and works very well.",
+  "t5b.m4.panelAccion":
+    "This baseline learns <strong>two</strong> numbers instead of one: the average of the returns "
+    + "observed after going right and the average after going left. It sounds reasonable, and in "
+    + "the exam it comes with the rider that it would introduce “an acceptable bias that only "
+    + "changes the direction at the start”. Look at the curve. <strong>In this environment there is "
+    + "no acceptable bias about it: the whole gradient is cancelled.</strong> When the two numbers "
+    + "reach their equilibrium, the <strong>expected</strong> update of the actor is "
+    + "<strong>exactly zero for any \\(p\\)</strong>: the difference between the two baselines is "
+    + "precisely the quantity the policy was using to decide which way to move, and once it is "
+    + "subtracted there is nothing left.",
+  "t5b.m4.panelAccion2":
+    "And now what actually happens, which is worse and more interesting than standing still. "
+    + "<strong>Zero expectation is not standing still.</strong> The expected gradient vanishes, but "
+    + "<strong>the variance has not gone anywhere</strong>: the policy still receives large shoves "
+    + "in directions that no longer lead anywhere, and what it does is <strong>diffuse</strong> — a "
+    + "random walk in parameter space, with nothing to bring it back to the centre. And since both "
+    + "ends are absorbing —at \\(p = 0\\) and \\(p = 1\\) the gradient dies out and the episode "
+    + "never finishes—, the policy ends up glued to one of them. Measured: <strong>the median of "
+    + "\\(p\\) ends at 0.0000, 94 out of 100 runs below 0.01, and the final mean return is "
+    + "\\(-470.71\\)</strong>, against the \\(-82.11\\) it started from. <strong>It does not go "
+    + "flat: it is destroyed.</strong>",
+  "t5b.m4.panelAccion3":
+    "That the culprit is diffusion and nothing else can be checked: if instead of being learnt the "
+    + "two numbers are <strong>frozen</strong> at their exact equilibrium —so that the expectation "
+    + "is zero from the very first episode— the policy drifts away just the same, and then towards "
+    + "\\(p = 1\\). The only thing that decides which end it goes to is which way it starts to "
+    + "drift.",
+  "t5b.m4.panelSesgoW":
+    "A fine point, which shows up when measuring and does not show up in the theory. The baseline "
+    + "<strong>does not bias</strong> as long as it does not depend on the action — but the book's "
+    + "condition is about a baseline that depends neither <strong>on the action nor on the "
+    + "sample</strong>. And in the box on p. 352, \\(w\\) is updated <strong>inside the very "
+    + "episode</strong> whose return is being used: it absorbs part of \\(G_t\\) and ends up "
+    + "correlated with the \\(G_{t+1}, G_{t+2}\\ldots\\) of that same episode. Measured over 10,000 "
+    + "episodes: with \\(w\\) <strong>frozen</strong> at its fixed point, the difference between the "
+    + "means of the two distributions is \\(-0.17\\) standard errors —zero, as the theory requires—; "
+    + "with \\(w\\) <strong>learnt</strong> with the order of the box, it is \\(-16.6\\). <strong>It "
+    + "does not contradict Sutton &amp; Barto</strong>: it is the difference between the ideal "
+    + "baseline of the theorem and the baseline an incremental algorithm can afford. In practice it "
+    + "more than makes up for it, and that is why the book writes it that way.",
+  "t5b.m4.panelAccionMatiz":
+    "A qualification, so as not to go further than the book goes: what Sutton &amp; Barto proves is "
+    + "that a baseline that does <strong>not</strong> depend on the action does <strong>not</strong> "
+    + "bias. That is a <strong>sufficient</strong> condition, not a necessary one, and the book "
+    + "itself cites in its notes work that builds action-dependent baselines without introducing "
+    + "bias. What this module shows is that <strong>the first per-action baseline anyone thinks of "
+    + "does break the algorithm</strong>, and in a rather worse way than a small bias.",
+  "t5b.m4.panelDos":
+    "“We have two hyperparameters”, says the slide, and does not say which. They are "
+    + "\\(\\alpha^\\theta\\), the policy step size, and \\(\\alpha^{w}\\), the value one. The book "
+    + "warns that <strong>they do not cost the same to choose</strong>: for the value one there are "
+    + "rules of thumb in the linear case; for the policy one it is much less clear, because its "
+    + "best value depends on the range of the rewards and on the parameterisation. And in the "
+    + "book's own figure there is the fact nobody comments on: the \\(\\alpha^\\theta\\) that works "
+    + "well <strong>with</strong> a baseline is \\(2^{-9}\\), <strong>sixteen times larger</strong> "
+    + "than the best \\(\\alpha\\) without one. Reducing the variance does not only speed things up: "
+    + "it lets you take bigger steps.",
+  "t5b.m4.panelDemo": "The condition, in full, in three steps:",
+  "t5b.m4.panelDemo2":
+    "<strong>The first step is the one that breaks if \\(b\\) depends on the action</strong>: then "
+    + "\\(b\\) does not come out as a common factor of the sum, and the term no longer vanishes.",
+  "t5b.m4.notaTope":
+    "The cap per episode is <strong>500 steps</strong>, the same as in module 3 and for the same "
+    + "reason; it is explained there, and there it can be switched. Not here: with 10,000 the curve "
+    + "without a baseline does not get above \\(-15\\) in 1000 episodes and the comparison with "
+    + "Figure 13.2 stops making sense.",
+  "t5b.m4.lectura1":
+    "A baseline that does not depend on the action <strong>does not move the mean</strong> of the "
+    + "gradient estimator —you have seen it: both distributions have the same mean— and <strong>cuts "
+    + "down its spread</strong>. That is why it speeds learning up, and why it also allows a step "
+    + "size sixteen times larger.",
+  "t5b.m4.lectura2":
+    "The condition “it must not depend on the action” is not a technicality. With one baseline per "
+    + "action —the average of the returns after each one, which sounds reasonable— the "
+    + "<strong>expected</strong> update vanishes completely in this environment. And that does "
+    + "<strong>not</strong> leave the algorithm standing still: it takes away the signal and leaves "
+    + "it the noise, so the policy diffuses until it is glued to an end. The return ends at "
+    + "\\(-470\\), five times worse than that of the starting policy.",
+  "t5b.m4.serieSin": "no baseline · \\(\\alpha = 2^{-13}\\)",
+  "t5b.m4.serieCon":
+    "with the chosen baseline · \\(\\alpha^\\theta = 2^{-{at}}\\), \\(\\alpha^{w} = 2^{-{aw}}\\)",
+  "t5b.m4.error": "The computation failed: {m}",
+  "t5b.m4.viz1x": "Episode",
+  "t5b.m4.viz1y": "G₀: total reward on episode",
+  "t5b.m4.anotVestrella": "v*(s₀)",
+  "t5b.m4.viz1runs":
+    "Averaged over 100 runs · <strong>same seed for both curves</strong>, not the same episodes · "
+    + "seed {s}",
+  "t5b.m4.distSin": "\\(b = 0\\)",
+  "t5b.m4.distEstado": "\\(b(S_t)\\)",
+  "t5b.m4.distAccion": "\\(b(S_t,A_t)\\)",
+  "t5b.m4.viz2x": "first component of the increment",
+  "t5b.m4.viz2y": "relative frequency",
+  "t5b.m4.viz2runs":
+    "{n} episodes seeded with seed {s}, the same ones for every baseline · \\(\\theta\\) and "
+    + "\\(w\\) frozen",
+  "t5b.m4.filaTotal": "total, weighted by \\(\\mu(s)\\)",
+  "t5b.m4.noLlega": "never",
+  "t5b.m4.mRatioVarGlosa": "with \\(b(S_t)\\), \\(\\theta\\) and \\(w\\) frozen",
+  "t5b.m4.cortada": "{n} runs cut short by overflow.",
+
+  /* --- MÓDULO 5 ----------------------------------------------------------- */
+  "t5b.m5.usoLabel": "Use of the learned value",
+  "t5b.m5.usoBase": "as a baseline (REINFORCE with baseline)",
+  "t5b.m5.usoCritico": "as a critic (one-step actor-critic)",
+  "t5b.m5.usoDos": "both, same seed",
+  "t5b.m5.capacidadLabel": "Capacity of the value approximator",
+  "t5b.m5.capUno": "a single number, \\(\\hat v(s,w) = w\\)",
+  "t5b.m5.capTres": "one per state",
+  "t5b.m5.alphaWLabel": "Value step size (\\(\\alpha^{w}\\))",
+  "t5b.m5.calcular": "Run",
+  "t5b.m5.reiniciar": "Defaults",
+  "t5b.m5.notaAlphaTheta":
+    "\\(\\alpha^\\theta = 2^{-9}\\), the one of Figure 13.2, and <strong>it is not a "
+    + "control</strong>: three controls already reach the budget, and the role of the policy step "
+    + "size is module 6. \\(w_0 = 0\\) for both capacities.",
+  "t5b.m5.notaSemilla":
+    "The two variants start from the same seed and the same policy; from the first step on the "
+    + "trajectories diverge, because each one has already updated the policy in its own way.",
+  "t5b.m5.viz1": "Total reward on episode",
+  "t5b.m5.viz1vacio": "Press <strong>Run</strong> to launch the batch.",
+  "t5b.m5.viz2": "Where each variant takes the policy",
+  "t5b.m5.viz2vacio": "Launch the batch to see where \\(p\\) goes.",
+  "t5b.m5.mFinalBase": "Final mean \\(G_0\\), baseline",
+  "t5b.m5.mFinalCritico": "Final mean \\(G_0\\), critic",
+  "t5b.m5.mPbase": "Final \\(p\\), baseline",
+  "t5b.m5.mPcritico": "Final \\(p\\), critic",
+  "t5b.m5.mTruncados": "Episodes truncated by the 1,000-step cap",
+  "t5b.m5.panelExactoIntro":
+    "This is not simulated: it is computed. For each variant, which way the "
+    + "<strong>expected</strong> update of the actor pushes at the starting \\(p\\).",
+  "t5b.m5.colVariante": "Variant",
+  "t5b.m4.mRatioVarAccion":
+    "with \\(b(S_t,A_t)\\), \\(\\theta\\) and \\(w\\) frozen",
+  "t5b.m4.mRatioVarSinBase":
+    "with no baseline there is nothing to compare: the \\(b(S_t)\\) one is shown",
+  "t5b.m5.colW": "\\(w\\) it is evaluated at (its fixed point)",
+  "t5b.m5.colActualizacion": "Expected update of the actor",
+  "t5b.m5.colPuntoFijo": "Fixed point of the policy",
+  "t5b.m5.panelExactoP":
+    "Evaluated at \\(p = p_0 = 0.05\\), the policy all four start from. This module has no \\(p\\) "
+    + "slider —the one in module 1 is there to walk along the curve— and the four rows are "
+    + "evaluated at the same point so that they are comparable. The third row points at \\(p = 1\\) "
+    + "<strong>for any \\(p\\)</strong>, not just for this one.",
+  "t5b.m5.panelExactoNota":
+    "Look at the third row. With a critic that is a single number, almost every TD error is worth "
+    + "\\(-1\\): the critic predicts the same value before and after, and the reward is always "
+    + "\\(-1\\). The only different step is <strong>the one that enters the goal</strong>, where the "
+    + "error is \\(-1-w\\), and with \\(w\\) negative that is a <strong>positive</strong> and large "
+    + "surprise. That step is <em>right</em> in the third cell… and since the three cells share a "
+    + "policy, it reinforces <em>right</em> <strong>in all of them</strong>, including the middle "
+    + "one, where <em>right</em> takes you backwards. The expected update points at \\(p = 1\\) for "
+    + "any \\(p\\), and \\(J(1) = -\\infty\\). <em>(Derivation of this page; the book does not "
+    + "analyse this environment with actor-critic.)</em>",
+  "t5b.m5.panelFrase":
+    "The full quotation, which is the most important of the unit and is on no slide: “Although the "
+    + "REINFORCE-with-baseline method learns both a policy and a state-value function, <strong>we do "
+    + "not consider it to be an actor–critic method because its state-value function is used only as "
+    + "a baseline, not as a critic</strong>. That is, it is not used for bootstrapping […]. This is a "
+    + "useful distinction, for <strong>only through bootstrapping do we introduce bias and an "
+    + "asymptotic dependence on the quality of the function approximation</strong>.” (Sutton &amp; "
+    + "Barto, §13.5, p. 353.)",
+  "t5b.m5.panelGana":
+    "That it turns out badly in this environment does not mean the method is bad, and it is worth "
+    + "not taking that conclusion away. Actor-critic gains two real things that cannot be seen here "
+    + "because the corridor is tiny: it is <strong>fully online and incremental</strong> —it updates "
+    + "at every step, does not wait until the end of the episode, and therefore also works for "
+    + "continuing tasks— and its one-step target has <strong>far less variance</strong> than a full "
+    + "return. What this module shows is what it <strong>pays</strong> for that, and that the price "
+    + "is set by the critic: with one weight per state, the same update takes the policy to the same "
+    + "place as REINFORCE with baseline.",
+  "t5b.m5.panelVersiones":
+    "⚠ <strong>There are two different actor-critic pseudocodes in the material and neither deck "
+    + "warns about it.</strong> You have them side by side in <a href=\"#b9\">Actor-critic</a>, "
+    + "with their six differences. <strong>What runs here is the one from the book</strong> (box on "
+    + "p. 354), for three reasons that are also given there; the one that weighs in this module is "
+    + "that the lecture-deck version <strong>does not say what to do on reaching the terminal "
+    + "state</strong>, and in this corridor that is the only transition that carries information.",
+  "t5b.m5.panelTope":
+    "The cap per episode is <strong>1,000 steps</strong>, in case the policy goes to an end and the "
+    + "episode never finishes. The counter above says how many have been cut off —and it changes "
+    + "with the controls—, but the interesting answer already shows with the default values: "
+    + "<strong>the variant that destroys itself hardly cuts off any</strong>. With “both”, a "
+    + "single-number critic and \\(\\alpha^{w} = 2^{-4}\\), it is <strong>3 episodes out of "
+    + "25,000</strong>: the actor-critic does not reach \\(p = 1\\), it settles at around "
+    + "<strong>0.98</strong> and its episodes last on the order of <strong>a hundred and fifty "
+    + "steps</strong> —dreadful compared with the 11.7 of the optimum, but a long way from the cap. "
+    + "<strong>What you see in the curve is the algorithm, not the cap.</strong>",
+  "t5b.m5.notaWcero":
+    "A nice detail about the start, and one not to confuse with the table above: the four rows are "
+    + "evaluated at the <strong>fixed point</strong> of \\(w\\), which is where the critic ends up; "
+    + "but the algorithm <strong>starts</strong> at \\(w_0 = 0\\). And with \\(w = 0\\) exactly, the "
+    + "expected update of the actor in the critic variant —which is \\((1-p)(-w)\\)— is "
+    + "<strong>zero</strong>: the algorithm does not move until \\(w\\) goes down.",
+  "t5b.m5.panelCriticoLento":
+    "⚠ <strong>You are in the box that the default values steer around, and it deserves an "
+    + "explanation.</strong> With a small \\(\\alpha^{w}\\) the value learns <strong>too "
+    + "slowly</strong> for the policy's \\(\\alpha^\\theta = 2^{-9}\\): the baseline arrives late, "
+    + "it does not cut the variance down in time and the noise carries the policy off to an end. "
+    + "With \\(\\alpha^{w} = 2^{-6}\\) and one weight per state that is <strong>8 collapsed runs "
+    + "out of 50</strong> and \\(G_0 = -170.60\\); with \\(2^{-8}\\), \\(-288.95\\) with a single "
+    + "number and \\(-446.86\\) with one per state. <strong>This is a lesson too, not a "
+    + "fault</strong>, and it is a different one from the module's: there what does the damage is "
+    + "<em>bootstrapping</em> with an incapable critic; here, an approximator that is capable but "
+    + "<strong>slow</strong>. Raise \\(\\alpha^{w}\\) to \\(2^{-4}\\) and the three boxes that "
+    + "should get there reach \\(2-\\sqrt2\\).",
+  "t5b.m5.notaEjecuciones":
+    "There are <strong>50</strong> runs and not the book's 100 because the episodes of the variant "
+    + "that collapses are extremely long. It is labelled on the chart.",
+  "t5b.m5.lectura1":
+    "What separates REINFORCE with baseline from actor-critic is not learning a value: it is "
+    + "<strong>using it to <em>bootstrap</em></strong>. With a baseline, the value is only "
+    + "subtracted, and the expected update remains exactly \\(\\nabla J(\\theta)\\) whatever the "
+    + "learned number is.",
+  "t5b.m5.lectura2":
+    "With <em>bootstrapping</em>, by contrast, <strong>the bias depends on the quality of the "
+    + "critic</strong>: with a single number for three states of very different value, the expected "
+    + "update points at \\(p = 1\\) for any \\(p\\) and the policy is destroyed; with one weight per "
+    + "state, it is \\(\\nabla J(\\theta)\\) again and the policy reaches \\(2-\\sqrt2\\).",
+  "t5b.m5.serieBase": "baseline",
+  "t5b.m5.serieCritico": "critic",
+  "t5b.m5.error": "The computation failed: {m}",
+  "t5b.m5.viz1x": "Episode",
+  "t5b.m5.viz1y": "G₀: total reward on episode",
+  "t5b.m5.anotVestrella": "v*(s₀)",
+  "t5b.m5.anotInicio": "initial policy",
+  "t5b.m5.viz1runs":
+    "Averaged over 50 runs · \\(\\alpha^\\theta = 2^{-9}\\) · <strong>same seed for both "
+    + "curves</strong> · seed {s}",
+  "t5b.m5.viz2x": "Episode",
+  "t5b.m5.viz2y": "p = π(right | s, θ)",
+  "t5b.m5.anotPestrella": "p* = 2−√2",
+  "t5b.m5.viz2runs": "Averaged over 50 runs · seed {s}",
+  "t5b.m5.filaBase": "baseline",
+  "t5b.m5.filaCritico": "critic",
+  "t5b.m5.sinPuntoFijo": "none: \\(p\\to1\\)",
+  "t5b.m5.conPuntoFijo": "\\(p^\\star = 2-\\sqrt2\\)",
+  "t5b.m5.truncGlosa": "out of {n} episodes per variant",
+  "t5b.m5.cortada": "{n} runs cut short by overflow.",
+
+  /* --- MÓDULO 6 ----------------------------------------------------------- */
+  "t5b.m6.alphaLabel": "Policy step size (\\(\\alpha^\\theta\\))",
+  "t5b.m6.frenoLabel": "Brake",
+  "t5b.m6.frenoNinguno": "none",
+  "t5b.m6.frenoRegion": "trust region \\(D_{KL} \\le \\delta\\)",
+  "t5b.m6.deltaLabel": "Limit \\(\\delta\\)",
+  "t5b.m6.calcular": "Run",
+  "t5b.m6.reiniciar": "Defaults",
+  "t5b.m6.notaSemilla":
+    "With and without the brake the seed is shared, <strong>not the trajectory</strong>: as soon as "
+    + "the brake clips one step, the policies diverge and the episodes are no longer the same.",
+  "t5b.m6.viz1": "The policy, run by run",
+  "t5b.m6.viz1vacio": "Press <strong>Run</strong> to launch the runs.",
+  "t5b.m6.viz2": "Mean total reward per episode",
+  "t5b.m6.viz2vacio": "Launch the batch to see the performance.",
+  "t5b.m6.mColapsadas": "Collapsed runs",
+  "t5b.m6.mColapsadasGlosa":
+    "collapsed = ends with \\(p \\ge 0.95\\) or \\(p \\le 0.05\\), the two "
+    + "\\(\\varepsilon\\)-<em>greedy</em> policies the book marks",
+  "t5b.m6.mFinal": "Mean \\(G_0\\) over the last 30 episodes",
+  "t5b.m6.mSaltoMax": "Largest jump of \\(p\\) in a single update",
+  "t5b.m6.mKLmax": "Largest \\(D_{KL}\\) of a single update",
+  "t5b.m6.mRecortes": "Updates clipped by the brake",
+  "t5b.m6.panelBucleIntro":
+    "The loop, with numbers. It is computed at the \\(p\\) the highlighted run is currently at —or "
+    + "at \\(p_0\\) if you have not run it yet— and with the step size you have chosen.",
+  "t5b.m6.colMagnitud": "Quantity",
+  "t5b.m6.colValor": "Value",
+  "t5b.m6.panelBucleNota":
+    "The last row is the frightening one. A single episode, with the step size you have chosen, can "
+    + "move the policy from where it is all the way there. And if it ends up near an end, the next "
+    + "episode will be much longer, and the next jump much larger.",
+  "t5b.m6.panelFreno":
+    "The brake is the idea of the last slide of the unit put to work. The step REINFORCE asks for is "
+    + "computed and, before applying it, <strong>how much it would move the policy</strong> is "
+    + "measured with the Kullback-Leibler divergence between the policy before and the policy after. "
+    + "If it goes over the limit \\(\\delta\\), the step <strong>is clipped</strong> —multiplied by "
+    + "the largest factor \\(\\tau\\le1\\) that fits— and applied clipped. Learning goes on, only it "
+    + "can no longer take a jump that wrecks the policy. This is, in one line, what the exam calls a "
+    + "<strong>trust region strategy</strong>, and it is the idea behind TRPO and PPO.",
+  "t5b.m6.panelPenalizacion":
+    "⚠ <strong>The slide proposes the idea in another form</strong> —an objective \\(J - "
+    + "\\eta_{KL} D_{KL}\\), along the lines of L2 regularisation— and <strong>with a single "
+    + "gradient step per batch that form does nothing</strong>: the reason why is in <a "
+    + "href=\"#b11\">Limiting the policy jump</a>. What runs under this button is the other side "
+    + "of the same idea, the <strong>region</strong> one: the step is computed and, if it moves "
+    + "the policy by more than \\(\\delta\\), it is clipped until it fits. <em>(The observation "
+    + "about the penalty is this page's, not the material's.)</em>",
+  "t5b.m6.panelKL":
+    "And one thing the slide does not say: between which two distributions it is computed. In general "
+    + "you have to average over the states with \\(\\mu(s)\\); <strong>in this corridor that is not "
+    + "needed</strong>, because the three cells share a policy and the divergence is the same in all "
+    + "three. With two actions it is this:",
+  "t5b.m6.panelAlcance":
+    "<strong>Sutton &amp; Barto covers none of this module.</strong> Chapter 13 does not discuss "
+    + "policy collapse from an over-large step, nor KL-divergence regularisation, nor TRPO, nor PPO; "
+    + "the only thing there is is a bibliographical citation on entropy regularisation. What you see "
+    + "here is the warning of the lecture deck turned into a reproducible experiment on the book's "
+    + "environment, <strong>and the experiment is this page's</strong>.",
+  "t5b.m6.panelTope":
+    "Episodes are cut off at <strong>1,000 steps</strong>. With the policy near an end an episode may "
+    + "never terminate, and a cap is needed for the computation to finish. On cutting off, the return "
+    + "is computed over the steps taken, so <strong>the collapse looks milder than it is</strong>: "
+    + "without a cap, the returns would be far worse and the jumps larger. <strong>The simplification "
+    + "works against what this module is trying to show, not in its favour.</strong>",
+  "t5b.m6.notaAcumulado":
+    "Unlike module 3, here the increment of the episode is accumulated and applied in one go, with "
+    + "\\(\\nabla\\ln\\pi\\) evaluated at the <strong>previous</strong> policy. It is needed in order "
+    + "to measure the jump. ⚠ <strong>And the difference from the book's order is not small: it is a "
+    + "factor of eight in the step size.</strong> Accumulating damps things down —the \\(T\\) updates "
+    + "no longer feed back on each other within the episode—, so a considerably larger "
+    + "\\(\\alpha^\\theta\\) is needed here to see the same thing: collapse starts at \\(2^{-8}\\) "
+    + "with this order and at \\(2^{-11}\\) with the order of the book's box. <strong>It is the same "
+    + "difference that produces the stall of Figure 13.1</strong>, and it is explained in module 3.",
+  "t5b.m6.lectura1":
+    "“One bad policy move wrecks the training” <strong>is not a metaphor</strong>: in this environment "
+    + "the jump of one update grows with <strong>the square of the episode length</strong>, and the "
+    + "episode length grows when the policy gets worse. A bad jump makes the policy worse, the policy "
+    + "makes the episodes longer, and the episodes make the next jump bigger. The loop closes, and "
+    + "that is why it does not fix itself.",
+  "t5b.m6.lectura2":
+    "Limiting <strong>how much the policy can move</strong> at each update —not how large the weights "
+    + "are— cuts the loop without stopping learning: with the brake on, the same step size that used "
+    + "to wreck the policy now makes progress towards \\(2-\\sqrt2\\). That is the idea behind TRPO "
+    + "and PPO. Mind the qualification, which is an honest one: the brake <strong>avoids the disaster, "
+    + "it does not recover the optimum</strong> — with the step size and the \\(\\delta\\) you have "
+    + "set, the final policy settles at <strong>{p}</strong> against \\(2-\\sqrt2 = 0.5858\\).",
+  "t5b.m6.lectura2Sin":
+    "Limiting <strong>how much the policy can move</strong> at each update —not how large the weights "
+    + "are— cuts the loop without stopping learning: put the brake on and you will see the same step "
+    + "size that used to wreck the policy make progress towards \\(2-\\sqrt2\\). That is the idea "
+    + "behind TRPO and PPO. And mind the qualification, which is an honest one: the brake "
+    + "<strong>avoids the disaster, it does not recover the optimum</strong> — with a step size "
+    + "large enough to collapse, the final policy settles below \\(2-\\sqrt2 = 0.5858\\).",
+  "t5b.m6.error": "The computation failed: {m}",
+  "t5b.m6.serieDestacada": "run 0",
+  "t5b.m6.viz1x": "Episode",
+  "t5b.m6.viz1y": "p = π(right | s, θ)",
+  "t5b.m6.anotOptimo": "p*",
+  "t5b.m6.anotArriba": "ε-greedy right",
+  "t5b.m6.anotAbajo": "ε-greedy left",
+  "t5b.m6.serieResto": "the other runs",
+  "t5b.m6.viz1runs": "{n} runs <strong>not averaged</strong> · seed {s}",
+  "t5b.m6.serieMedia": "average of the 20",
+  "t5b.m6.viz2x": "Episode",
+  "t5b.m6.viz2y": "G₀: total reward on episode",
+  "t5b.m6.anotVestrella": "v*(s₀)",
+  "t5b.m6.anotInicio": "initial policy",
+  "t5b.m6.viz2runs": "Averaged over the {n} runs · seed {s}",
+  "t5b.m6.filaP": "current \\(p\\) of the highlighted run",
+  "t5b.m6.filaJ": "\\(J(p)\\)",
+  "t5b.m6.filaT": "Expected episode length, \\(-J(p)\\)",
+  "t5b.m6.filaCota":
+    "Bound on the jump of an episode of that length, \\(\\alpha^\\theta\\sqrt2\\,T(T+1)/2\\)",
+  "t5b.m6.filaPsalto": "\\(p\\) that would result from a jump of that size to the right",
+  "t5b.m6.deVeinte": "{n} of {total}",
+  "t5b.m6.deTotal": "{n} of {total}",
+  "t5b.m6.cortada": "{n} runs cut short by overflow of \\(\\theta\\).",
+
+  /* --- cuestionario del módulo 1 ------------------------------------------ */
+  "t5b.m1.quiz.0.enunciado":
+    "In the short corridor of Example 13.1, the best policy within the class considered is "
+    + "stochastic. Why?",
+  "t5b.m1.quiz.0.opciones": [
+    "Because the features do not tell the three states apart, so there is a single probability "
+      + "for three different situations, and one of them has its actions switched.",
+    "Because the MDP is not Markovian: the next state depends on where the agent has been "
+      + "before.",
+    "Because the rewards are stochastic and a deterministic policy cannot average them.",
+    "Because the environment is episodic and undiscounted, and with \\(\\gamma = 1\\) the "
+      + "optimum of an MDP can always be stochastic.",
+  ],
+  "t5b.m1.quiz.0.explicacion":
+    "The whole example lives off <em>aliasing</em>: the book defines \\(x(s,\\text{right}) = "
+    + "[1,0]^\\top\\) and \\(x(s,\\text{left}) = [0,1]^\\top\\) <strong>for all three "
+    + "states</strong>, and that is why the agent can only have one \\(p\\). The MDP "
+    + "<strong>is</strong> Markovian and its transitions are deterministic; what is not Markovian "
+    + "is the representation. The rewards are always \\(-1\\), with no noise. And \\(\\gamma = "
+    + "1\\) has nothing to do with it: in a finite MDP with distinguishable states there "
+    + "<strong>always</strong> exists a deterministic optimal policy, and in this very corridor, "
+    + "if the states are told apart, the optimum is (right, left, right) and is worth \\(-3\\).",
+  "t5b.m1.quiz.1.enunciado":
+    "In this corridor, what happens to a policy that goes right with probability 1?",
+  "t5b.m1.quiz.1.opciones": [
+    "It never terminates: it bounces between the first cell and the second, and its performance "
+      + "is \\(-\\infty\\).",
+    "It reaches the goal in three steps, which is the minimum possible.",
+    "It reaches the goal, but more slowly than the optimal stochastic policy.",
+    "It is equivalent to an \\(\\varepsilon\\)-<em>greedy</em> policy with a very small "
+      + "\\(\\varepsilon\\), and reaches about \\(-44\\).",
+  ],
+  "t5b.m1.quiz.1.explicacion":
+    "In the second cell the actions are switched, so always going right sends you back to the "
+    + "first cell over and over: the episode never ends. The curve shows it by falling to "
+    + "\\(-\\infty\\) on its right branch. Three steps is what the deterministic policy achieves "
+    + "<strong>if the states are told apart</strong>, which is not the case. And \\(-44.21\\) is "
+    + "the value of \\(p = 0.95\\), the \\(\\varepsilon\\)-<em>greedy</em> policy with "
+    + "\\(\\varepsilon = 0.1\\) that the book marks on its graph: it is finite precisely because "
+    + "it is <strong>not</strong> deterministic.",
+  "t5b.m1.quiz.2.enunciado":
+    "In the cross gridworld, with the four arms indistinguishable, what is the optimal policy "
+    + "within the parameterised class, and what is it worth?",
+  "t5b.m1.quiz.2.opciones": [
+    "The uniform one over the four actions, with \\(J = -4\\): on average four steps are needed, "
+      + "one per action tried.",
+    "The one that gives all the probability to the action that solves the most frequent arm, "
+      + "with \\(J = -1\\).",
+    "There is no optimum: by symmetry every stochastic policy is worth the same.",
+    "The one that splits the probability in proportion to the distance from each arm to the "
+      + "goal.",
+  ],
+  "t5b.m1.quiz.2.explicacion":
+    "The four arms are symmetric and each one calls for a different action, so the expected time "
+    + "is \\(\\frac14\\sum_a 1/\\pi(a)\\); that sum is minimised at the uniform policy, and gives "
+    + "four steps. \\(-1\\) is what is achieved <strong>if the arms are told apart</strong>, with "
+    + "the right deterministic policy in each. And not every stochastic policy is worth the same: "
+    + "as soon as one action takes more probability than the others, the arms that need the rest "
+    + "take longer, and the average gets worse. The four distances to the goal are identical: one "
+    + "step.",
+
+  /* --- cuestionario del módulo 2 ------------------------------------------ */
+  "t5b.m2.quiz.0.enunciado":
+    "What problem exactly does the policy gradient theorem solve?",
+  "t5b.m2.quiz.0.opciones": [
+    "That the gradient of the state distribution does not appear on its right-hand side, so "
+      + "there is no need to differentiate something that depends on the dynamics of the "
+      + "environment.",
+    "That it removes the state distribution from the formula, so the gradient can be estimated "
+      + "with transitions collected any way at all.",
+    "That it replaces the action-value function by the observed return, which can indeed be "
+      + "sampled.",
+    "That it guarantees that gradient ascent converges to the globally optimal policy, whatever "
+      + "the parameterisation.",
+  ],
+  "t5b.m2.quiz.0.explicacion":
+    "The theorem leaves \\(\\mu(s)\\) in the formula but <strong>outside the gradient</strong>: "
+    + "that is what makes it usable, because the dependence of the policy on the state "
+    + "distribution is the environment's business and we do not know it. \\(\\mu\\) does not "
+    + "disappear, and precisely for that reason states have to be sampled <strong>by following "
+    + "\\(\\pi\\)</strong> — which is what makes these methods on-policy. Replacing "
+    + "\\(q_\\pi(S_t,A_t)\\) by \\(G_t\\) is the next step, the one REINFORCE takes, and it comes "
+    + "later. And there is no global-optimum guarantee: REINFORCE converges to a "
+    + "<strong>local</strong> optimum.",
+  "t5b.m2.quiz.1.enunciado":
+    "The theorem is written with \\(\\propto\\) and not with \\(=\\). What is missing?",
+  "t5b.m2.quiz.1.opciones": [
+    "A constant which, in the episodic case, is the average length of the episode; in the "
+      + "continuing case it is 1 and the relation is an equality.",
+    "The factor \\(\\gamma^t\\), which shows up later in the pseudocode boxes and which the "
+      + "statement of the theorem omits.",
+    "An unknown constant that depends on the environment and that therefore has to be estimated "
+      + "along with the gradient.",
+    "Nothing: the \\(\\propto\\) is a typographical convention and the two expressions are "
+      + "equal.",
+  ],
+  "t5b.m2.quiz.1.explicacion":
+    "The book says what the constant is and it is no mystery: the average length of the episode "
+    + "in the episodic case, and 1 in the continuing one. For the algorithm it makes no "
+    + "difference, because any constant is absorbed into the step size \\(\\alpha\\), which is "
+    + "arbitrary — but when checking the theorem with numbers it has to be put in, and here you "
+    + "have seen the ratio be exactly 12. The \\(\\gamma^t\\) is another matter: it appears "
+    + "because the text works with \\(\\gamma = 1\\) and the boxes give the general version. And "
+    + "there is nothing to estimate: the constant is known.",
+  "t5b.m2.quiz.2.enunciado":
+    "In this corridor, what is \\(\\mu(s)\\) and where does it come from?",
+  "t5b.m2.quiz.2.opciones": [
+    "The fraction of time an episode spends in each cell while following \\(\\pi\\); it comes "
+      + "from normalising the expected number of visits \\(\\eta(s)\\), and it is set by the "
+      + "environment together with the policy.",
+    "A distribution of weights chosen by the designer to say which states matter most when "
+      + "measuring the error.",
+    "The stationary distribution of the Markov chain induced by \\(\\pi\\), which exists because "
+      + "the process is ergodic.",
+    "The probability that the episode starts in each state, which here is 1 for the first cell "
+      + "and 0 for the rest.",
+  ],
+  "t5b.m2.quiz.2.explicacion":
+    "\\(\\mu(s) = \\eta(s)/\\sum_{s'}\\eta(s')\\) with \\(\\eta(s)\\) the expected number of "
+    + "steps in \\(s\\) per episode: it is a result of the dynamics and the policy, not a choice. "
+    + "The distribution of weights chosen by the designer is the one in the weighted squared "
+    + "error of the previous unit — same symbol, different concept, and the confusion is easy "
+    + "because the material uses \\(\\mu\\) for both things. The <strong>stationary</strong> "
+    + "distribution is the one of the continuing case, not of the episodic one. And the initial "
+    + "distribution is \\(h(s)\\), which appears inside the computation of \\(\\eta\\) but is not "
+    + "\\(\\mu\\): here \\(\\mu\\) is not \\((1,0,0)\\) but \\((1/2,1/3,1/6)\\).",
+
+  /* --- cuestionario del módulo 3 ------------------------------------------ */
+  "t5b.m3.quiz.0.enunciado":
+    "REINFORCE estimates the gradient by Monte Carlo. What follows from that?",
+  "t5b.m3.quiz.0.opciones": [
+    "That the estimator is unbiased but of high variance, and that is why learning is slow and "
+      + "needs a lot of experience.",
+    "That the estimator is very efficient and needs little experience, because each episode "
+      + "contributes the full return.",
+    "That the estimator is biased by using a sample of the return instead of \\(q_\\pi\\), and "
+      + "converges to a point other than the optimum.",
+    "That the estimator is only valid if the episode has a fixed length, because otherwise the "
+      + "returns are not comparable.",
+  ],
+  "t5b.m3.quiz.0.explicacion":
+    "\\(\\mathbb E_\\pi[G_t\\mid S_t,A_t] = q_\\pi(S_t,A_t)\\): replacing \\(q_\\pi\\) by "
+    + "\\(G_t\\) <strong>introduces no bias</strong>, and the book says that the expected update "
+    + "over an episode is in the same direction as the performance gradient. What it does "
+    + "introduce is <strong>variance</strong>, which is why the book itself finishes by saying "
+    + "that “as a Monte Carlo method REINFORCE may be of high variance and thus produce slow "
+    + "learning”. That the full return arrives all at once does not make it efficient: it makes "
+    + "it noisy, as the distribution of \\(G_0\\) shows. And the episode length need not be "
+    + "fixed; here it varies a great deal, and that is precisely part of the noise.",
+  "t5b.m3.quiz.1.enunciado": "Why does the book's figure average over 100 runs?",
+  "t5b.m3.quiz.1.opciones": [
+    "Because a single run is so noisy that it does not allow the three step sizes to be compared "
+      + "with one another.",
+    "Because the algorithm is deterministic and the 100 runs serve to check that there are no "
+      + "implementation errors.",
+    "Because each run uses a different environment, and one has to average over environments for "
+      + "the result to be general.",
+    "Because with fewer runs the gradient estimator would be biased.",
+  ],
+  "t5b.m3.quiz.1.explicacion":
+    "Drop the runs control to 1 and compare: the trace of a single run goes up and down so much "
+    + "that comparing step sizes stops making sense. The algorithm is <strong>not</strong> "
+    + "deterministic: the policy is stochastic and the return depends on which episode comes out. "
+    + "The environment is always the same corridor. And averaging runs does not change the bias "
+    + "of the gradient estimator —which is zero—; it changes the <strong>variance of the curve "
+    + "that gets drawn</strong>.",
+  "t5b.m3.quiz.2.enunciado":
+    "The book's pseudocode says “initialize \\(\\theta\\), <em>e.g.</em>, to 0”, and this page "
+    + "starts with \\(p_0 = 0.05\\). Why?",
+  "t5b.m3.quiz.2.opciones": [
+    "Because with \\(\\theta = 0\\) the expected return is already \\(-12\\), almost the optimum, "
+      + "and the book's figure starts at around \\(-90\\): the initialisation of the box and that "
+      + "of the figure are not compatible, and the book does not declare which it used.",
+    "Because with \\(\\theta = 0\\) the softmax is undefined and one has to start away from the "
+      + "origin.",
+    "Because \\(p_0 = 0.05\\) is the only initialisation with which REINFORCE converges; with "
+      + "\\(\\theta = 0\\) the algorithm diverges.",
+    "Because the book uses \\(p_0 = 0.05\\) and says so in the caption of Figure 13.1.",
+  ],
+  "t5b.m3.quiz.2.explicacion":
+    "With \\(\\theta = 0\\) the two preferences are equal, \\(p = 0.5\\) and the expected return "
+    + "is \\(-12\\), less than half a step from the optimum \\(-11.66\\): there would be nothing "
+    + "to learn, and the book's figure starts ninety units lower. The softmax with \\(\\theta = "
+    + "0\\) is perfectly well defined and gives the uniform distribution. With \\(\\theta = 0\\) "
+    + "the algorithm converges just the same, only it starts from a place where it has almost "
+    + "arrived — you can check that with the button. And the caption of Figure 13.1 <strong>does "
+    + "not say</strong> which \\(\\theta\\) it starts from: that is exactly the ambiguity.",
+
+  /* --- cuestionario del módulo 4 ------------------------------------------ */
+  "t5b.m4.quiz.0.enunciado":
+    "What is the exact condition for a baseline not to change the expected value of the update?",
+  "t5b.m4.quiz.0.opciones": [
+    "That it does not depend on the action. It can be any function of the state, even a random "
+      + "variable.",
+    "That it be an unbiased estimate of \\(v_\\pi(s)\\); if it is not, the gradient shifts.",
+    "That it be constant in time and in state, because only then does it come out as a common "
+      + "factor of the sum.",
+    "That it be non-negative, so that the subtraction \\(G_t - b(S_t)\\) does not change the sign "
+      + "of the return.",
+  ],
+  "t5b.m4.quiz.0.explicacion":
+    "The proof uses that \\(\\sum_a\\nabla\\pi(a\\mid s,\\theta) = \\nabla 1 = 0\\), and for "
+    + "\\(b\\) to come out as a common factor of that sum it is enough that it does not depend on "
+    + "\\(a\\). It can depend on the state as much as it likes, and the book adds that it can even "
+    + "be random. It does not have to estimate \\(v_\\pi\\) well: a poor baseline does not bias, it "
+    + "just reduces the variance less — in fact \\(b = 0\\) is a perfectly valid baseline, and that "
+    + "is plain REINFORCE. Nor does it have to be constant across states; on the contrary, the book "
+    + "insists that it <strong>should</strong> vary with the state to be of any use. And the sign of "
+    + "the return has nothing to do with it: what matters is the mean of the product.",
+  "t5b.m4.quiz.1.enunciado":
+    "In this corridor, with a baseline that learns one number per action, what happens to "
+    + "learning?",
+  "t5b.m4.quiz.1.opciones": [
+    "It is destroyed: the expected update vanishes but the variance does not, so the policy "
+      + "diffuses with nothing to centre it and ends up glued to an end.",
+    "It speeds up even further, because two numbers estimate the return better than one.",
+    "It converges just the same, but to a policy slightly different from \\(2-\\sqrt2\\).",
+    "It stays exactly where it was: with a null expected gradient, the policy no longer moves.",
+  ],
+  "t5b.m4.quiz.1.explicacion":
+    "The equilibrium of those two numbers is the mean of \\(q_\\pi(s,a)\\) weighted by \\(\\mu(s)\\) "
+    + "for each action, and their difference is exactly the quantity the policy was using to decide "
+    + "which way to move: subtracting it cancels the whole <strong>expected</strong> gradient, for "
+    + "any \\(p\\). But zero expectation is not standing still — the variance is still there, the "
+    + "policy performs a random walk and both ends are absorbing, so it ends up glued to one of "
+    + "them: the median of \\(p\\) ends at 0.00 and the mean return at \\(-470\\), far below the "
+    + "\\(-82\\) it started from. It is not that it estimates better: estimating <strong>per "
+    + "action</strong> erases the only information that tells one action from the other. And it is "
+    + "not a small deviation from the optimum either.",
+  "t5b.m4.quiz.2.enunciado":
+    "In the book's figure, the policy step size with a baseline is \\(2^{-9}\\) and without one "
+    + "\\(2^{-13}\\). What explains that difference?",
+  "t5b.m4.quiz.2.opciones": [
+    "That reducing the variance of the estimator allows larger steps without the updates getting "
+      + "out of control.",
+    "That with a baseline the estimated gradient is larger in magnitude, and that has to be "
+      + "compensated with a larger step size too.",
+    "That \\(\\alpha^\\theta\\) and \\(\\alpha^{w}\\) have to add up to approximately the step size "
+      + "that would be used without a baseline.",
+    "That it is a convention of the book so that the two curves fit on the same scale.",
+  ],
+  "t5b.m4.quiz.2.explicacion":
+    "With a noisy estimator you have to take small steps so that the noise averages out; on "
+    + "subtracting the baseline, the spread falls and the same step size stops being dangerous —in "
+    + "fact it can be multiplied by sixteen. The module shows it in the distribution of the "
+    + "estimator: the mean is the same and the width is not. The magnitude of the expected gradient "
+    + "does <strong>not</strong> change: that is precisely what the baseline condition says. The two "
+    + "step sizes are independent and are neither added nor shared out. And it is not a graphical "
+    + "convention: the caption of the figure says that the step size without a baseline is the one "
+    + "at which it performs best, to the nearest power of two.",
+
+  /* --- cuestionario del módulo 5 ------------------------------------------ */
+  "t5b.m5.quiz.0.enunciado":
+    "What exactly distinguishes an actor-critic method from REINFORCE with baseline?",
+  "t5b.m5.quiz.0.opciones": [
+    "That it uses the value function to <em>bootstrap</em>, that is, as part of the target, and "
+      + "not only as a reference that is subtracted.",
+    "That it learns a value function as well as the policy; REINFORCE with baseline learns only "
+      + "the policy.",
+    "That it updates the policy at every step instead of at the end of the episode, while the "
+      + "rest of the algorithm is identical.",
+    "That it uses the advantage function \\(A(s,a)\\) instead of the return, which reduces the "
+      + "variance without introducing bias.",
+  ],
+  "t5b.m5.quiz.0.explicacion":
+    "The book says it in so many words: REINFORCE with baseline is <strong>not</strong> "
+    + "actor-critic, and it is not even though it learns a value function, because that function is "
+    + "used only as a baseline. The criterion is <em>bootstrapping</em>, and with it comes the bias. "
+    + "That it updates at every step is a <strong>consequence</strong> of bootstrapping —not needing "
+    + "the full return, there is no longer anything to wait for—, not the definition. And both "
+    + "variants use an estimate of the advantage: the factor \\(G_t - \\hat v(S_t,w)\\) is one too, "
+    + "only a Monte Carlo one; what changes is that the actor-critic's is biased.",
+  "t5b.m5.quiz.1.enunciado":
+    "In this corridor, with \\(\\hat v(s,w) = w\\) —a single number for the three states—, why does "
+    + "actor-critic push the policy towards always going right?",
+  "t5b.m5.quiz.1.opciones": [
+    "Because with a constant value almost every TD error is \\(-1\\) and contributes nothing; the "
+      + "only informative one is the step that enters the goal, which reinforces <em>right</em> in "
+      + "all three cells at once.",
+    "Because the critic overestimates the value of the third cell and that makes the policy prefer "
+      + "to get closer to it.",
+    "Because the critic step size \\(\\alpha^{w}\\) is larger than the policy's and the critic "
+      + "drags the actor along.",
+    "Because with \\(\\gamma = 1\\) the accumulator \\(I\\) grows and amplifies the late updates of "
+      + "the episode.",
+  ],
+  "t5b.m5.quiz.1.explicacion":
+    "With a constant value, \\(\\delta = -1 + w - w = -1\\) on every transition that does not "
+    + "terminate, and a \\(\\delta\\) that is the same for both actions moves nothing, because "
+    + "\\(\\sum_a\\nabla\\pi(a\\mid s,\\theta) = 0\\). The only different step is the one that enters "
+    + "the goal, where \\(\\delta = -1-w\\); with \\(w\\) negative that is a large positive surprise "
+    + "that reinforces <em>right</em>, and since the three cells share a policy, it reinforces it "
+    + "also in the middle one, where <em>right</em> goes backwards. The critic does not overestimate "
+    + "any particular cell: it gives the same number to all three, and that is the problem. Lowering "
+    + "\\(\\alpha^{w}\\) does not change the sign of the push, only its size. And with \\(\\gamma = "
+    + "1\\) the accumulator \\(I\\) is always <strong>1</strong>: it amplifies nothing.",
+  "t5b.m5.quiz.2.enunciado":
+    "On moving the approximator from a single number to one weight per state, actor-critic starts "
+    + "converging to the same place as REINFORCE with baseline. What does that show?",
+  "t5b.m5.quiz.2.opciones": [
+    "That the bias of <em>bootstrapping</em> is not fixed: it depends on the quality of the critic, "
+      + "and with a critic able to represent \\(v_\\pi\\) it disappears.",
+    "That <em>bootstrapping</em> never introduces bias if the critic step size is small enough.",
+    "That the problem was not <em>bootstrapping</em> but the number of parameters of the policy, "
+      + "which with three weights does tell the states apart.",
+    "That actor-critic and REINFORCE with baseline are the same algorithm written in two "
+      + "different ways.",
+  ],
+  "t5b.m5.quiz.2.explicacion":
+    "It is the second half of the book's sentence: bootstrapping introduces bias <strong>and an "
+    + "asymptotic dependence on the quality of the approximation</strong>. With three weights, the "
+    + "critic can represent \\(v_\\pi\\) exactly, the expected TD error becomes the true advantage "
+    + "and the expected update is \\(\\nabla J(\\theta)\\) again. The critic step size has nothing to "
+    + "do with it: with a single number, the fixed point is where it is however small "
+    + "\\(\\alpha^{w}\\) may be. The policy has <strong>not</strong> changed: it still has two "
+    + "parameters and still cannot tell the states apart — in fact both variants converge to "
+    + "\\(2-\\sqrt2\\), which is the optimum <strong>with</strong> <em>aliasing</em>. And they are "
+    + "not the same algorithm: one waits until the end of the episode and the other does not.",
+
+  /* --- cuestionario del módulo 6 ------------------------------------------ */
+  "t5b.m6.quiz.0.enunciado":
+    "Why is an over-large step more dangerous in policy gradient than in supervised learning?",
+  "t5b.m6.quiz.0.opciones": [
+    "Because the policy decides which experience it is trained on: a spoiled policy generates "
+      + "worse episodes, and the next update is computed from those episodes.",
+    "Because the gradient of the policy has a larger magnitude than that of a supervised loss "
+      + "function, and that makes the same steps bigger.",
+    "Because the policy is stochastic and the sampling noise accumulates linearly with the number "
+      + "of updates.",
+    "Because in policy gradient you maximise instead of minimise, and ascent is intrinsically "
+      + "unstable.",
+  ],
+  "t5b.m6.quiz.0.explicacion":
+    "In supervised learning the data do not change: a bad step spoils the weights and the same data "
+    + "set pulls them back. Here the data are generated by the policy, so a bad step also spoils "
+    + "<strong>the source of the next data</strong>, and in this corridor that shows up strongly "
+    + "because the episodes get longer and with them the size of the jump grows. The magnitude of "
+    + "the gradient is not intrinsically larger: what grows is the return that multiplies it. "
+    + "Sampling noise does exist, but that is what the REINFORCE module studies, and on its own it "
+    + "does not produce an irreversible collapse. And maximising or minimising is just a sign: "
+    + "ascent on \\(J\\) is descent on \\(-J\\).",
+  "t5b.m6.quiz.1.enunciado": "What exactly does a trust region strategy limit?",
+  "t5b.m6.quiz.1.opciones": [
+    "How much the policy can change from one update to the next, measured with a divergence "
+      + "between the two distributions.",
+    "The magnitude of the parameter vector \\(\\theta\\), as L2 regularisation does in supervised "
+      + "learning.",
+    "The number of episodes that can be used before re-estimating the gradient.",
+    "The range of the rewards, so that returns do not grow without control.",
+  ],
+  "t5b.m6.quiz.1.explicacion":
+    "What is bounded is the movement of <strong>the policy</strong>, not that of the parameters. It "
+    + "is an important difference: two very similar \\(\\theta\\) vectors can give very different "
+    + "policies, and the other way round; that is why it is measured with a divergence between "
+    + "distributions, such as the KL, and not with a norm on \\(\\theta\\). L2 regularisation does "
+    + "bound the weight vector, and it is the analogy the slide uses <strong>to explain the "
+    + "idea</strong>, not the technique. The number of episodes and reward clipping are other "
+    + "things, useful but different.",
+  "t5b.m6.quiz.2.enunciado":
+    "In this corridor, why does the size of the update grow when the policy gets worse?",
+  "t5b.m6.quiz.2.opciones": [
+    "Because the return is minus the length of the episode, and the increment of an episode of "
+      + "length \\(T\\) adds up to \\(T(T+1)/2\\) in magnitude: if the policy lengthens the "
+      + "episodes, it enlarges the jumps.",
+    "Because as the policy approaches an end, the eligibility vector grows without bound.",
+    "Because the step size \\(\\alpha^\\theta\\) adapts automatically to the observed performance.",
+    "Because with long episodes there are more steps and the sampling noise cancels out less.",
+  ],
+  "t5b.m6.quiz.2.explicacion":
+    "With \\(-1\\) per step and no discounting, \\(G_t = -(T-t)\\), and the sum of their magnitudes "
+    + "along the episode is \\(T(T+1)/2\\): it grows with the <strong>square</strong> of the length. "
+    + "The eligibility vector does just the opposite: its norm is \\(\\sqrt2(1-p)\\) or \\(\\sqrt2 "
+    + "p\\), so at the ends it <strong>shrinks</strong> for the likely action — and even so the "
+    + "return wins. The step size is fixed, it does not adapt. And sampling noise plays a part, but "
+    + "what makes the jump grow systematically is the size of the return, not its variance.",
 };

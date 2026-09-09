@@ -19,7 +19,7 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 /* Toda pagina nueva tiene que entrar AQUI. En el Tema 3 se nos paso y sus 289
    claves no se comprobaron hasta que alguien lo noto a mano. */
 const HTML = ["index.html", "tema1.html", "tema2.html", "tema3.html",
-              "tema4.html", "tema4b.html", "tema5.html"];
+              "tema4.html", "tema4b.html", "tema5.html", "tema5b.html"];
 const JS = readdirSync(join(RAIZ, "assets"))
   .filter((f) => f.endsWith(".js") && f !== "en.js" && f !== "i18n.js")
   .map((f) => join("assets", f));
@@ -209,7 +209,13 @@ const SUBINDICE_CRUDO = /[A-Za-zπΠ]_[πk*0-9]/;
 /* Las cajas de pseudocódigo son transcripción literal en monoespaciado: ahí
  * Σ_{s',r}, argmax_a y π_* comparten una misma convención de texto plano y
  * subrayar solo π_* la rompería. Se dejan fuera a propósito. */
-const CAJAS_PSEUDOCODIGO = ["t3.b6.caja", "t3.m3.caja", "t3.m5.caja"];
+/* Las cajas de pseudocódigo son transcripción literal de un recuadro del libro, en
+   monoespaciado: ahí `R_k` y `γ^t` son lo correcto, y cambiarlos por <sub> sería
+   falsear la cita. En español el test ya las salta porque `soloInterfaz` recorta
+   <pre>…</pre> del HTML; en inglés el valor vive en el diccionario y no lleva <pre>,
+   así que hay que eximirlas por clave. */
+const CAJAS_PSEUDOCODIGO = ["t3.b6.caja", "t3.m3.caja", "t3.m5.caja",
+                            "t5b.b7.caja", "t5b.b8.caja", "t5b.b9.caja"];
 
 /** Deja solo lo que llega a la pantalla como texto: sin LaTeX ni comentarios. */
 function soloInterfaz(src) {

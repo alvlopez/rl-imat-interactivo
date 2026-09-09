@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-t="meta.titulo.tema5b">Tema 5 (cont.) · Métodos de gradiente de política — RL IMAT</title>
+<meta name="description" content="Recurso interactivo del Tema 5 (2.ª parte) de Aprendizaje por Refuerzo (IMAT): métodos de gradiente de política. Por qué la política óptima puede ser estocástica, el teorema del gradiente término a término, por qué REINFORCE es correcto y lento, qué toca y qué no toca una línea base, actor-crítico frente a REINFORCE con línea base, y el colapso de la política y cómo frenarlo.">
+<link rel="stylesheet" href="assets/estilo.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<header class="cabecera">
+  <div class="contenedor">
+    <a class="marca" href="index.html">RL · IMAT <span class="marca-tema" data-t="marca.tema">interactivo</span></a>
+    <nav>
+      <a href="index.html" data-t="nav.inicio">Inicio</a>
+      <a href="tema1.html" data-t="nav.tema1">Tema 1 · Introducción</a>
+      <a href="tema2.html" data-t="nav.tema2">Tema 2 · MDP</a>
+      <a href="tema3.html" data-t="nav.tema3">Tema 3 · Programación dinámica</a>
+      <a href="tema4.html" data-t="nav.tema4">Tema 4 · RL sin modelo</a>
+      <a href="tema4b.html" data-t="nav.tema4b">Tema 4 (cont.) · Fórmulas intermedias</a>
+      <a href="tema5.html" data-t="nav.tema5">Tema 5 · Aproximación de funciones</a>
+      <a href="tema5b.html" data-t="nav.tema5b">Tema 5 (cont.) · Gradiente de política</a>
+    </nav>
+    <div class="herramientas"></div>
+  </div>
+</header>
+
+<main class="contenedor">
+
+  <!-- ================================================================= -->
+  <!-- A1 · portada  ·  A2 · índice                                      -->
+  <!-- ================================================================= -->
+  <div class="portada-tema">
+    <p class="kicker" data-t="t5b.kicker">Tema 5 (cont.) · Sutton &amp; Barto, capítulo 13</p>
+    <h1 data-t="t5b.h1">Métodos de gradiente de política</h1>
+    <p class="entradilla" data-t="t5b.entradilla">
+      Hasta aquí, la política no existía sin \(q\): se aprendían valores y la política salía
+      de ellos. Aquí se aprende <strong>la política directamente</strong>, con sus propios parámetros
+      \(\theta\), y se sube por el gradiente de \(J(\theta)\). Esta página responde las
+      preguntas que las diapositivas del tema dejan abiertas: <strong>de qué entorno son</strong> las dos
+      figuras que se proyectan sin nombrar, <strong>qué es \(\mu(s)\)</strong> y por qué el teorema del
+      gradiente dice \(\propto\) y no \(=\), <strong>por qué REINFORCE es lento</strong> aunque su estimador
+      sea correcto, <strong>bajo qué condición exacta</strong> una línea base no sesga y qué pasa si depende
+      de la acción, <strong>qué gana y qué paga</strong> el actor-crítico frente a REINFORCE con línea base,
+      y qué quiere decir de verdad que «un mal movimiento de la política destroza el
+      entrenamiento».
+    </p>
+
+    <p class="entradilla" data-t="t5b.subtitulo">
+      Cubre <code>5_Tema_5_2#slide-1</code> a <code>#slide-20</code> de la baraja de clase. En el material de Lucía
+      este mismo contenido es el <strong>Tema 6</strong> (<code>Tema6_PolicyGradient</code>), y lo que solo esté allí se
+      cita como suyo. El bloque de <strong>AlphaGo</strong> de las diapositivas 21 a 30 <strong>no está aquí</strong>:
+      será un contenido aparte.
+    </p>
+
+    <div class="controles">
+      <div class="control">
+        <label data-t="t5b.semillaLabel">Semilla</label>
+        <input type="number" id="semilla" value="2026" min="1" step="1">
+      </div>
+      <div class="control">
+        <label>&nbsp;</label>
+        <span class="suave" data-t="t5b.semilla">Semilla 2026 · todo lo aleatorio de esta página se reproduce con ella</span>
+      </div>
+    </div>
+
+    <p class="explicacion nota" data-t="t5b.avisoEntornos">
+      En este tema las diapositivas no traen ni un solo ejemplo numérico: ni un entorno, ni
+      una traza, ni una tabla de valores, ni un ejercicio. Lo único cuantitativo son dos figuras
+      del libro, y de ellas no se dice de qué entorno son. Aquí se usan dos: el <strong>pasillo
+      corto</strong> del Ejemplo 13.1 de Sutton &amp; Barto —que es, precisamente, el entorno de esas dos
+      figuras— y una <strong>rejilla en cruz</strong> diseñada para esta asignatura, que <strong>no está en el
+      libro</strong> y se declara como propia cada vez que aparece.
+    </p>
+
+    <p class="explicacion nota" data-t="t5b.avisoEstocastico">
+      Donde hay simulación, cada gráfica dice sobre cuántas ejecuciones independientes
+      promedia. Los valores exactos —el óptimo del pasillo, la distribución \(\mu\), el
+      gradiente de \(J\), y los paneles exactos de los módulos 4, 5 y 6— <strong>no se simulan: se
+      calculan en forma cerrada</strong>, así que no dependen de la semilla y salen iguales en
+      cualquier ordenador.
+    </p>
+
+    <nav class="indice" aria-label="Módulos del tema">
+      <ol>
+        <li><a href="#m1"><span class="num">1</span> <span data-t="t5b.indice.m1">¿Puede ser óptima una política estocástica?</span></a></li>
+        <li><a href="#m2"><span class="num">2</span> <span data-t="t5b.indice.m2">El teorema del gradiente, término a término</span></a></li>
+        <li><a href="#m3"><span class="num">3</span> <span data-t="t5b.indice.m3">REINFORCE: el estimador correcto y lento</span></a></li>
+        <li><a href="#m4"><span class="num">4</span> <span data-t="t5b.indice.m4">La línea base: qué toca y qué no toca</span></a></li>
+        <li><a href="#m5"><span class="num">5</span> <span data-t="t5b.indice.m5">Actor-crítico: el mismo número, como línea base y como crítico</span></a></li>
+        <li><a href="#m6"><span class="num">6</span> <span data-t="t5b.indice.m6">El colapso de la política, y el freno</span></a></li>
+      </ol>
+    </nav>
+    <p class="suave" data-t="t5b.indice.nota">
+      Seis paradas manipulables. Las <strong>acciones continuas</strong> —la política gaussiana de
+      <code>5_Tema_5_2#slide-20</code>— no son una parada: se explican en el último bloque de apuntes, con
+      su fórmula y su gradiente, porque en el material no hay ningún experimento que se pueda
+      reproducir.
+    </p>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- A3 · mapa del tema                                                -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="mapa">
+    <h2 data-t="t5b.mapa.h2">Mapa del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.mapa.cab">
+            <th>Concepto</th><th>De dónde sale</th><th>A dónde lleva</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.mapa.f1">
+            <td>Parametrizar la política</td>
+            <td>Ya se aproximaba \(q\) para obtener \(\pi\); se salta el intermediario</td>
+            <td>\(\pi(a\mid s,\theta)\) y el ascenso \(\theta_{t+1} = \theta_t + \alpha\widehat{\nabla J(\theta_t)}\)</td>
+          </tr>
+          <tr data-t="t5b.mapa.f2">
+            <td>Preferencias y softmax</td>
+            <td>\(h(s,a,\theta)\) convertido en distribución</td>
+            <td>Ya lo ejecutaste en el Tema 1 con \(H_t(a)\) → <strong>B3</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f3">
+            <td>Cuándo gana una política estocástica</td>
+            <td>Cuando las características <strong>no distinguen</strong> los estados</td>
+            <td>El pasillo corto y la rejilla en cruz → <strong>módulo 1</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f4">
+            <td>\(J(\theta) \doteq v_{\pi_\theta}(s_0)\)</td>
+            <td>El rendimiento depende de las acciones <strong>y de la distribución de estados</strong></td>
+            <td>Y la distribución la fija el entorno, que no conocemos → <strong>B5</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f5">
+            <td>Teorema del gradiente</td>
+            <td>En el lado derecho <strong>no aparece \(\nabla\mu\)</strong></td>
+            <td>Se puede estimar muestreando → <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f6">
+            <td>\(\propto\) y no \(=\)</td>
+            <td>La constante es <strong>la longitud media del episodio</strong></td>
+            <td>Se absorbe en \(\alpha\); pero importa si se comprueba el teorema → <strong>módulo 2</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f7">
+            <td>De la esperanza a la muestra</td>
+            <td>Multiplicar y dividir por \(\pi(a\mid S_t,\theta)\)</td>
+            <td>La regla de REINFORCE y el vector de elegibilidad → <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f8">
+            <td>Monte Carlo</td>
+            <td>Usa el retorno completo: <strong>insesgado y de varianza alta</strong></td>
+            <td>Aprende despacio → <strong>módulo 3</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f9">
+            <td>Línea base \(b(S_t)\)</td>
+            <td>\(\sum_a b(s)\nabla\pi(a\mid s,\theta) = b(s)\nabla 1 = 0\)</td>
+            <td>No cambia la esperanza, sí la varianza → <strong>módulo 4</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f10">
+            <td><em>Bootstrap</em></td>
+            <td>Sustituir \(G_t\) por \(G_{t:t+1}\) introduce <strong>sesgo</strong></td>
+            <td>Y una dependencia de la calidad del crítico → <strong>módulo 5</strong></td>
+          </tr>
+          <tr data-t="t5b.mapa.f11">
+            <td>El salto de la política</td>
+            <td>La política decide con qué experiencia se entrena</td>
+            <td>Un salto malo se realimenta; la KL lo frena → <strong>módulo 6</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B1 · de los valores a la política                                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b1">
+    <header>
+      <h2 data-t="t5b.b1.h2">Hasta aquí, la política no existía sin \(q\)</h2>
+      <p class="fuente" data-t="t5b.b1.fuente"><code>5_Tema_5_2#slide-2</code> · Lucía: <code>Tema6_PolicyGradient#slide-3</code> · Sutton &amp; Barto, §13.1, p. 343</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b1.texto">
+      La diapositiva lo dice en tres frases: hemos construido el comportamiento del agente a
+      partir de los valores de acción, y <strong>las políticas ni siquiera existen sin \(q\)</strong>; pero
+      desde el tema anterior estamos usando aproximaciones parametrizadas de \(q\) para resolver
+      <strong>indirectamente</strong> lo que de verdad queremos, que es la política. De ahí la pregunta que
+      abre el tema: <strong>¿y si aprendemos directamente una política parametrizada?</strong>
+    </p>
+    <p class="ecuacion" data-t="t5b.b1.ecuacion">
+      \[ \pi(a\mid s,\theta) \;=\; \Pr\{A_t = a \mid S_t = s,\; \theta_t = \theta\} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b1.texto2">
+      Un método de <strong>gradiente de política</strong> aprende \(\theta\) subiendo por el gradiente de
+      una medida escalar de rendimiento \(J(\theta)\). Fíjate en el signo: es <strong>ascenso</strong>, y se
+      <strong>maximiza</strong>. Cuando además se apoya en una estimación aprendida de una función de valor,
+      el método se llama <strong>actor-crítico</strong>. La baraja añade una coletilla que conviene guardar:
+      algunos autores consideran actor-crítico una <strong>tercera familia</strong> de métodos, y <strong>no hay
+      consenso</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5b.b1.ecuacion2">
+      \[ \theta_{t+1} \;=\; \theta_t + \alpha\,\widehat{\nabla J(\theta_t)} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b1.glosa">
+      \(\widehat{\nabla J(\theta_t)}\) es una <strong>estimación estocástica</strong> cuya esperanza
+      aproxima el gradiente de \(J\). Esa glosa <strong>solo está en el material de Lucía</strong>
+      (<code>Tema6_PolicyGradient#slide-4</code>), y es la que explica el sombrero.
+    </p>
+    <div class="aviso" data-t="t5b.b1.aviso">
+      Un matiz sobre «las políticas ni siquiera existen sin \(q\)»: es un recurso retórico y en
+      esta misma asignatura hay un contraejemplo. Los <strong>bandidos de gradiente</strong> del Tema 1
+      construyen una política a partir de preferencias \(H_t(a)\) <strong>sin ninguna función de
+      valor</strong>, y con línea base. Lo tienes ejecutándose en la página del Tema 1.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B2 · qué familia es esta, y dónde encaja actor-crítico            -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b2">
+    <header>
+      <h2 data-t="t5b.b2.h2">La familia, y el diagrama que solo está en Lucía</h2>
+      <p class="fuente" data-t="t5b.b2.fuente"><code>5_Tema_5_2#slide-4</code> · el diagrama, solo en Lucía: <code>Tema6_PolicyGradient#slide-5</code> · Sutton &amp; Barto, §13.1, p. 343</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b2.texto">
+      La definición del libro es exacta y conviene tenerla literal: un método es de gradiente
+      de política si aprende \(\theta\) por ascenso sobre \(J\); y es <strong>actor-crítico</strong> si
+      además aprende una función de valor <strong>que se usa para hacer <em>bootstrap</em></strong>. Ojo con esto
+      último, porque es la línea que separa REINFORCE con línea base del actor-crítico y se
+      desarrolla en el bloque B9.
+    </p>
+    <p class="explicacion" data-t="t5b.b2.texto2">
+      El material de Lucía dibuja las tres familias como un diagrama de Venn con once
+      algoritmos. Esta es la versión <strong>vigente</strong> de ese diagrama —la del <code>.pptx</code> de febrero de
+      2026—; si trabajas con el PDF exportado en noviembre de 2025 verás <strong>TRPO y PPO
+      clasificados como <em>policy based</em></strong>, y el profesor ya los movió a la intersección.
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.b2.cab">
+            <th>Familia</th><th>Algoritmos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.b2.f1">
+            <td>Basados en valor</td>
+            <td>DQN · DDQN · Dueling DQN · Rainbow</td>
+          </tr>
+          <tr data-t="t5b.b2.f2">
+            <td><strong>Actor-crítico</strong> (intersección)</td>
+            <td><strong>A2C/A3C · TRPO · PPO · DDPG · TD3 · SAC</strong></td>
+          </tr>
+          <tr data-t="t5b.b2.f3">
+            <td>Basados en política</td>
+            <td>REINFORCE</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5b.b2.aviso">
+      De todos esos, en esta asignatura se ven <strong>REINFORCE</strong>, <strong>REINFORCE con línea base</strong> y el
+      <strong>actor-crítico a un paso</strong>; de <strong>TRPO</strong> y <strong>PPO</strong> se ve la idea que los sostiene (el
+      bloque B11), no su formulación. Los de la primera fila son del tema anterior.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B3 · preferencias y softmax: ya lo has ejecutado                  -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b3">
+    <header>
+      <h2 data-t="t5b.b3.h2">Preferencias de acción y softmax</h2>
+      <p class="fuente" data-t="t5b.b3.fuente"><code>5_Tema_5_2#slide-5</code> · las condiciones y el caso lineal, solo en Lucía: <code>Tema6_PolicyGradient#slide-6</code>, <code>#slide-7</code> · Sutton &amp; Barto, §13.1, ecuaciones (13.2) y (13.3), p. 344</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b3.texto">
+      La política se puede parametrizar como se quiera <strong>mientras sea diferenciable respecto de
+      \(\theta\)</strong>, es decir, mientras \(\nabla\pi(a\mid s,\theta)\) exista y sea finito. Y en la
+      práctica se exige algo más: que <strong>nunca llegue a ser determinista</strong>, porque la exploración
+      ya no se añade por fuera —aquí no hay \(\varepsilon\)— sino que vive <strong>dentro</strong> de la
+      propia política. Para espacios de acción discretos, la parametrización habitual son
+      <strong>preferencias numéricas</strong> \(h(s,a,\theta)\in\mathbb R\) pasadas por una softmax.
+    </p>
+    <p class="ecuacion" data-t="t5b.b3.ecuacion">
+      \[ \pi(a\mid s,\theta) \;\doteq\; \frac{e^{\,h(s,a,\theta)}}{\sum_{a'} e^{\,h(s,a',\theta)}}
+         \qquad\text{y, en el caso lineal,}\qquad h(s,a,\theta) = \theta^\top x(s,a) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b3.texto2">
+      \(h\) es lo que se aprende, y puede ir de una función lineal de las características a una
+      red profunda. La softmax solo hace de convertidor: <strong>de preferencias a distribución</strong>. Y
+      como en toda softmax, <strong>solo importan las diferencias</strong> entre preferencias, no su valor
+      absoluto.
+    </p>
+    <div class="aviso" data-t="t5b.b3.pregunta">
+      El material de Lucía pone junto a esta fórmula una pregunta al aula: <strong>«¿dónde hemos
+      visto esto antes?»</strong> (<code>Tema6_PolicyGradient#slide-6</code>), y no la responde en ninguna
+      diapositiva. La respuesta está en el <strong>Tema 1</strong>: los <strong>bandidos de gradiente</strong> usan
+      exactamente la misma construcción, \(\Pr\{A_t=a\}\doteq e^{H_t(a)}/\sum_b e^{H_t(b)}\doteq
+      \pi_t(a)\) (<code>Tema1_Intro#slide-27</code>, y en la baraja de Álvaro <code>1_Tema1#page-30</code>), con su
+      <strong>línea base</strong> \(\bar R_t\) un paso después. La única diferencia es el estado: allí las
+      preferencias eran \(H_t(a)\), aquí son \(h(s,a,\theta)\). <strong>Ya lo tienes ejecutándose</strong> en
+      el <a href="tema1.html#m3">comparador de estrategias del Tema 1</a>, como la estrategia «gradiente».
+    </div>
+    <p class="explicacion" data-t="t5b.b3.texto3">
+      Y una observación del libro que este año viene bien tener escrita: hacer una softmax
+      <strong>sobre los valores de acción</strong> no es lo mismo. Los valores de acción convergen a sus
+      valores verdaderos, que difieren en una cantidad finita, y eso se traduce en
+      probabilidades concretas distintas de 0 y de 1. Las <strong>preferencias</strong> no convergen a nada:
+      se van hacia donde haga falta, y si la política óptima es determinista, las preferencias
+      de las acciones óptimas se van infinitamente por encima de las demás.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B4 · las cuatro ventajas, y cuál está demostrada → módulo 1       -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b4">
+    <header>
+      <h2 data-t="t5b.b4.h2">Las cuatro ventajas de la diapositiva, una quinta del libro, y cuál de ellas tiene un caso detrás</h2>
+      <p class="fuente" data-t="t5b.b4.fuente"><code>5_Tema_5_2#slide-6</code> · Lucía: <code>Tema6_PolicyGradient#slide-8</code> · Sutton &amp; Barto, §13.1, pp. 344-346, y §13.2, p. 346</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b4.texto">
+      La diapositiva enuncia <strong>cuatro</strong> ventajas, de corrido y sin ejemplo. Aquí van esas cuatro
+      con lo que el libro dice de cada una, que no es lo mismo para todas, y <strong>una quinta que no
+      está en ninguna de las dos barajas</strong>: «a veces el óptimo es estocástico», que es del libro
+      (§13.1, p. 344). Va en segundo lugar, y no es un añadido menor — es justamente
+      <strong>la única con evidencia numérica</strong> del capítulo, y la que sostiene el módulo 1.
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.b4.cab">
+            <th>Ventaja</th><th>Qué dice el libro</th><th>¿Con qué evidencia?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.b4.f1">
+            <td><strong>Flexibilidad</strong>: masas de probabilidad arbitrarias, política estocástica sin estructura impuesta, <strong>que puede llegar a ser casi determinista</strong></td>
+            <td>Con \(\varepsilon\)-<em>greedy</em> siempre queda una probabilidad \(\varepsilon\) de acción aleatoria; con preferencias no, porque no convergen a valores concretos</td>
+            <td>Argumento, no teorema (§13.1, p. 344)</td>
+          </tr>
+          <tr data-t="t5b.b4.f2">
+            <td><strong>A veces el óptimo es estocástico</strong> — ⚠ <strong>esta no está en ninguna de las dos barajas</strong>: es del libro</td>
+            <td>«In problems with significant function approximation, <strong>the best approximate policy may be stochastic</strong>»</td>
+            <td><strong>La única con evidencia numérica</strong>: el Ejemplo 13.1 y su gráfica → <strong>módulo 1</strong></td>
+          </tr>
+          <tr data-t="t5b.b4.f3">
+            <td><strong>La política puede ser más simple de aproximar que el valor</strong></td>
+            <td>«For some, the action-value function is simpler […] For others, the policy is simpler», con Tetris como referencia externa</td>
+            <td>Cualitativa; el libro no la ilustra, y la propia diapositiva se desdice («dependerá del problema»)</td>
+          </tr>
+          <tr data-t="t5b.b4.f4">
+            <td><strong>Se puede inyectar conocimiento previo</strong> en la política, <strong>no</strong> en la recompensa</td>
+            <td>«This is often <strong>the most important reason</strong> for using a policy-based learning method»</td>
+            <td>Cualitativa. El libro le da el rango de razón más importante y aun así no la ilustra</td>
+          </tr>
+          <tr data-t="t5b.b4.f5">
+            <td><strong>Convergencia más suave</strong></td>
+            <td>Con parametrización continua las probabilidades cambian suavemente; con \(\varepsilon\)-<em>greedy</em> pueden cambiar de golpe ante un cambio mínimo de los valores estimados</td>
+            <td>Argumento de <strong>continuidad</strong>, y está en <strong>§13.2</strong>, no en §13.1. El libro <strong>no enuncia aquí ningún teorema de convergencia</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="aviso" data-t="t5b.b4.aviso">
+      Ojo con la cuarta: en el examen se ha preguntado con el sentido invertido —«se evita
+      introducir conocimiento previo, lo cual puede hacerse mejor en la recompensa»— y eso es
+      <strong>falso</strong>. La ventaja es que <strong>sí</strong> se puede inyectar en la política, y la diapositiva lo
+      subraya entre paréntesis: <strong>no</strong> en el diseño de la señal de recompensa.
+    </div>
+    <div class="aviso" data-t="t5b.b4.aviso2">
+      Y ojo con la primera y la quinta juntas: «nunca determinista» y «casi determinista» no se
+      contradicen. La softmax <strong>se acerca</strong> al determinismo sin alcanzarlo nunca: las
+      probabilidades tienden a 0 y a 1 pero no llegan, porque las preferencias tendrían que ser
+      infinitas.
+    </div>
+    <p><a class="siguiente" href="#m1" data-t="t5b.b4.modulo">→ módulo 1: mueve \(p\) en dos entornos donde ninguna política determinista termina, y mira dónde cae el óptimo.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 1 · ¿puede ser óptima una política estocástica?            -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m1">
+    <header>
+      <p class="etiqueta" data-t="t5b.m1.etiqueta">MÓDULO 1</p>
+      <h2 data-t="t5b.m1.h2">¿Puede ser óptima una política estocástica?</h2>
+      <p class="fuente" data-t="t5b.m1.fuente"><code>5_Tema_5_2#slide-6</code>, <code>#slide-11</code> · Sutton &amp; Barto, §13.1, Ejemplo 13.1 y la gráfica de su recuadro; Ejercicio 13.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m1.explicacion">
+      Tres celdas en fila, meta a la derecha, \(-1\) por paso. Dos acciones, <em>derecha</em> e
+      <em>izquierda</em>, con el efecto que esperas… <strong>salvo en la celda del medio, donde están
+      invertidas</strong>: allí <em>derecha</em> te lleva a la izquierda. Y un detalle que lo cambia todo:
+      <strong>las tres celdas tienen las mismas características</strong>, \(x(s,\text{derecha}) = [1,0]^\top\)
+      y \(x(s,\text{izquierda}) = [0,1]^\top\) para las tres. El agente <strong>no las distingue</strong>, así
+      que solo puede tener <strong>una</strong> probabilidad \(p\) de ir a la derecha, la misma en las tres.
+      Mueve \(p\) y mira dónde cae el máximo.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo1). -->
+    <div id="m1-controles"></div>
+    <div id="m1-viz1"></div>
+    <div id="m1-viz2"></div>
+    <div id="m1-metricas"></div>
+    <div id="m1-ficha"></div>
+    <div id="m1-tabla"></div>
+    <div id="m1-paneles"></div>
+    <p class="explicacion" id="m1-lectura"></p>
+    <div id="m1-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B5 · J(theta) y el problema de la distribución de estados         -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b5">
+    <header>
+      <h2 data-t="t5b.b5.h2">El rendimiento, y por qué su gradiente es difícil</h2>
+      <p class="fuente" data-t="t5b.b5.fuente"><code>5_Tema_5_2#slide-7</code> · Lucía: <code>Tema6_PolicyGradient#slide-9</code> · Sutton &amp; Barto, §13.2, ecuación (13.4), p. 346</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b5.texto">
+      Para tareas episódicas, el rendimiento es <strong>el valor verdadero del estado inicial bajo la
+      política</strong>: el valor esperado de seguir \(\pi_\theta\) desde \(s_0\). El libro supone
+      además que todos los episodios empiezan en el mismo \(s_0\) y que <strong>no hay descuento
+      (\(\gamma=1\))</strong> en el caso episódico; el \(\gamma^t\) que aparece en los pseudocódigos es
+      para el caso general descontado, y se comenta en B7.
+    </p>
+    <p class="ecuacion" data-t="t5b.b5.ecuacion">
+      \[ J(\theta) \;\doteq\; v_{\pi_\theta}(s_0) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b5.texto2">
+      Y aquí está el obstáculo. El rendimiento depende de <strong>dos</strong> cosas: de qué acciones elige
+      la política —que sabemos derivar, porque conocemos la parametrización— y de <strong>en qué
+      estados</strong> las elige, es decir, de la distribución de estados que la política induce. Esa
+      segunda parte es <strong>función del entorno</strong>, cuya dinámica no conocemos: <strong>no la podemos
+      derivar</strong>. La frase que lo dice con todas las letras solo está en el material de Lucía.
+    </p>
+    <p class="explicacion" data-t="t5b.b5.pregunta">
+      La pregunta del tema queda planteada así: <strong>¿cómo estimar el gradiente del rendimiento
+      respecto de \(\theta\) si depende de un efecto de \(\theta\) sobre la distribución de
+      estados que desconocemos?</strong> La respuesta es el bloque siguiente.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B6 · el teorema del gradiente de la política → módulo 2           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b6">
+    <header>
+      <h2 data-t="t5b.b6.h2">El teorema del gradiente de la política</h2>
+      <p class="fuente" data-t="t5b.b6.fuente"><code>5_Tema_5_2#slide-8</code> · Lucía: <code>Tema6_PolicyGradient#slide-10</code> · Sutton &amp; Barto, §13.2, ecuación (13.5), p. 348; demostración en el recuadro de la p. 347; \(\mu\) y \(\eta\) en §9.2, recuadro de la p. 221</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b6.texto">
+      Este es el único resultado duro del tema, y ninguna de las dos barajas lo demuestra ni
+      dice dónde está la demostración. La expresión es esta, con el \(\propto\) incluido:
+    </p>
+    <p class="ecuacion" data-t="t5b.b6.ecuacion">
+      \[ \nabla J(\theta) \;\propto\; \sum_{s} \mu(s) \sum_{a} q_\pi(s,a)\,\nabla\pi(a\mid s,\theta) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b6.texto2">
+      Lo que hay que ver es <strong>lo que no está</strong>: en el lado derecho <strong>no aparece
+      \(\nabla\mu\)</strong>. Ese es el logro del teorema, y la frase que lo dice —«este resultado
+      <strong>NO</strong> implica derivar la distribución de estados»— está solo en el material de Lucía. En
+      la baraja de clase se pinta en su lugar un recuadro rojo alrededor de \(\sum_s\mu(s)\sum_a
+      q_\pi(s,a)\) y uno verde alrededor de \(\nabla\pi(a\mid s,\theta)\), <strong>y no se explican</strong>:
+      el rojo es lo que se va a estimar muestreando, el verde es lo único que hay que derivar.
+    </p>
+    <p class="explicacion" data-t="t5b.b6.texto3">
+      Dos cosas que las diapositivas no dicen y que hacen falta para entender la fórmula. La
+      primera: <strong>qué es \(\mu(s)\)</strong>. Es la <strong>distribución dentro de política</strong>, la fracción del
+      tiempo que se pasa en cada estado siguiendo \(\pi\). Se calcula contando visitas: si
+      \(\eta(s)\) es el número esperado de pasos en \(s\) por episodio, entonces \(\mu(s) =
+      \eta(s)/\sum_{s'}\eta(s')\). No es una distribución arbitraria ni una elección de diseño:
+      <strong>la fija el entorno junto con la política</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5b.b6.ecuacion2">
+      \[ \mu(s) \;=\; \frac{\eta(s)}{\sum_{s'}\eta(s')},
+         \qquad
+         \eta(s) \;=\; h(s) + \sum_{\bar s}\eta(\bar s)\sum_a \pi(a\mid \bar s,\theta)\,p(s\mid \bar s,a) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b6.texto4">
+      La segunda: <strong>por qué \(\propto\) y no \(=\)</strong>. Porque falta una constante, y el libro
+      dice cuál es: en el caso episódico, <strong>la longitud media del episodio</strong>; en el caso
+      continuado, 1, y ahí la relación es una igualdad. Para el algoritmo da igual —«cualquier
+      constante de proporcionalidad se puede absorber en el paso \(\alpha\), que por lo demás es
+      arbitrario»—, pero <strong>no da igual si quieres comprobar el teorema con números</strong>, que es
+      justo lo que hace el módulo 2.
+    </p>
+    <div class="aviso" data-t="t5b.b6.aviso">
+      ⚠ Cuidado con una lectura fácil: el teorema <strong>no</strong> evita muestrear estados. Lo que evita
+      es <strong>derivar</strong> la distribución. \(\mu(s)\) sigue estando en la fórmula, y el paso
+      siguiente es exactamente muestrear estados siguiendo \(\pi\): «si se sigue \(\pi\), los
+      estados aparecerán en esas proporciones». <strong>Eso es lo que hace que estos métodos sean
+      dentro de política.</strong>
+    </div>
+    <p><a class="siguiente" href="#m2" data-t="t5b.b6.modulo">→ módulo 2: los dos lados de la ecuación, con sus números, y la constante que los iguala.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 2 · el teorema del gradiente, término a término            -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m2">
+    <header>
+      <p class="etiqueta" data-t="t5b.m2.etiqueta">MÓDULO 2</p>
+      <h2 data-t="t5b.m2.h2">El teorema del gradiente, término a término</h2>
+      <p class="fuente" data-t="t5b.m2.fuente"><code>5_Tema_5_2#slide-8</code> · Sutton &amp; Barto, §13.2, ecuación (13.5); \(\mu\) y \(\eta\) en §9.2; el vector de elegibilidad, Ejercicio 13.3 y ecuación (13.9)</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m2.explicacion">
+      La fórmula del teorema tiene tres piezas y en clase se proyecta entera, con dos recuadros
+      de color que no se explican. Aquí están las tres, con sus números, sobre el pasillo corto:
+      <strong>\(\mu(s)\)</strong>, la fracción del tiempo que se pasa en cada celda; <strong>\(q_\pi(s,a)\)</strong>, lo que
+      vale cada acción; y <strong>\(\nabla\pi(a\mid s,\theta)\)</strong>, lo único que hay que derivar. Y al
+      lado, el gradiente de \(J\) calculado <strong>por otro camino</strong>: diferencias finitas sobre la
+      fórmula cerrada del módulo anterior, sin usar el teorema para nada. Los dos números tienen
+      que coincidir… <strong>salvo por una constante</strong>.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo2). -->
+    <div id="m2-controles"></div>
+    <div id="m2-viz1"></div>
+    <div id="m2-viz2"></div>
+    <div id="m2-viz3"></div>
+    <div id="m2-metricas"></div>
+    <div id="m2-paneles"></div>
+    <p class="explicacion" id="m2-lectura"></p>
+    <div id="m2-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B7 · REINFORCE: de la esperanza a la muestra → módulo 3           -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b7">
+    <header>
+      <h2 data-t="t5b.b7.h2">REINFORCE</h2>
+      <p class="fuente" data-t="t5b.b7.fuente"><code>5_Tema_5_2#slide-9</code>, <code>#slide-10</code>, <code>#slide-11</code> · el método <em>all-actions</em> y el pseudocódigo, solo en Lucía: <code>Tema6_PolicyGradient#slide-11</code>, <code>#slide-14</code> · Sutton &amp; Barto, §13.3, ecuaciones (13.6) a (13.9) y recuadro de la p. 350</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b7.texto">
+      El lado derecho del teorema es una suma sobre estados <strong>ponderada por la frecuencia con
+      que aparecen bajo \(\pi\)</strong>. Si se sigue \(\pi\), los estados aparecen justo en esas
+      proporciones, así que la suma sobre estados es ya una esperanza y se puede sustituir por
+      muestras.
+    </p>
+    <p class="ecuacion" data-t="t5b.b7.ecuacion">
+      \[ \nabla J(\theta) \;\propto\; \sum_s\mu(s)\sum_a q_\pi(s,a)\nabla\pi(a\mid s,\theta)
+         \;=\; \mathbb E_\pi\!\left[\sum_a q_\pi(S_t,a)\,\nabla\pi(a\mid S_t,\theta)\right] \]
+    </p>
+    <p class="explicacion" data-t="t5b.b7.texto2">
+      Si se para aquí y se sustituye \(q_\pi\) por un valor aprendido \(\hat q(S_t,a,w)\), sale
+      un algoritmo con nombre propio, el método <em>all-actions</em>, que actualiza usando <strong>todas</strong>
+      las acciones y no solo la tomada. El libro lo menciona y sigue de largo; <strong>en la baraja de
+      clase no aparece, solo en la de Lucía</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5b.b7.ecuacion2">
+      \[ \theta_{t+1} \doteq \theta_t + \alpha\sum_a \hat q(S_t,a,w)\,\nabla\pi(a\mid S_t,\theta) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b7.texto3">
+      Para quedarnos solo con la acción tomada hace falta el truco de la diapositiva:
+      <strong>multiplicar y dividir por \(\pi(a\mid S_t,\theta)\)</strong>. Con eso la suma sobre acciones se
+      convierte en una esperanza sobre la acción que la política toma, y el retorno \(G_t\)
+      entra como muestra de \(q_\pi(S_t,A_t)\).
+    </p>
+    <p class="ecuacion" data-t="t5b.b7.ecuacion3">
+      \[ \nabla J(\theta) = \mathbb E_\pi\!\left[\sum_a \pi(a\mid S_t,\theta)\,q_\pi(S_t,a)\frac{\nabla\pi(a\mid S_t,\theta)}{\pi(a\mid S_t,\theta)}\right]
+       = \mathbb E_\pi\!\left[q_\pi(S_t,A_t)\frac{\nabla\pi(A_t\mid S_t,\theta)}{\pi(A_t\mid S_t,\theta)}\right]
+       = \mathbb E_\pi\!\left[G_t\,\frac{\nabla\pi(A_t\mid S_t,\theta)}{\pi(A_t\mid S_t,\theta)}\right] \]
+    </p>
+    <p class="explicacion" data-t="t5b.b7.glosa">
+      El segundo paso sustituye \(a\) por la muestra \(A_t\sim\pi\); el tercero usa que
+      \(\mathbb E_\pi[G_t\mid S_t,A_t] = q_\pi(S_t,A_t)\).
+    </p>
+    <p class="ecuacion destacada" data-t="t5b.b7.ecuacion4">
+      \[ \theta_{t+1} \;\doteq\; \theta_t + \alpha\,G_t\,\frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b7.texto4">
+      La baraja marca dos cosas en esta fórmula con un círculo rojo y una elipse verde, y <strong>no
+      las explica en ningún texto</strong>: la explicación está en las notas del ponente. Son estas
+      dos. <strong>El retorno \(G_t\)</strong>: el incremento es proporcional al retorno, así que los
+      parámetros se mueven más en las direcciones que favorecen acciones con retorno alto. <strong>El
+      denominador \(\pi(A_t\mid S_t,\theta_t)\)</strong>: dividir por la probabilidad de la acción
+      tomada <strong>normaliza</strong> el incremento; si no se dividiera, las acciones que se eligen mucho
+      llevarían ventaja —se actualizarían más veces en su dirección— y podrían acabar ganando
+      aunque no den el retorno más alto. Es también lo que <strong>mitiga la pérdida de
+      exploración</strong>.
+    </p>
+    <div class="aviso" data-t="t5b.b7.aviso">
+      El material de Lucía cuenta ese denominador como que «reduce el sesgo de que acciones
+      poco seleccionadas queden sin ser elegidas» (<code>Tema6_PolicyGradient#slide-13</code>). Cuidado con
+      la palabra: ahí «sesgo» está en sentido coloquial, y <strong>tres diapositivas después</strong> se usa
+      en sentido estadístico y contrario («no introduce ningún sesgo»). REINFORCE <strong>es un
+      estimador insesgado</strong>; lo que hace el denominador es compensar la frecuencia de muestreo,
+      no un sesgo.
+    </div>
+    <p class="explicacion" data-t="t5b.b7.texto5">
+      Ese cociente tiene nombre. En la literatura lo verás como <em>score function</em>, que es
+      como lo llaman las dos barajas; <strong>en Sutton &amp; Barto se llama <em>vector de elegibilidad</em></strong>
+      (p. 349), y en el capítulo 13 no aparece la expresión «score function» ni una vez. Son el
+      mismo objeto, y la identidad que los une —\(\nabla\ln x = \nabla x/x\)— <strong>no la escribe
+      ninguna de las dos barajas</strong>:
+    </p>
+    <p class="ecuacion" data-t="t5b.b7.ecuacion5">
+      \[ \nabla\ln\pi(A_t\mid S_t,\theta_t) \;=\; \frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)} \]
+    </p>
+    <div class="aviso" data-t="t5b.b7.aviso2">
+      Y no lo confundas con las <strong>trazas</strong> de elegibilidad del Tema 4: el <strong>vector</strong> de
+      elegibilidad es un gradiente instantáneo, la <strong>traza</strong> \(z_t\) es su acumulación
+      descontada. En el algoritmo de un paso hay vector y no hay traza.
+    </div>
+    <p class="explicacion" data-t="t5b.b7.texto6">
+      Para la softmax lineal, el vector de elegibilidad tiene una forma cerrada que hace falta
+      para programar nada de esto, y que <strong>no está en ninguna diapositiva de ninguna de las dos
+      colecciones</strong>. El libro la plantea como Ejercicio 13.3: es la <strong>característica de la
+      acción tomada menos la característica media bajo la política</strong>.
+    </p>
+    <p class="ecuacion" data-t="t5b.b7.ecuacion6">
+      \[ \nabla\ln\pi(a\mid s,\theta) \;=\; x(s,a) - \sum_{a'} \pi(a'\mid s,\theta)\,x(s,a') \]
+    </p>
+    <pre class="codigo" data-t="t5b.b7.caja">REINFORCE: control por gradiente de política, Monte Carlo (episódico), para π_*
+
+Entrada: una parametrización derivable de la política π(a|s,θ)
+Parámetro: paso α &gt; 0
+Inicializar los parámetros de la política θ ∈ R^{d′} (p. ej. θ = 0)
+
+Repetir para cada episodio:
+    Generar un episodio S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T siguiendo π(·|·,θ)
+    Repetir para cada paso del episodio t = 0, 1, …, T−1:
+        G ← Σ_{k=t+1}^{T} γ^{k−t−1} R_k                                    (G_t)
+        θ ← θ + α γ^t G ∇ln π(A_t|S_t,θ)</pre>
+    <p class="explicacion" data-t="t5b.b7.texto7">
+      Tres cosas de este recuadro. <strong>El \(\gamma^t\)</strong> no está en la regla de actualización que
+      se proyecta dos diapositivas antes, y nadie lo comenta: aparece porque el texto trabaja
+      sin descuento (\(\gamma=1\)) y los recuadros dan la versión general descontada. Con
+      \(\gamma=1\) —que es el caso del pasillo corto— <strong>vale 1 y desaparece</strong>; con \(\gamma<1\)
+      <strong>omitirlo da un algoritmo distinto</strong>, no una simplificación. <strong>El bucle sobre \(t\)</strong> va
+      después de generar el episodio entero: REINFORCE usa el retorno completo, así que todas
+      sus actualizaciones se hacen <strong>en retrospectiva</strong>, cuando el episodio ha terminado. Y <strong>la
+      inicialización</strong> dice «e.g., to 0», lo cual tiene consecuencias que se ven en el módulo
+      3.
+    </p>
+    <div class="aviso" data-t="t5b.b7.respuesta">
+      <code>5_Tema_5_2#slide-10</code> pregunta al aula: <strong>«¿on-policy u off-policy? ¿online u offline?»</strong>
+      y no lo responde en pantalla. La respuesta, en las notas del ponente: <strong>es dentro de
+      política (<em>on-policy</em>) y fuera de línea (<em>offline</em>)</strong>. Dentro de política porque el
+      episodio se genera siguiendo la misma \(\pi\) que se actualiza —es lo que exige el paso de
+      la suma sobre \(\mu\) a la esperanza—; fuera de línea porque hay que esperar al final del
+      episodio para tener \(G_t\).
+    </div>
+    <p><a class="siguiente" href="#m3" data-t="t5b.b7.modulo">→ módulo 3: el estimador es correcto y aun así aprende despacio. Aquí se ve cuánto y por qué.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 3 · REINFORCE: el estimador correcto y lento               -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m3">
+    <header>
+      <p class="etiqueta" data-t="t5b.m3.etiqueta">MÓDULO 3</p>
+      <h2 data-t="t5b.m3.h2">REINFORCE: el estimador correcto y lento</h2>
+      <p class="fuente" data-t="t5b.m3.fuente"><code>5_Tema_5_2#slide-10</code>, <code>#slide-11</code> · Sutton &amp; Barto, §13.3, ecuación (13.8), recuadro de la p. 350 y Figura 13.1</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m3.explicacion">
+      Esta es la figura que se proyecta en clase sin una palabra de texto, y ahora con todo lo
+      que le falta: <strong>el entorno es el pasillo corto del módulo 1</strong>, la línea discontinua es
+      \(v_*(s_0) = -(6+4\sqrt2) \approx -11{,}66\) —el mejor valor alcanzable dentro de esta clase
+      de políticas—, y el eje vertical es el <strong>retorno total del episodio</strong>, \(G_0\), promediado
+      sobre las ejecuciones independientes que elijas —cien, como en el libro, o menos: el
+      control está justo debajo y el pie de la gráfica dice siempre cuántas son—. Con
+      \(\gamma = 1\) y \(-1\) por paso, \(G_0\) es justamente <strong>menos la longitud del episodio</strong>.
+    </p>
+    <p class="explicacion" data-t="t5b.m3.explicacion2">
+      El estimador de REINFORCE <strong>es correcto</strong>: su esperanza apunta en la dirección del
+      gradiente del rendimiento, y eso te lo garantiza el módulo anterior. Mira entonces cuánto
+      tarda, y sobre todo mira qué pasa cuando bajas las ejecuciones promediadas a 1.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo3). -->
+    <div id="m3-controles"></div>
+    <div id="m3-viz1"></div>
+    <div id="m3-viz2"></div>
+    <div id="m3-metricas"></div>
+    <div id="m3-paneles"></div>
+    <p class="explicacion" id="m3-lectura"></p>
+    <div id="m3-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B8 · REINFORCE con línea base → módulo 4                          -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b8">
+    <header>
+      <h2 data-t="t5b.b8.h2">REINFORCE con línea base</h2>
+      <p class="fuente" data-t="t5b.b8.fuente"><code>5_Tema_5_2#slide-12</code>, <code>#slide-13</code> · el pseudocódigo y las respuestas escritas, solo en Lucía: <code>Tema6_PolicyGradient#slide-16</code>, <code>#slide-17</code> · Sutton &amp; Barto, §13.4, ecuaciones (13.10) y (13.11) y recuadro de la p. 352; Figura 13.2, p. 352</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b8.texto">
+      Al teorema se le puede restar una <strong>línea base</strong> \(b(s)\) sin que deje de ser cierto:
+    </p>
+    <p class="ecuacion" data-t="t5b.b8.ecuacion">
+      \[ \nabla J(\theta) \;\propto\; \sum_s\mu(s)\sum_a\big(q_\pi(s,a) - b(s)\big)\nabla\pi(a\mid s,\theta) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b8.texto2">
+      <strong>La condición exacta —y es la que se pregunta en el examen— es que \(b\) no varíe con la
+      acción.</strong> Puede ser cualquier función del estado, incluso una variable aleatoria, mientras
+      no dependa de \(a\). La razón cabe en una línea, y <strong>no la escribe ninguna de las dos
+      barajas</strong>: las probabilidades suman uno en cada estado, así que la suma de sus gradientes
+      es el gradiente de una constante.
+    </p>
+    <p class="ecuacion" data-t="t5b.b8.ecuacion2">
+      \[ \sum_a b(s)\,\nabla\pi(a\mid s,\theta) \;=\; b(s)\,\nabla\sum_a \pi(a\mid s,\theta) \;=\; b(s)\,\nabla 1 \;=\; \mathbf 0 \]
+    </p>
+    <p class="ecuacion" data-t="t5b.b8.ecuacion3">
+      \[ \theta_{t+1} \;\doteq\; \theta_t + \alpha\big(G_t - b(S_t)\big)\frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b8.texto3">
+      Como la línea base puede ser idénticamente cero, esta regla es una <strong>generalización
+      estricta</strong> de REINFORCE. Y la consecuencia es la frase que hay que saber decir: <strong>la línea
+      base deja igual el valor esperado de la actualización, pero puede tener un efecto enorme
+      sobre su varianza</strong>.
+    </p>
+    <div class="aviso" data-t="t5b.b8.respuesta">
+      <code>5_Tema_5_2#slide-12</code> pregunta dos cosas al aula y no responde ninguna en pantalla:
+      <strong>«¿bajo qué condiciones? ¿por qué?»</strong> y <strong>«¿cuál es el papel de la línea base? ¿cómo
+      lidiamos con ella?»</strong>. Las tres respuestas están en las notas del ponente. <strong>Condición:</strong>
+      la línea base no puede depender de las acciones; si no depende, es inmediato ver que no
+      afecta al valor medio de la expresión. <strong>Papel:</strong> es una especie de <strong>normalización</strong>,
+      hace que el término del retorno sea más uniforme entre estados, <strong>reduce la varianza</strong> del
+      estimador y con ello acelera el aprendizaje. <strong>Cómo se lidia con ella:</strong> hay que
+      <strong>aprenderla</strong>, y se hace eligiendo un aproximador que dependa de <strong>un conjunto de
+      parámetros distinto del de la política</strong>. Eso es exactamente de dónde salen \(w\) y
+      \(\alpha^{w}\).
+    </div>
+    <p class="explicacion" data-t="t5b.b8.texto4">
+      Por qué tiene que variar con el estado: en algunos estados <strong>todas</strong> las acciones valen
+      mucho y hace falta una referencia alta para distinguir las buenas de las menos buenas; en
+      otros valen todas poco y la referencia adecuada es baja. En los bandidos del Tema 1 la
+      línea base era un solo número, \(\bar R_t\), porque no había estados; aquí es una función
+      del estado. La elección natural es una <strong>estimación del valor del estado</strong>,
+      \(\hat v(S_t,w)\), aprendida por Monte Carlo —igual que la política.
+    </p>
+    <pre class="codigo" data-t="t5b.b8.caja">REINFORCE con línea base (episódico), para estimar π_θ ≈ π_*
+
+Entrada: una parametrización derivable de la política π(a|s,θ)
+Entrada: una parametrización derivable del valor de estado v̂(s,w)
+Parámetros: pasos α^θ &gt; 0, α^w &gt; 0
+Inicializar los parámetros de la política θ ∈ R^{d′} y los pesos del valor w ∈ R^d (p. ej. a 0)
+
+Repetir para cada episodio:
+    Generar un episodio S_0, A_0, R_1, …, S_{T−1}, A_{T−1}, R_T siguiendo π(·|·,θ)
+    Repetir para cada paso del episodio t = 0, 1, …, T−1:
+        G ← Σ_{k=t+1}^{T} γ^{k−t−1} R_k                                    (G_t)
+        δ ← G − v̂(S_t,w)
+        w ← w + α^w δ ∇v̂(S_t,w)
+        θ ← θ + α^θ γ^t δ ∇ln π(A_t|S_t,θ)</pre>
+    <div class="aviso" data-t="t5b.b8.aviso">
+      ⚠ <strong>Ese \(\delta\) no es el error TD.</strong> Aquí \(\delta = G - \hat v(S_t,w)\) es un <strong>error
+      Monte Carlo</strong>: compara el retorno <strong>real</strong> del episodio con la estimación. El \(\delta_t\)
+      del actor-crítico compara con una estimación del futuro. Se escriben igual y <strong>no son lo
+      mismo</strong>; la diferencia entre los dos <strong>es</strong> el contenido del bloque siguiente.
+    </div>
+    <p class="explicacion" data-t="t5b.b8.texto5">
+      «Tenemos dos hiperparámetros», dice la diapositiva, y ahí lo deja. Son
+      \(\alpha^\theta\) y \(\alpha^{w}\), y no son intercambiables. El libro avisa: elegir el
+      paso del <strong>valor</strong> es relativamente fácil, hay reglas prácticas para el caso lineal; <strong>es
+      mucho menos claro cómo elegir el de la política</strong>, cuyo mejor valor depende del rango de
+      variación de las recompensas y de la parametrización. Y en la figura del libro se ve la
+      consecuencia, aunque nadie la comente: el \(\alpha^\theta\) que va bien <strong>con</strong> línea base
+      es \(2^{-9}\), <strong>dieciséis veces mayor</strong> que el mejor \(\alpha\) sin ella, \(2^{-13}\). El
+      dato está a la vista en los rótulos de la figura que se proyecta.
+    </p>
+    <p><a class="siguiente" href="#m4" data-t="t5b.b8.modulo">→ módulo 4: la misma tanda con línea base, sin ella, y con una línea base que sí depende de la acción.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 4 · la línea base: qué toca y qué no toca                  -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m4">
+    <header>
+      <p class="etiqueta" data-t="t5b.m4.etiqueta">MÓDULO 4</p>
+      <h2 data-t="t5b.m4.h2">La línea base: qué toca y qué no toca</h2>
+      <p class="fuente" data-t="t5b.m4.fuente"><code>5_Tema_5_2#slide-12</code>, <code>#slide-13</code> · Sutton &amp; Barto, §13.4, ecuaciones (13.10) y (13.11), recuadro de la p. 352 y Figura 13.2</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m4.explicacion">
+      Restar al retorno una referencia \(b(S_t)\) no cambia el valor esperado de la
+      actualización, <strong>siempre que esa referencia no dependa de la acción</strong>. La razón cabe en
+      una línea: las probabilidades suman uno en cada estado, así que \(\sum_a b(s)\nabla\pi(a\mid
+      s,\theta) = b(s)\nabla 1 = 0\). Lo que sí cambia, y mucho, es <strong>la varianza</strong>. Aquí puedes
+      ver las dos cosas por separado: la media del estimador, que no se mueve, y su distribución,
+      que se estrecha.
+    </p>
+    <p class="explicacion" data-t="t5b.m4.explicacion2">
+      Y puedes hacer lo que la condición prohíbe: poner <strong>una línea base por acción</strong>. Es una
+      línea base perfectamente razonable a primera vista —la media de los retornos observados tras
+      cada acción— y es la que aparece en el examen como distractor. Mira qué le pasa a la curva.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo4). -->
+    <div id="m4-controles"></div>
+    <div id="m4-viz1"></div>
+    <div id="m4-viz2"></div>
+    <div id="m4-tabla"></div>
+    <div id="m4-metricas"></div>
+    <div id="m4-paneles"></div>
+    <p class="explicacion" id="m4-lectura"></p>
+    <div id="m4-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B9 · actor-crítico: el bootstrap, el sesgo y la ventaja → módulo 5 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b9">
+    <header>
+      <h2 data-t="t5b.b9.h2">Actor-crítico</h2>
+      <p class="fuente" data-t="t5b.b9.fuente"><code>5_Tema_5_2#slide-14</code> a <code>#slide-17</code> · la definición de \(\delta_t\) y la función de ventaja, solo en Lucía: <code>Tema6_PolicyGradient#slide-19</code> · Sutton &amp; Barto, §13.5, ecuaciones (13.12) a (13.14) y recuadro de la p. 354</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b9.texto">
+      Aquí está <strong>la frase más importante del tema</strong>, y ninguna de las dos barajas la dice:
+      REINFORCE con línea base aprende una política <strong>y</strong> una función de valor, y aun así <strong>no
+      es un método actor-crítico</strong>. El criterio no es aprender un valor: es <strong>para qué se usa</strong>.
+      En REINFORCE con línea base el valor se usa solo como <strong>referencia</strong> del estado que se
+      está actualizando; no se usa para hacer <em>bootstrap</em>, es decir, para actualizar la
+      estimación de un estado a partir de la estimación de los siguientes. Y esa distinción es
+      útil porque <strong>solo a través del <em>bootstrap</em> se introducen sesgo y una dependencia
+      asintótica de la calidad de la aproximación</strong>.
+    </p>
+    <p class="explicacion" data-t="t5b.b9.texto2">
+      El actor-crítico a un paso hace exactamente eso: sustituye el retorno completo de
+      REINFORCE por el <strong>retorno a un paso</strong>, y usa el valor aprendido a la vez como objetivo y
+      como referencia. Las tres líneas de la deducción son las de la diapositiva:
+    </p>
+    <p class="ecuacion" data-t="t5b.b9.ecuacion">
+      \[
+      \begin{aligned}
+      \theta_{t+1} &amp;\doteq \theta_t + \alpha\Big(G_{t:t+1} - \hat v(S_t,w)\Big)\frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}\\[2pt]
+      &amp;= \theta_t + \alpha\Big(R_{t+1} + \gamma\,\hat v(S_{t+1},w) - \hat v(S_t,w)\Big)\frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}\\[2pt]
+      &amp;= \theta_t + \alpha\,\delta_t\,\frac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}
+      \end{aligned}
+      \]
+    </p>
+    <p class="explicacion" data-t="t5b.b9.texto3">
+      Lo que se gana y lo que se paga, punto por punto. <strong>Se gana</strong> que es un algoritmo
+      <strong>totalmente en línea e incremental</strong>: estados, acciones y recompensas se procesan según
+      ocurren y no se vuelven a mirar, así que no hay que esperar al final del episodio y sirve
+      también para tareas continuadas. Y se gana <strong>varianza</strong>: el objetivo a un paso es mucho
+      menos ruidoso que un retorno completo. <strong>Se paga sesgo</strong>, porque el objetivo usa una
+      estimación; y se paga una <strong>dependencia asintótica de la calidad del crítico</strong>, que
+      REINFORCE con línea base no tiene: ese es insesgado y converge a un óptimo local, pero
+      aprende despacio y es incómodo de implementar en línea.
+    </p>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.b9.cab">
+            <th></th><th>REINFORCE con línea base</th><th>Actor-crítico a un paso</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.b9.f1">
+            <td>Usa el valor para…</td><td>restar una referencia</td><td><strong>hacer <em>bootstrap</em></strong></td>
+          </tr>
+          <tr data-t="t5b.b9.f2">
+            <td>¿Sesgo?</td><td>no</td><td><strong>sí</strong></td>
+          </tr>
+          <tr data-t="t5b.b9.f3">
+            <td>Varianza</td><td>alta, de Monte Carlo</td><td>menor</td>
+          </tr>
+          <tr data-t="t5b.b9.f4">
+            <td>¿Depende de la calidad del aproximador?</td><td>asintóticamente no</td><td><strong>sí</strong></td>
+          </tr>
+          <tr data-t="t5b.b9.f5">
+            <td>¿En línea?</td><td>no: espera al fin del episodio</td><td><strong>sí, totalmente incremental</strong></td>
+          </tr>
+          <tr data-t="t5b.b9.f6">
+            <td>Tareas continuadas</td><td>incómodo</td><td>sí</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="explicacion" data-t="t5b.b9.texto4">
+      El material de Lucía escribe además la <strong>función de ventaja</strong> y la relaciona con el error
+      TD. La ventaja mide <strong>cuánto mejora o empeora el retorno esperado al ejecutar \(a\) en
+      \(s\)</strong> respecto a <strong>seguir la política actual</strong> desde ese estado:
+    </p>
+    <p class="ecuacion" data-t="t5b.b9.ecuacion2">
+      \[ A(s,a) \;\doteq\; q_\pi(s,a) - v_\pi(s),
+         \qquad\text{y, con un crítico exacto,}\qquad
+         \mathbb E_\pi\big[\delta_t \mid S_t = s,\,A_t = a\big] \;=\; A(s,a) \]
+    </p>
+    <div class="aviso" data-t="t5b.b9.aviso">
+      Dos avisos sobre esta fórmula. El primero: <strong>la función de ventaja no está definida en
+      Sutton &amp; Barto</strong>, ni en el capítulo 13 ni en ningún otro. El libro solo la nombra en las
+      notas bibliográficas, diciendo que a los métodos actor-crítico «a veces se los llama
+      métodos actor-crítico <strong>de ventaja</strong>» (p. 360). El símbolo y el nombre son de la
+      literatura y de <code>notacion.md</code>, no del libro: si lo buscas allí, no lo encontrarás. El
+      segundo: la relación entre \(\delta_t\) y \(A(s,a)\) es <strong>en esperanza</strong>. Lo verás escrito
+      como \(\delta_t \approx A(s,a)\), que es la forma corta de decir esto mismo: el error TD
+      de un paso es una <strong>muestra</strong> de la ventaja.
+    </div>
+    <div class="aviso" data-t="t5b.b9.dosVersiones">
+      ⚠ <strong>Hay dos pseudocódigos distintos de actor-crítico en el material del curso, y ninguna
+      baraja lo dice.</strong> <code>5_Tema_5_2#slide-17</code> proyecta una versión tomada de presentaciones de
+      van Hasselt y Silver: es <strong>continuada</strong> (un solo bucle sobre \(t\), sin episodios), usa
+      \(\beta\) para el paso del crítico, <strong>no lleva el factor \(\gamma^t\)</strong>, <strong>no dice qué
+      hacer en el estado terminal</strong> y <strong>no inicializa \(w\)</strong>. <code>Tema6_PolicyGradient#slide-22</code>
+      proyecta la del libro, que es <strong>episódica</strong>, usa \(\alpha^\theta\) y \(\alpha^{w}\), lleva
+      el acumulador \(I\) y sí trata el terminal. <strong>No son incompatibles</strong> —son el mismo
+      algoritmo en variante continuada y episódica—, pero no se pueden mezclar. <strong>Esta página
+      ejecuta la del libro</strong>, porque el pasillo corto es episódico y tiene estado terminal, y
+      porque es la única de las dos que se puede citar por página.
+    </div>
+    <pre class="codigo" data-t="t5b.b9.caja">Actor-crítico a un paso (episódico), para estimar π_θ ≈ π_*
+
+Entrada: una parametrización derivable de la política π(a|s,θ)
+Entrada: una parametrización derivable del valor de estado v̂(s,w)
+Parámetros: pasos α^θ &gt; 0, α^w &gt; 0
+Inicializar los parámetros de la política θ ∈ R^{d′} y los pesos del valor w ∈ R^d (p. ej. a 0)
+
+Repetir para cada episodio:
+    Inicializar S (primer estado del episodio)
+    I ← 1
+    Repetir mientras S no sea terminal (para cada paso):
+        A ~ π(·|S,θ)
+        Tomar la acción A; observar S′, R
+        δ ← R + γ v̂(S′,w) − v̂(S,w)          (si S′ es terminal, v̂(S′,w) ≐ 0)
+        w ← w + α^w δ ∇v̂(S,w)
+        θ ← θ + α^θ I δ ∇ln π(A|S,θ)
+        I ← γI
+        S ← S′</pre>
+    <div class="aviso" data-t="t5b.b9.aviso2">
+      Dos lecturas del recuadro que se pierden. <strong>\(I\) no es una matriz identidad</strong>: es el
+      \(\gamma^t\) llevado incrementalmente, y con \(\gamma=1\) vale siempre 1 y desaparece. Y
+      <strong>\(\alpha^\theta\) y \(\alpha^{w}\) son independientes</strong>, igual que lo son
+      \(\lambda^\theta\) y \(\lambda^{w}\) en la versión con trazas: el libro <strong>no exige</strong> que
+      coincidan.
+    </div>
+    <div class="aviso" data-t="t5b.b9.figura">
+      El diagrama de bloques de <code>5_Tema_5_2#slide-16</code> dice, sin una línea de texto, lo esencial
+      del método: el <strong>actor</strong> manda acciones al entorno; el <strong>crítico</strong> recibe la recompensa;
+      el estado llega a los dos; y del crítico al actor sale una sola señal, \(\delta\), el
+      error TD. El crítico <strong>no elige acciones</strong> y el actor <strong>no evalúa</strong>. ⚠ En esa diapositiva,
+      y en la equivalente de Lucía, <strong>el globo amarillo que resalta \(\delta_t\) tapa la
+      \(\alpha\)</strong> de la fórmula del pie: si la copias de ahí, te llevas la tasa de aprendizaje
+      perdida.
+    </div>
+    <p><a class="siguiente" href="#m5" data-t="t5b.b9.modulo">→ módulo 5: el mismo número, usado como línea base y usado como crítico. No hacen lo mismo.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 5 · actor-crítico: el mismo número                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m5">
+    <header>
+      <p class="etiqueta" data-t="t5b.m5.etiqueta">MÓDULO 5</p>
+      <h2 data-t="t5b.m5.h2">El mismo número, como línea base y como crítico</h2>
+      <p class="fuente" data-t="t5b.m5.fuente"><code>5_Tema_5_2#slide-14</code> a <code>#slide-17</code> · Sutton &amp; Barto, §13.5, p. 353, y el recuadro de la p. 354</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m5.explicacion">
+      Las dos variantes aprenden <strong>el mismo número</strong> con <strong>la misma regla</strong>: un peso \(w\) que
+      estima el valor de los estados. La única diferencia está en qué se hace con él. En REINFORCE
+      con línea base, \(w\) se <strong>resta</strong> del retorno real del episodio y nada más. En actor-crítico,
+      \(w\) se usa además como <strong>objetivo</strong>: el retorno completo se sustituye por
+      \(R_{t+1} + \gamma\hat v(S_{t+1},w)\). Eso es hacer <em>bootstrap</em>, y es lo único que separa
+      a los dos métodos — el libro es explícito: REINFORCE con línea base <strong>no</strong> es actor-crítico
+      porque su función de valor «se usa solo como línea base, no como crítico».
+    </p>
+    <p class="explicacion" data-t="t5b.m5.explicacion2">
+      Y esa diferencia tiene una consecuencia que la diapositiva no cuenta: <strong>solo a través del
+      <em>bootstrap</em> se introducen sesgo y una dependencia asintótica de la calidad de la
+      aproximación</strong>. Aquí puedes ver las dos mitades de esa frase. Con el aproximador del libro
+      —<strong>un solo número para tres estados de valor muy distinto</strong>— mira qué le pasa a cada
+      variante. Y después dale un peso por estado y vuelve a mirar.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo5). -->
+    <div id="m5-controles"></div>
+    <div id="m5-viz1"></div>
+    <div id="m5-viz2"></div>
+    <div id="m5-tabla"></div>
+    <div id="m5-metricas"></div>
+    <div id="m5-paneles"></div>
+    <p class="explicacion" id="m5-lectura"></p>
+    <div id="m5-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B10 · notas y precauciones → módulo 6                             -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b10">
+    <header>
+      <h2 data-t="t5b.b10.h2">Notas y precauciones</h2>
+      <p class="fuente" data-t="t5b.b10.fuente"><code>5_Tema_5_2#slide-18</code> · Lucía: <code>Tema6_PolicyGradient#slide-20</code>, <code>#slide-23</code> · Sutton &amp; Barto, §13.5, p. 354 (trazas); el colapso, en ninguna parte del libro</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b10.texto">
+      La baraja cierra el desarrollo con cuatro avisos. Los dos primeros son de alcance. <strong>Se
+      puede usar el retorno \(\lambda\)</strong> y implementarlo con <strong>trazas de elegibilidad</strong>: basta
+      sustituir el retorno a un paso \(G_{t:t+1}\) por \(G_{t:t+n}\) o por \(G_t^\lambda\), y en
+      la vista hacia atrás se usan <strong>dos trazas independientes</strong>, una para el actor y otra para
+      el crítico, con sus dos \(\lambda\) y sus dos \(\alpha\). Es una frase en clase y aquí
+      también: el mecanismo de las trazas está en la <a href="tema4b.html#m2">segunda página del tema 4</a>. Y
+      <strong>la idea es ya muy general</strong>: la mayoría de los métodos que se ven como estado del arte son
+      extensiones o variaciones de esta.
+    </p>
+    <p class="explicacion" data-t="t5b.b10.texto2">
+      Los dos últimos avisos son de otra naturaleza, y son <strong>la afirmación más fuerte del
+      tema</strong>. Cuando se usa un método de gradiente de política, <strong>la política condiciona
+      fuertemente la experiencia con la que se entrena al agente</strong>. Y entonces: se puede estar
+      progresando bien y que <strong>un mal movimiento de la política</strong> haga que a partir de ahí solo
+      se obtenga <strong>experiencia irrelevante</strong>, que <strong>destrozará la aproximación de la política</strong>
+      con el tiempo.
+    </p>
+    <div class="aviso" data-t="t5b.b10.aviso">
+      ⚠ Esa afirmación <strong>no aparece en Sutton &amp; Barto</strong>. El libro no discute el colapso de la
+      política por un paso demasiado grande en ninguna parte del capítulo 13; lo más cercano es
+      una cita bibliográfica sobre regularización por entropía (p. 360). Es una advertencia del
+      profesor, y <strong>es la parte del tema que más se pregunta en el examen</strong>. También es la única
+      que en el material no tiene detrás <strong>ni un ejemplo, ni una curva, ni una simulación</strong>. El
+      módulo 6 la convierte en un dato.
+    </div>
+    <p class="explicacion" data-t="t5b.b10.texto3">
+      Merece la pena ver por qué esto es distinto de un paso demasiado grande de toda la vida.
+      En aprendizaje supervisado, un paso malo estropea los pesos y el siguiente lote —que no ha
+      cambiado— tira de ellos hacia atrás. Aquí <strong>el lote siguiente lo genera la política que
+      acabas de estropear</strong>: si la política se vuelve mala, los episodios que produce son peores
+      y más largos, y con ellos se calcula la siguiente actualización. El bucle se
+      <strong>realimenta</strong>, y ese es el punto.
+    </p>
+    <p><a class="siguiente" href="#m6" data-t="t5b.b10.modulo">→ módulo 6: sube \(\alpha^\theta\) hasta que el bucle se cierre, y luego ponle el freno.</a></p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B11 · limitar el salto: regularización, KL, TRPO y PPO → módulo 6 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b11">
+    <header>
+      <h2 data-t="t5b.b11.h2">Limitar el salto de la política</h2>
+      <p class="fuente" data-t="t5b.b11.fuente"><code>5_Tema_5_2#slide-19</code> · Lucía: <code>Tema6_PolicyGradient#slide-23</code>, sin el hiperparámetro · Sutton &amp; Barto: no cubre este punto; solo cita «entropy regularization» en las notas bibliográficas, p. 360</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b11.texto">
+      La intuición de la diapositiva: <strong>los saltos bruscos en la política son los sospechosos
+      habituales del colapso del entrenamiento</strong>. Y la idea clave: añadir un <strong>término de
+      regularización</strong>, al estilo de la L2 en aprendizaje supervisado, pero que en vez de
+      penalizar el tamaño de los pesos penalice <strong>cuánto se ha movido la política</strong>. Como medida
+      de ese movimiento se usa la <strong>divergencia de Kullback-Leibler</strong> entre la política actual y
+      su actualización, y bastaría con definir un objetivo que la tenga en cuenta.
+    </p>
+    <p class="ecuacion" data-t="t5b.b11.ecuacion">
+      \[ J(\theta) - \eta_{KL}\,D_{KL} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b11.texto2">
+      \(\eta_{KL}\) es el hiperparámetro que modula la regularización. <strong>Ese hiperparámetro
+      solo aparece en la baraja de clase</strong>; el material de Lucía dice «definir una función
+      objetivo que la tenga en cuenta» y no lo escribe. Y estas son las ideas que hay detrás de
+      algoritmos como <strong>TRPO</strong> y <strong>PPO</strong>.
+    </p>
+    <p class="explicacion" data-t="t5b.b11.texto3">
+      La diapositiva no define \(D_{KL}\) ni dice entre qué dos distribuciones se calcula. Para
+      dos políticas sobre el mismo conjunto de acciones, y promediando sobre los estados con la
+      distribución dentro de política, es esto:
+    </p>
+    <p class="ecuacion" data-t="t5b.b11.ecuacion2">
+      \[ D_{KL}(\pi_{\theta_{\text{ant}}} \,\|\, \pi_\theta) \;=\; \sum_s \mu(s) \sum_a \pi(a\mid s,\theta_{\text{ant}})\,\ln\frac{\pi(a\mid s,\theta_{\text{ant}})}{\pi(a\mid s,\theta)} \]
+    </p>
+    <div class="aviso" data-t="t5b.b11.aviso">
+      ⚠ Un detalle que conviene saber antes de programarlo, y que la diapositiva no puede
+      contar en una viñeta: <strong>con un solo paso de gradiente por lote, la penalización \(J -
+      \eta_{KL}D_{KL}\) no hace nada</strong>. La divergencia se mide desde la política anterior, así
+      que en el punto de partida vale cero <strong>y su gradiente también</strong>: el paso sale idéntico al
+      de REINFORCE. La penalización empieza a morder cuando se dan <strong>varios</strong> pasos sobre el
+      mismo lote alejándose de la política anterior, que es lo que hace PPO. Por eso el módulo 6
+      implementa la otra cara de la misma idea, la que el examen llama <strong>estrategia de región de
+      confianza</strong>: se calcula el paso y, si mueve la política más de lo permitido, <strong>se recorta
+      hasta que quepa</strong>.
+    </div>
+    <p class="ecuacion" data-t="t5b.b11.ecuacion3">
+      \[ \theta \leftarrow \theta_{\text{ant}} + \tau\,\Delta\theta,
+         \qquad
+         \tau = \max\{\tau\in(0,1] \;:\; D_{KL}(\pi_{\theta_{\text{ant}}}\|\pi_{\theta_{\text{ant}}+\tau\Delta\theta}) \le \delta \} \]
+    </p>
+    <p class="explicacion" data-t="t5b.b11.texto4">
+      Lo que separa a TRPO de PPO no entra en el alcance de este curso: <strong>TRPO</strong> impone la
+      restricción como tal, con una aproximación de segundo orden; <strong>PPO</strong> consigue un efecto
+      parecido mucho más barato, <strong>recortando</strong> el cociente entre la política nueva y la antigua
+      en el propio objetivo. En el examen se pide reconocer la idea —que hay estrategias que
+      <strong>acotan la región en la que se puede mover la política</strong>, y que PPO es una de ellas—, no
+      las formulaciones.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- MÓDULO 6 · el colapso de la política, y el freno                  -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="m6">
+    <header>
+      <p class="etiqueta" data-t="t5b.m6.etiqueta">MÓDULO 6</p>
+      <h2 data-t="t5b.m6.h2">El colapso de la política, y el freno</h2>
+      <p class="fuente" data-t="t5b.m6.fuente"><code>5_Tema_5_2#slide-18</code>, <code>#slide-19</code> · Sutton &amp; Barto no cubre este punto: el capítulo 13 no discute el colapso por un paso grande</p>
+    </header>
+
+    <p class="explicacion" data-t="t5b.m6.explicacion">
+      Aquí no hay línea base ni crítico: REINFORCE a secas, sobre el mismo pasillo, con el paso de
+      la política en tus manos. Lo que se dibuja <strong>no es una media</strong>: son las ejecuciones una a
+      una, porque el colapso le pasa a una ejecución concreta y una media lo taparía. Sube
+      el paso y mira cuántas se van contra el techo o contra el suelo.
+    </p>
+    <p class="explicacion" data-t="t5b.m6.explicacionBucle">
+      Por qué esto no es «un paso demasiado grande» de los de siempre está contado arriba, en
+      <a href="#b10">Notas y precauciones</a>: <strong>el lote siguiente lo genera la política que acabas
+      de estropear</strong>. Lo que se añade aquí es <strong>el tamaño</strong>. En este entorno el factor que
+      multiplica al vector de elegibilidad es el retorno, que con \(-1\) por paso es menos la
+      longitud del episodio, y el incremento de un episodio de longitud \(T\) suma \(T(T+1)/2\) en
+      módulo: <strong>el salto crece con el cuadrado de la longitud del episodio, y la longitud del
+      episodio crece cuando la política empeora</strong>. El panel de más abajo lo pone en números con
+      el paso que tengas puesto.
+    </p>
+
+    <!-- El interior lo construye assets/tema5b.js (función modulo6). -->
+    <div id="m6-controles"></div>
+    <div id="m6-viz1"></div>
+    <div id="m6-viz2"></div>
+    <div id="m6-tabla"></div>
+    <div id="m6-metricas"></div>
+    <div id="m6-paneles"></div>
+    <p class="explicacion" id="m6-lectura"></p>
+    <div id="m6-quiz"></div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B12 · espacios de acción continuos: la política gaussiana         -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b12">
+    <header>
+      <h2 data-t="t5b.b12.h2">Acciones continuas</h2>
+      <p class="fuente" data-t="t5b.b12.fuente"><code>5_Tema_5_2#slide-20</code> — solo en la baraja de clase; el material de Lucía no cubre acciones continuas · Sutton &amp; Barto, §13.7, ecuaciones (13.19) y (13.20), pp. 357-358</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b12.texto">
+      Primero, lo que dice la diapositiva y conviene no olvidar: <strong>discretizar las acciones
+      continuas, aunque sea de forma gruesa, suele funcionar bien</strong>. Dicho eso, los métodos de
+      gradiente de política admiten espacios de acción continuos de forma natural, y esta es la
+      ventaja práctica que los métodos de valor no tienen: con un \(\max_a\) sobre un continuo
+      no se puede trabajar. La idea es que <strong>en vez de aprender una probabilidad por acción se
+      aprenden los estadísticos de una distribución continua</strong>. Con una normal, la política es
+      su densidad:
+    </p>
+    <p class="ecuacion" data-t="t5b.b12.ecuacion">
+      \[ \pi(a\mid s,\theta) \;\doteq\; \frac{1}{\sigma(s,\theta)\sqrt{2\pi}}\,\exp\!\left(-\frac{\big(a - m(s,\theta)\big)^2}{2\,\sigma(s,\theta)^2}\right) \]
+    </p>
+    <div class="aviso" data-t="t5b.b12.aviso">
+      ⚠ <strong>El libro llama \(\mu(s,\theta)\) a la media de esta gaussiana</strong>, y \(\mu(s)\) a la
+      distribución dentro de política del teorema del gradiente — las dos cosas, en el mismo
+      capítulo. Aquí la media se escribe \(m(s,\theta)\) para que \(\mu(s)\) siga significando
+      lo mismo que en el bloque B6 y en la página del tema anterior. Si lees el libro, el
+      \(\mu\) de la ecuación (13.19) es esta \(m\).
+    </div>
+    <p class="explicacion" data-t="t5b.b12.texto2">
+      La diapositiva enseña la forma de la política y nada más. Lo que falta, y hace falta para
+      usarla, es <strong>cómo se parametrizan los dos estadísticos</strong>. El vector se parte en dos,
+      \(\theta = [\theta_m, \theta_\sigma]^\top\), con sus propios vectores de características:
+    </p>
+    <p class="ecuacion" data-t="t5b.b12.ecuacion2">
+      \[ m(s,\theta) \doteq \theta_m^\top x_m(s),
+         \qquad
+         \sigma(s,\theta) \doteq \exp\!\big(\theta_\sigma^\top x_\sigma(s)\big) \]
+    </p>
+    <p class="explicacion" data-t="t5b.b12.texto3">
+      Y la razón de la exponencial, que es la pregunta que siempre sale: <strong>la desviación típica
+      tiene que ser positiva siempre</strong>, y una función lineal no lo garantiza; la exponencial de
+      una función lineal, sí. La media, en cambio, puede aproximarse linealmente sin problema.
+    </p>
+    <p class="explicacion" data-t="t5b.b12.texto4">
+      El vector de elegibilidad de esta política tiene dos partes, una por cada mitad de
+      \(\theta\). El libro lo plantea como ejercicio (13.4) y sale de derivar el logaritmo de la
+      densidad:
+    </p>
+    <p class="ecuacion" data-t="t5b.b12.ecuacion3">
+      \[ \nabla\ln\pi(a\mid s,\theta_m) = \frac{1}{\sigma(s,\theta)^2}\big(a - m(s,\theta)\big)\,x_m(s),
+         \qquad
+         \nabla\ln\pi(a\mid s,\theta_\sigma) = \left(\frac{\big(a-m(s,\theta)\big)^2}{\sigma(s,\theta)^2} - 1\right)x_\sigma(s) \]
+    </p>
+    <div class="aviso" data-t="t5b.b12.aviso2">
+      Este bloque <strong>no lleva módulo</strong>, y por una razón que se puede comprobar: <strong>en el libro no
+      hay ningún experimento de acciones continuas</strong>. La §13.7 es puramente formal —no hay
+      entorno, ni curva de aprendizaje, ni ejercicio numérico—, y su única ilustración es una
+      figura de cuatro densidades normales <strong>adaptada de Wikipedia</strong>, según reconoce el propio
+      libro en sus notas. Reproducir una gráfica de densidades gaussianas no respondería a
+      ninguna pregunta que la diapositiva deje abierta.
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- B13 · cierre: qué queda fuera de este tema                        -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="b13">
+    <header>
+      <h2 data-t="t5b.b13.h2">Qué queda fuera, y dónde está</h2>
+      <p class="fuente" data-t="t5b.b13.fuente">Alcance de <code>5_Tema_5_2#slide-1</code> a <code>#slide-20</code> · Sutton &amp; Barto, §13.6 y notas bibliográficas del capítulo 13, p. 360</p>
+    </header>
+    <p class="explicacion" data-t="t5b.b13.texto">
+      Cuatro cosas que rozan este tema y no entran, para que sepas que existen y no las busques
+      aquí. <strong>El caso continuado</strong>: el libro dedica su §13.6 a tareas sin episodios, donde el
+      rendimiento deja de ser el valor del estado inicial y pasa a ser la <strong>tasa de recompensa
+      media</strong> \(r(\pi)\); el teorema del gradiente sigue siendo cierto, con constante de
+      proporcionalidad 1, y ahí sí es una igualdad. Ninguna de las dos barajas lo toca.
+      <strong>Gradiente de política fuera de política</strong>: existe en la literatura y el libro solo lo
+      cita en sus notas. <strong>Gradiente natural</strong>: igual. Y <strong>la demostración del teorema</strong>, que
+      está en el recuadro de la p. 347 del libro y que aquí se comprueba con números en vez de
+      reproducirse.
+    </p>
+    <p class="explicacion" data-t="t5b.b13.texto2">
+      Y una última: la baraja de clase continúa, después de esto, con <strong>AlphaGo</strong> como ejemplo
+      de gradiente de política combinado con planificación. <strong>Ese bloque será un contenido
+      aparte</strong> y no está en esta página.
+    </p>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A5 · ecuaciones clave                                             -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="ecuaciones">
+    <h2 data-t="t5b.ecuaciones.h2">Ecuaciones clave del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.ecuaciones.cab">
+            <th>Ecuación</th><th>Qué dice</th><th>Dónde se usa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.ecuaciones.f1">
+            <td>\(\theta_{t+1} = \theta_t + \alpha\,\widehat{\nabla J(\theta_t)}\)</td>
+            <td>Ascenso de gradiente sobre el rendimiento: se <strong>suma</strong> y se <strong>maximiza</strong></td>
+            <td>B1, todos los módulos</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f2">
+            <td>\(\pi(a\mid s,\theta) \doteq \dfrac{e^{h(s,a,\theta)}}{\sum_{a'}e^{h(s,a',\theta)}}\)</td>
+            <td>Preferencias convertidas en distribución; solo importan las diferencias</td>
+            <td>B3, módulos 1 a 6</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f3">
+            <td>\(h(s,a,\theta) = \theta^\top x(s,a)\)</td>
+            <td>El caso lineal: la preferencia es un producto escalar</td>
+            <td>B3, todos los módulos</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f4">
+            <td>\(J(\theta) \doteq v_{\pi_\theta}(s_0)\)</td>
+            <td>El rendimiento episódico es el valor verdadero del estado inicial</td>
+            <td>B5, módulos 1, 2, 6</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f5">
+            <td>\(\nabla J(\theta) \propto \sum_s\mu(s)\sum_a q_\pi(s,a)\nabla\pi(a\mid s,\theta)\)</td>
+            <td>El gradiente <strong>no exige derivar \(\mu\)</strong>; la constante es la longitud media del episodio</td>
+            <td>B6, módulo 2</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f6">
+            <td>\(\mu(s) = \eta(s)/\sum_{s'}\eta(s')\)</td>
+            <td>La distribución dentro de política sale de contar visitas</td>
+            <td>B6, módulo 2</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f7">
+            <td>\(\theta_{t+1} \doteq \theta_t + \alpha\,G_t\,\dfrac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}\)</td>
+            <td>REINFORCE: retorno por vector de elegibilidad</td>
+            <td>B7, módulos 3, 4, 6</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f8">
+            <td>\(\nabla\ln\pi(a\mid s,\theta) = x(s,a) - \sum_{a'}\pi(a'\mid s,\theta)x(s,a')\)</td>
+            <td>El vector de elegibilidad de la softmax lineal</td>
+            <td>B7, módulos 2 a 6</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f9">
+            <td>\(\sum_a b(s)\nabla\pi(a\mid s,\theta) = b(s)\nabla 1 = \mathbf 0\)</td>
+            <td>Por qué una línea base que no depende de \(a\) no sesga</td>
+            <td>B8, módulo 4</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f10">
+            <td>\(\theta_{t+1}\doteq\theta_t+\alpha\big(G_t - b(S_t)\big)\dfrac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}\)</td>
+            <td>REINFORCE con línea base: misma esperanza, menos varianza</td>
+            <td>B8, módulo 4</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f11">
+            <td>\(\delta_t = R_{t+1} + \gamma\,\hat v(S_{t+1},w) - \hat v(S_t,w)\)</td>
+            <td>El error TD, que es lo que el crítico manda al actor</td>
+            <td>B9, módulo 5</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f12">
+            <td>\(\theta_{t+1}\doteq\theta_t+\alpha\,\delta_t\,\dfrac{\nabla\pi(A_t\mid S_t,\theta_t)}{\pi(A_t\mid S_t,\theta_t)}\)</td>
+            <td>Actor-crítico a un paso</td>
+            <td>B9, módulo 5</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f13">
+            <td>\(A(s,a) \doteq q_\pi(s,a) - v_\pi(s)\)</td>
+            <td>Cuánto mejora ejecutar \(a\) frente a seguir la política actual</td>
+            <td>B9, módulo 5</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f14">
+            <td>\(J(\theta) - \eta_{KL}D_{KL}\)</td>
+            <td>Penalizar cuánto se mueve la política, no cuánto valen los pesos</td>
+            <td>B11, módulo 6</td>
+          </tr>
+          <tr data-t="t5b.ecuaciones.f15">
+            <td>\(\pi(a\mid s,\theta)\doteq\frac{1}{\sigma\sqrt{2\pi}}e^{-(a-m)^2/2\sigma^2}\)</td>
+            <td>Con acciones continuas se aprenden los estadísticos, no las probabilidades</td>
+            <td>B12</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A6 · errores frecuentes                                           -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="errores">
+    <h2 data-t="t5b.errores.h2">Errores frecuentes</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.errores.cab">
+            <th>Se dice</th><th>Y en realidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.errores.f1">
+            <td>«REINFORCE con línea base ya es actor-crítico, porque aprende una función de valor»</td>
+            <td><strong>No.</strong> El criterio es el <em>bootstrap</em>, no aprender un valor. En REINFORCE con línea base el valor se usa <strong>solo como referencia</strong> del estado que se está actualizando, y por eso ese método <strong>no introduce sesgo</strong>. S&amp;B §13.5, p. 353</td>
+          </tr>
+          <tr data-t="t5b.errores.f2">
+            <td>«La línea base sesga el gradiente»</td>
+            <td><strong>No, mientras no dependa de la acción.</strong> Deja el valor esperado de la actualización <strong>igual</strong> y cambia <strong>la varianza</strong>. Lo que sí rompe la garantía es que dependa de \(a\). S&amp;B §13.4, p. 351</td>
+          </tr>
+          <tr data-t="t5b.errores.f3">
+            <td>«REINFORCE es un método en línea»</td>
+            <td><strong>No.</strong> Es Monte Carlo: usa el retorno completo, así que <strong>todas</strong> sus actualizaciones se hacen en retrospectiva, al terminar el episodio. El que sí es en línea es el actor-crítico a un paso. S&amp;B §13.3, p. 349 y §13.5, p. 353</td>
+          </tr>
+          <tr data-t="t5b.errores.f4">
+            <td>«El \(\gamma^t\) del pseudocódigo sobra»</td>
+            <td><strong>No.</strong> Está porque el texto trabaja sin descuento y los recuadros dan la versión general. Con \(\gamma=1\) desaparece; con \(\gamma&lt;1\), <strong>omitirlo da otro algoritmo</strong>. S&amp;B p. 350</td>
+          </tr>
+          <tr data-t="t5b.errores.f5">
+            <td>«El teorema del gradiente evita muestrear estados»</td>
+            <td><strong>No.</strong> Evita <strong>derivar</strong> la distribución de estados. \(\mu(s)\) sigue en la fórmula, y el paso siguiente es precisamente muestrear estados siguiendo \(\pi\) — que es lo que hace estos métodos <strong>dentro de política</strong>. S&amp;B §13.2, p. 346 y §13.3, p. 348</td>
+          </tr>
+          <tr data-t="t5b.errores.f6">
+            <td>«En un MDP finito la política óptima puede ser estocástica»</td>
+            <td><strong>No</strong> por esto. En el pasillo corto el óptimo es estocástico <strong>porque las características no distinguen los estados</strong>: el libro habla siempre de «la mejor política <strong>aproximada</strong>». Con estados distinguibles, el óptimo del pasillo es determinista y vale \(-3\). S&amp;B §13.1, p. 345, y el módulo 1</td>
+          </tr>
+          <tr data-t="t5b.errores.f7">
+            <td>«\(\delta\) es siempre el error TD»</td>
+            <td><strong>No.</strong> En REINFORCE con línea base \(\delta = G - \hat v(S_t,w)\) es un error <strong>Monte Carlo</strong>; en actor-crítico es el error <strong>TD</strong>. Mismo símbolo, dos objetos, y la diferencia entre ellos <strong>es</strong> el tema de §13.5</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A7 · cierre: qué hay que llevarse                                 -->
+  <!-- ================================================================= -->
+  <section class="modulo solo-estudio" id="cierre">
+    <h2 data-t="t5b.cierre.h2">Qué hay que llevarse</h2>
+    <ul class="explicacion">
+      <li data-t="t5b.cierre.v1">Que <strong>la política óptima puede ser estocástica</strong>, y por una razón concreta: cuando las
+        características no distinguen los estados. Lo has visto en dos entornos donde
+        <strong>ninguna</strong> política determinista termina, y con la pérdida medida: \(-11{,}66\) frente
+        a \(-3\) en el pasillo, \(-4\) frente a \(-1\) en la cruz.</li>
+      <li data-t="t5b.cierre.v2">Que el teorema del gradiente sirve <strong>porque en su lado derecho no está \(\nabla\mu\)</strong>,
+        no porque evite muestrear estados. Y que el \(\propto\) esconde un número: <strong>la longitud
+        media del episodio</strong>, que has visto valer 12 y cerrar la igualdad.</li>
+      <li data-t="t5b.cierre.v3">Que en la regla de REINFORCE el retorno decide <strong>cuánto</strong> y el vector de elegibilidad
+        decide <strong>hacia dónde</strong>, y que se divide por \(\pi(A_t\mid S_t,\theta)\) para que las
+        acciones frecuentes no ganen por ser frecuentes.</li>
+      <li data-t="t5b.cierre.v4">Que <strong>el estimador de REINFORCE es correcto y aun así aprende despacio</strong>: has visto la
+        misma tanda con 1, 10 y 100 ejecuciones y la dispersión que se esconde detrás de la
+        curva media.</li>
+      <li data-t="t5b.cierre.v5">Que una línea base <strong>no cambia la dirección esperada del gradiente mientras no dependa
+        de la acción</strong>, y que si depende, sí la cambia: has visto la distribución desplazarse.</li>
+      <li data-t="t5b.cierre.v6">Que el mismo número, usado como <strong>línea base</strong>, es inofensivo, y usado como
+        <strong>crítico</strong> puede llevarse por delante la política: el sesgo <strong>solo entra por el
+        <em>bootstrap</em></strong>, y depende de la calidad del crítico.</li>
+      <li data-t="t5b.cierre.v7">Que «un mal movimiento de la política destroza el entrenamiento» <strong>no es una metáfora</strong>:
+        la política decide con qué experiencia se entrena, y has visto el bucle cerrarse y
+        abrirse otra vez al poner un límite al salto.</li>
+    </ul>
+  </section>
+
+  <!-- ================================================================= -->
+  <!-- A8 · glosario de notación                                         -->
+  <!-- ================================================================= -->
+  <section class="modulo" id="glosario">
+    <h2 data-t="t5b.glosario.h2">Glosario de notación del tema</h2>
+    <div class="tabla-scroll">
+      <table class="datos texto">
+        <thead>
+          <tr data-t="t5b.glosario.cab">
+            <th>Símbolo</th><th>Significado</th><th>Dónde</th><th>Nota</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-t="t5b.glosario.f1">
+            <td>\(\theta\)</td>
+            <td>vector de parámetros de <strong>la política</strong></td>
+            <td>todo el tema</td>
+            <td>De <code>notacion.md</code>. En el tema anterior los pesos de DQN se escribieron \(w\) precisamente para dejar \(\theta\) libre aquí</td>
+          </tr>
+          <tr data-t="t5b.glosario.f2">
+            <td>\(d'\)</td>
+            <td>número de componentes de \(\theta\)</td>
+            <td>B3, módulos 1-6</td>
+            <td>Del libro (p. 21). <code>notacion.md</code> no lo tiene. Pasillo corto: \(d'=2\); rejilla en cruz: \(d'=4\)</td>
+          </tr>
+          <tr data-t="t5b.glosario.f3">
+            <td>\(w\)</td>
+            <td>pesos del <strong>crítico</strong> o de la <strong>línea base</strong></td>
+            <td>B8, B9, módulos 4, 5</td>
+            <td>De <code>notacion.md</code>, que lo escribe \(w\) a secas. Las barajas mezclan \(w\) y \(\mathbf w\) sin criterio; aquí <strong>siempre sin negrita</strong></td>
+          </tr>
+          <tr data-t="t5b.glosario.f4">
+            <td>\(d\)</td>
+            <td>número de componentes de \(w\)</td>
+            <td>B8, B9, módulo 5</td>
+            <td>Con \(\hat v(s,w)=w\), \(d=1\); con un peso por estado en el pasillo, \(d=3\)</td>
+          </tr>
+          <tr data-t="t5b.glosario.f5">
+            <td>\(h(s,a,\theta)\)</td>
+            <td>preferencia de la acción \(a\) en el estado \(s\)</td>
+            <td>B3</td>
+            <td>El \(H_t(a)\) del Tema 1 es esto mismo sin estado</td>
+          </tr>
+          <tr data-t="t5b.glosario.f6">
+            <td><span style="white-space:nowrap">\(\pi(a\mid s,\theta)\)</span></td>
+            <td>política parametrizada</td>
+            <td>todo el tema</td>
+            <td></td>
+          </tr>
+          <tr data-t="t5b.glosario.f7">
+            <td>\(J(\theta)\)</td>
+            <td>rendimiento de la política; <strong>se maximiza</strong></td>
+            <td>B5, módulos 1, 2, 6</td>
+            <td>De <code>notacion.md</code>. En el caso episódico, \(J(\theta)\doteq v_{\pi_\theta}(s_0)\)</td>
+          </tr>
+          <tr data-t="t5b.glosario.f8">
+            <td>\(\alpha^\theta\), \(\alpha^{w}\)</td>
+            <td>los dos pasos, <strong>independientes</strong></td>
+            <td>B8, B9, módulos 4, 5, 6</td>
+            <td><code>notacion.md</code> solo tiene \(\alpha\). ⚠ <code>5_Tema_5_2#slide-17</code> usa <strong>\(\beta\)</strong> para el paso del crítico: es notación importada de otra presentación y <strong>aquí no se usa</strong></td>
+          </tr>
+          <tr data-t="t5b.glosario.f9">
+            <td>\(\mu(s)\)</td>
+            <td><strong>distribución dentro de política</strong>: fracción del tiempo que se pasa en \(s\) siguiendo \(\pi\)</td>
+            <td>B6, módulo 2</td>
+            <td>No está en <code>notacion.md</code>. Es la de S&amp;B §9.2 y la misma que usa la página del tema anterior</td>
+          </tr>
+          <tr data-t="t5b.glosario.f10">
+            <td>\(\eta(s)\)</td>
+            <td>número esperado de pasos en \(s\) por episodio</td>
+            <td>B6, módulo 2</td>
+            <td>No está en <code>notacion.md</code>. \(\mu(s)=\eta(s)/\sum_{s'}\eta(s')\)</td>
+          </tr>
+          <tr data-t="t5b.glosario.f20">
+            <td>\(h(s)\)</td>
+            <td>probabilidad de que el episodio <strong>empiece</strong> en \(s\)</td>
+            <td>B6, módulo 2</td>
+            <td>⚠ <strong>Colisión con \(h(s,a,\theta)\)</strong>, la preferencia de acción, que es otra cosa y aparece en B3 y en las ecuaciones clave. <strong>No se renombra ninguna de las dos</strong>: el libro las llama así (§9.2 y §13.1), y cambiarlas alejaría la página del libro. Se distinguen por el número de argumentos, y aquí se declaran</td>
+          </tr>
+          <tr data-t="t5b.glosario.f11">
+            <td>\(m(s,\theta)\)</td>
+            <td><strong>media</strong> de la política gaussiana</td>
+            <td>B12</td>
+            <td>⚠ <strong>El libro la llama \(\mu(s,\theta)\)</strong>, y en el mismo capítulo \(\mu(s)\) es la distribución dentro de política. Aquí se renombra para que \(\mu\) signifique una sola cosa</td>
+          </tr>
+          <tr data-t="t5b.glosario.f12">
+            <td>\(\eta_{KL}\)</td>
+            <td>peso de la regularización por divergencia KL</td>
+            <td>B11, módulo 6</td>
+            <td>⚠ <code>5_Tema_5_2#slide-19</code> lo escribe <strong>\(\eta\)</strong> a secas, que choca con \(\eta(s)\). El subíndice es de esta página</td>
+          </tr>
+          <tr data-t="t5b.glosario.f13">
+            <td>\(b(s)\)</td>
+            <td>línea base</td>
+            <td>B8, módulo 4</td>
+            <td>\(b\) también es el índice mudo de la suma sobre acciones en el libro; <strong>aquí ese índice se escribe \(a'\)</strong></td>
+          </tr>
+          <tr data-t="t5b.glosario.f14">
+            <td>\(\delta_t\)</td>
+            <td>error TD</td>
+            <td>B9, módulo 5</td>
+            <td>De <code>notacion.md</code>. ⚠ En el recuadro de REINFORCE con línea base, \(\delta\) es un error <strong>Monte Carlo</strong>: no es lo mismo</td>
+          </tr>
+          <tr data-t="t5b.glosario.f15">
+            <td>\(A(s,a)\)</td>
+            <td>función de ventaja, \(\doteq q_\pi(s,a)-v_\pi(s)\)</td>
+            <td>B9, módulo 5</td>
+            <td>De <code>notacion.md</code> y del material de Lucía. ⚠ <strong>Sutton &amp; Barto no la define</strong>: solo nombra «advantage actor–critic» en la p. 360</td>
+          </tr>
+          <tr data-t="t5b.glosario.f16">
+            <td>\(I\)</td>
+            <td>acumulador de \(\gamma^t\) en el actor-crítico</td>
+            <td>B9, módulo 5</td>
+            <td><strong>No es la identidad.</strong> Con \(\gamma=1\) vale siempre 1</td>
+          </tr>
+          <tr data-t="t5b.glosario.f17">
+            <td>\(x(s,a)\)</td>
+            <td>vector de características del par estado-acción</td>
+            <td>B3, módulos 1-6</td>
+            <td>De <code>notacion.md</code>. En el pasillo, \([1,0]^\top\) y \([0,1]^\top\) <strong>para los tres estados</strong></td>
+          </tr>
+          <tr data-t="t5b.glosario.f18">
+            <td>\(p\)</td>
+            <td><strong>en esta página</strong>, \(\pi(\text{derecha}\mid s,\theta)\) o \(\pi(\text{este}\mid s,\theta)\)</td>
+            <td>módulos 1, 2, 5, 6</td>
+            <td>⚠ No confundir con \(p(s',r\mid s,a)\), la dinámica del MDP: <strong>la dinámica no aparece en ninguna fórmula de esta página</strong></td>
+          </tr>
+          <tr data-t="t5b.glosario.f19">
+            <td>\(\lambda^\theta\), \(\lambda^{w}\)</td>
+            <td>los dos parámetros de traza, independientes</td>
+            <td>B10</td>
+            <td>Solo se mencionan; las trazas se ven en el Tema 4 (cont.)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <p>
+      <a class="siguiente" href="tema5.html" data-t="t5b.pie.anterior">← Tema 5 · Aproximación de la función de valor</a>
+    </p>
+    <p data-t="t5b.pie.1">
+      Material de apoyo de <strong>Aprendizaje por Refuerzo</strong> (DEAC-IMAT-411),
+      Grado en Ingeniería Matemática e Inteligencia Artificial · Universidad Pontificia
+      Comillas · ICAI. Basado en Sutton &amp; Barto, <em>Reinforcement Learning: An
+      Introduction</em>, 2.ª ed., capítulo 13.
+    </p>
+    <p class="suave" data-t="t5b.pie.2">
+      Todas las simulaciones son reproducibles: con la misma semilla se obtiene siempre
+      el mismo resultado. Los valores exactos —los módulos 1 y 2 enteros, y los paneles
+      exactos de los módulos 4, 5 y 6— se calculan en forma cerrada y no dependen de ella.
+    </p>
+  </footer>
+
+</main>
+
+<script type="module" src="assets/tema5b.js"></script>
+</body>
+</html>
