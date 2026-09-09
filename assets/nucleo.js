@@ -276,6 +276,23 @@ function lienzo(ancho, alto, { escalable = false } = {}) {
  *
  * LAS TRES SON ADITIVAS: sin ellas, la función se comporta exactamente igual
  * que antes (temas 1 a 4).
+ *
+ * ⚠ `yMin`/`yMax` SON UNA EXTENSIÓN MÍNIMA DEL RANGO, NO UN RECORTE. Si el
+ * dato no cabe, el eje se estira para que quepa. Antes eran un marco duro y la
+ * serie se salía por debajo, pintando encima de las etiquetas del eje x y
+ * dejando invisible la curva que el módulo quería enseñar (Tema 5 cont., el
+ * módulo 3 con tope de 10 000 pasos dibujaba UNA de sus tres curvas). No se
+ * recorta el dato a propósito: aplanar una curva contra el borde es peor que
+ * cambiarle la escala, porque el alumno deja de ver que se hunde.
+ *
+ * `ventanaY: true` recupera el marco duro, y es para el único caso legítimo:
+ * una función SIN MÍNIMO —una asíntota— donde estirar no significa nada,
+ * porque el suelo lo fijaría el punto de muestreo más extremo. Ahí el rango es
+ * una ventana deliberada, y lo que hace falta es que la curva se corte al
+ * llegar al borde. Que es lo que hace el recorte de abajo.
+ *
+ * TODAS LAS SERIES SE RECORTAN AL RECTÁNGULO DE DIBUJO, en los dos modos: un
+ * trazo no puede pintar sobre los ejes ni sobre sus rótulos.
  */
 export function graficaLineas(series, opciones = {}) {
   const {
@@ -291,6 +308,7 @@ export function graficaLineas(series, opciones = {}) {
     lineaCero = false,
     anotaciones = [],
     anotacionesY = [],
+    ventanaY = false,
     mensaje = t("grafica.sinDatos", "Sin datos todavía."),
   } = opciones;
   const logY = escalaY === "log";
@@ -332,8 +350,13 @@ export function graficaLineas(series, opciones = {}) {
       }
     }
   }
+  /* El rango pedido es un MÍNIMO, no un recorte: si el dato no cabe, el eje se
+     estira. Con `ventanaY` se respeta tal cual, que es lo que necesita una
+     asíntota (véase la cabecera). */
   if (yMin === undefined) yMin = yMinAuto;
+  else if (!ventanaY && Number.isFinite(yMinAuto)) yMin = Math.min(yMin, yMinAuto);
   if (yMax === undefined) yMax = yMaxAuto;
+  else if (!ventanaY && Number.isFinite(yMaxAuto)) yMax = Math.max(yMax, yMaxAuto);
 
   if (logY) {
     /* Sin ningún dato positivo no hay rango logarítmico posible: se cae a una
@@ -365,6 +388,17 @@ export function graficaLineas(series, opciones = {}) {
   const ty = (y) => (logY
     ? m.s + h - ((Math.log10(y) - loY) / (hiY - loY || 1)) * h
     : m.s + h - ((y - yMin) / (yMax - yMin)) * h);
+
+  /* Recorte al rectángulo de dibujo. Con el rango estirado casi nunca hace
+     nada; con `ventanaY` es lo que corta las ramas de una asíntota justo en el
+     borde, en vez de dejarlas pintar sobre las etiquetas del eje x. El id lleva
+     un sufijo aleatorio porque en una página hay muchas gráficas. */
+  const idRecorte = `rec-${Math.random().toString(36).slice(2, 9)}`;
+  const defs = el("defs");
+  const recorte = el("clipPath", { id: idRecorte });
+  recorte.appendChild(el("rect", { x: m.i, y: m.s, width: w, height: h }));
+  defs.appendChild(recorte);
+  svg.appendChild(defs);
 
   /* --- rejilla y eje Y --- */
   const marcasY = logY
@@ -404,8 +438,18 @@ export function graficaLineas(series, opciones = {}) {
       x1: x, x2: x, y1: m.s, y2: m.s + h,
       stroke: ejeColor, "stroke-width": 0.5, opacity: 0.18,
     }));
+    /* Un rótulo centrado sobre la última marca se sale por la derecha si es
+       largo: el margen es de 14 px y «≥ 748» mide 30. Solo cuando de verdad
+       no cabe se ancla al borde; el resto de las gráficas del sitio no se
+       enteran. La anchura se estima a 6,2 px por carácter, que es lo que mide
+       la monoespaciada de 11 px. */
+    const medio = String(etiqueta).length * 3.1;
+    const seSaleDcha = x + medio > ancho;
+    const seSaleIzda = x - medio < 0;
     svg.appendChild(el("text", {
-      x, y: m.s + h + 16, "text-anchor": "middle",
+      x: seSaleDcha ? ancho - 2 : (seSaleIzda ? 2 : x),
+      y: m.s + h + 16,
+      "text-anchor": seSaleDcha ? "end" : (seSaleIzda ? "start" : "middle"),
       fill: textoColor, "font-size": 11, "font-family": "monospace",
     }, etiqueta));
   }
@@ -417,7 +461,13 @@ export function graficaLineas(series, opciones = {}) {
     }));
   }
 
-  /* --- anotaciones verticales (p. ej. "aquí cambia el entorno") --- */
+  /* --- anotaciones verticales (p. ej. "aquí cambia el entorno") ---
+     Los rótulos se ESCALONAN cuando dos caen demasiado cerca. Antes se
+     escribían todos a la misma altura y se pisaban: la media del módulo 4 del
+     Tema 5 (cont.) imprimía «75,7» y «75,1» uno encima de otro —y eran el
+     punto entero de la vista—, y el deslizador del módulo 1 tachaba la marca
+     de ε-greedy en un tercio de su recorrido. */
+  const ocupados = [];
   for (const a of anotaciones) {
     const x = tx(a.x);
     svg.appendChild(el("line", {
@@ -427,8 +477,16 @@ export function graficaLineas(series, opciones = {}) {
     // Cerca del borde derecho el rótulo se sale del lienzo: se ancla al otro
     // lado de su línea. Lo destapó la anotación «k = 173» del Tema 3.
     const alFinal = x > m.i + w * 0.62;
+    const ancho1 = String(a.texto).length * 6;
+    const izda = alFinal ? x - 5 - ancho1 : x + 5;
+    const dcha = izda + ancho1;
+    let piso = 0;
+    while (ocupados.some((o) => o.piso === piso && o.dcha > izda - 6 && o.izda < dcha + 6)) {
+      piso += 1;
+    }
+    ocupados.push({ piso, izda, dcha });
     svg.appendChild(el("text", {
-      x: alFinal ? x - 5 : x + 5, y: m.s + 12,
+      x: alFinal ? x - 5 : x + 5, y: m.s + 12 + piso * 13,
       "text-anchor": alFinal ? "end" : "start",
       fill: tono("--acento"), "font-size": 11, "font-weight": 600,
     }, a.texto));
@@ -446,16 +504,28 @@ export function graficaLineas(series, opciones = {}) {
     }));
     if (a.texto) {
       /* Rótulo pegado al borde derecho y por encima de su línea, salvo que la
-         línea esté tan arriba que el texto se saldría del lienzo. */
-      const arriba = y - m.s > 14;
+         línea esté tan arriba que el texto se saldría del lienzo. Y salvo que
+         ahí ya haya un rótulo de anotación vertical: entonces se pasa debajo
+         de su línea. En el módulo 1 del Tema 5 (cont.) «óptimo dentro de la
+         clase» y «ε-greedy derecha» salían pegados el uno al otro. */
+      const ancho2 = String(a.texto).length * 6;
+      const izda2 = m.i + w - 4 - ancho2;
+      const choca = (yTexto) => ocupados.some((o) => o.dcha > izda2 - 6
+        && o.izda < m.i + w - 4 + 6
+        && Math.abs((m.s + 12 + o.piso * 13) - yTexto) < 12);
+      let yTexto = y - m.s > 14 ? y - 5 : y + 13;
+      if (choca(yTexto)) yTexto = y + 13;
       svg.appendChild(el("text", {
-        x: m.i + w - 4, y: arriba ? y - 5 : y + 13, "text-anchor": "end",
+        x: m.i + w - 4, y: yTexto, "text-anchor": "end",
         fill: color, "font-size": 11, "font-weight": 600,
       }, a.texto));
     }
   }
 
-  /* --- series (submuestreadas si hay muchos puntos) --- */
+  /* --- series (submuestreadas si hay muchos puntos) ---
+     Todas van dentro de un grupo recortado al rectángulo de dibujo. */
+  const zonaSeries = el("g", { "clip-path": `url(#${idRecorte})` });
+  svg.appendChild(zonaSeries);
   const dibujable = (v) => Number.isFinite(v) && !(logY && v <= 0);
   visibles.forEach((s) => {
     const n = s.y.length;
@@ -469,7 +539,7 @@ export function graficaLineas(series, opciones = {}) {
     if ((ultimo % salto !== 0) && dibujable(s.y[ultimo])) {
       d += `L${tx(xDe(s, ultimo)).toFixed(2)} ${ty(s.y[ultimo]).toFixed(2)}`;
     }
-    svg.appendChild(el("path", {
+    zonaSeries.appendChild(el("path", {
       d, fill: "none", stroke: s.color, "stroke-width": s.grosor ?? 1.9,
       "stroke-linejoin": "round", "stroke-linecap": "round",
       "stroke-dasharray": s.discontinua ? "5 4" : null,
@@ -477,22 +547,26 @@ export function graficaLineas(series, opciones = {}) {
     if (s.puntos) {
       for (let i = 0; i < n; i++) {
         if (!dibujable(s.y[i])) continue;
-        svg.appendChild(el("circle", {
+        zonaSeries.appendChild(el("circle", {
           cx: tx(xDe(s, i)), cy: ty(s.y[i]), r: 3, fill: s.color,
         }));
       }
     }
   });
 
-  /* --- rótulos de eje --- */
+  /* --- rótulos de eje ---
+     Por `textoSvg` y no por `el("text")`: así admiten <sub>…</sub>, que es la
+     única forma de escribir v_π(s₀) dentro de un SVG —LaTeX no se pinta y el
+     guion bajo en crudo rompe la notación del curso—. Sin <sub> el resultado
+     es idéntico al de antes. */
   if (ejeX) {
-    svg.appendChild(el("text", {
+    svg.appendChild(textoSvg({
       x: m.i + w / 2, y: alto - 6, "text-anchor": "middle",
       fill: textoColor, "font-size": 11.5, "font-weight": 600,
     }, ejeX));
   }
   if (ejeY) {
-    svg.appendChild(el("text", {
+    svg.appendChild(textoSvg({
       x: 12, y: m.s + h / 2, "text-anchor": "middle",
       fill: textoColor, "font-size": 11.5, "font-weight": 600,
       transform: `rotate(-90 12 ${m.s + h / 2})`,
