@@ -40,7 +40,10 @@ function grupoRadio(contenedor, opciones, valorInicial, alElegir) {
   const botones = opciones.map((op) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = op.texto;
+    /* `html` es para las etiquetas con subíndice (v_π, q_π): el resto va como
+       texto plano, que es lo seguro por omisión. */
+    if (op.html) b.innerHTML = op.texto;
+    else b.textContent = op.texto;
     if (op.titulo) b.title = op.titulo;
     b.addEventListener("click", () => {
       marcar(op.valor);
@@ -451,8 +454,8 @@ function moduloValores() {
   let exacto = false;
 
   grupoRadio($("#m3-vista"), [
-    { texto: "v(s)", valor: "v" },
-    { texto: t("t2.m3.vista.q", "q(s,a)"), valor: "q", titulo: "Los cuatro valores de acción, en cuñas" },
+    { texto: "v<sub>π</sub>(s)", valor: "v", html: true },
+    { texto: t("t2.m3.vista.q", "q<sub>π</sub>(s,a)"), valor: "q", html: true, titulo: "Los cuatro valores de acción, en cuñas" },
   ], "v", (valor) => { vista = valor; dibujar(); });
 
   $("#m3-gamma").addEventListener("input", (ev) => {
@@ -780,7 +783,7 @@ function moduloBackup() {
       t("t2.m4.leyenda",
         `Azul: viento (celdas 3 y 4). Verde: viento (celdas 10 y 14). Rojo: el remolino
          (estado 8), donde <em>entrar</em> cuesta −5. T solo se alcanza desde el 16 yendo al este.`) +
-      `<br><strong>${t("t2.m4.paraActualizar", "Para actualizar v({e}) hacen falta los valores de:", { e: etiqueta })}</strong>
+      `<br><strong>${t("t2.m4.paraActualizar", "Para actualizar v<sub>π</sub>({e}) hacen falta los valores de:", { e: etiqueta })}</strong>
        <span class="mono">${sucesores.join(", ")}</span>.`;
   }
 
@@ -919,7 +922,7 @@ function moduloOptimalidad() {
       </tr>`);
     }
     zonaTabla.innerHTML = `
-      <thead><tr><th>s</th><th>v(s)</th><th>${t("t2.m5.thGreedy", "acción(es) greedy")}</th></tr></thead>
+      <thead><tr><th>s</th><th>v<sub>π</sub>(s)</th><th>${t("t2.m5.thGreedy", "acción(es) greedy")}</th></tr></thead>
       <tbody>${filas.join("")}</tbody>`;
     renderizarMatematicas($("#m5-nota"));
   }

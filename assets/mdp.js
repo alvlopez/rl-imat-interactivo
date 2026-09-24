@@ -482,7 +482,7 @@ export function ramasBackup(mdp, s) {
   }));
 }
 
-/** ¿De qué estados necesito el valor para actualizar v(s)? (pregunta típica de examen) */
+/** ¿De qué estados necesito el valor para actualizar V(s)? (pregunta típica de examen) */
 export function estadosSucesores(mdp, s) {
   const conjunto = new Set();
   for (let a = 0; a < mdp.nAcciones; a++) {

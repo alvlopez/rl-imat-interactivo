@@ -1403,7 +1403,7 @@ function modulo3() {
   const notaDivergencia = aviso(zonaNotas, t("t5.m3.notaDivergencia",
     "Con este \\(\\alpha\\), alguna ejecución se ha ido: los pesos han superado \\(10^{6}\\) y se ha "
     + "cortado. Esto <strong>no</strong> es la divergencia del módulo 4 —aquí el entrenamiento es "
-    + "dentro de política y el problema es solo que el paso es demasiado grande—, es la inestabilidad "
+    + "on-policy y el problema es solo que el paso es demasiado grande—, es la inestabilidad "
     + "numérica de siempre del descenso del gradiente. Baja \\(\\alpha\\)."));
   const notaSingular = aviso(zonaNotas, t("t5.m3.notaSingular",
     "La matriz \\(A\\) ha salido casi singular y se ha regularizado con \\(\\varepsilon I\\), como "
@@ -1704,8 +1704,8 @@ function modulo4() {
     ALFAS_M4.map((a) => ({ valor: a, texto: num(a, 2) })), alpha,
     (v) => { alpha = v; dibujar(); });
   const mandoRegimen = grupoRadio(panel, t("t5.m4.regimenLabel", "Régimen de actualización"), [
-    { valor: "off", texto: t("t5.m4.regimenOff", "fuera de política") },
-    { valor: "on", texto: t("t5.m4.regimenOn", "dentro de política") },
+    { valor: "off", texto: t("t5.m4.regimenOff", "off-policy") },
+    { valor: "on", texto: t("t5.m4.regimenOn", "on-policy") },
   ], regimen, (v) => { regimen = v; dibujar(); });
   botonControl(panel, t("t5.m4.reiniciar", "Valores por omisión"), () => {
     gamma = 0.99; alpha = 0.1; regimen = "off";
@@ -1755,33 +1755,33 @@ function modulo4() {
     + "\\(\\gamma=1\\) su módulo es <strong>menor que 1</strong>: el sistema se mantiene a raya. "
     + "<strong>Este cierre del ejemplo no está en el libro</strong>: lo añade este recurso para que "
     + "se vea el contraste, y es la aplicación directa del teorema de convergencia de TD(0) lineal "
-    + "dentro de política —de hecho, con esta distribución la matriz \\(A\\) vale "
+    + "on-policy —de hecho, con esta distribución la matriz \\(A\\) vale "
     + "\\((5-2\\gamma)/2 > 0\\) y \\(b = 0\\), luego el punto fijo TD es \\(w_{TD}=0\\), que es el "
     + "valor verdadero—."));
   const notaAlphaGrande = aviso(zonaTablaAlpha, t("t5.m4.notaAlphaGrande",
-    "Que dentro de política sea estable no es gratis: con un \\(\\alpha\\) suficientemente grande "
+    "Que on-policy sea estable no es gratis: con un \\(\\alpha\\) suficientemente grande "
     + "también se rompe. Pero eso es el paso demasiado grande de siempre, no la tríada: se arregla "
-    + "bajando \\(\\alpha\\), y la divergencia de fuera de política no."));
+    + "bajando \\(\\alpha\\), y la divergencia de off-policy no."));
   const notaDesborde = aviso(zonaTablaAlpha, t("t5.m4.notaDesborde",
     "Se ha parado el cálculo en \\(10^{12}\\): seguir no añade información. En el límite, \\(w\\) se "
     + "va a infinito."));
 
   parrafo(zonaTablaAlpha, "explicacion siempre", t("t5.m4.porQueOff",
     "La clave del ejemplo es que <strong>esa transición ocurre repetidamente sin que \\(w\\) se "
-    + "actualice en las demás transiciones</strong>. Fuera de política eso es posible: la política de "
+    + "actualice en las demás transiciones</strong>. Off-policy eso es posible: la política de "
     + "comportamiento puede elegir, en las otras transiciones, acciones que la política objetivo nunca "
     + "elegiría, y para ellas la razón de importancia es cero y no se actualiza nada. Dentro de "
     + "política, esa razón vale siempre uno. Como lo dice el libro: <strong>al final, al gaitero hay "
-    + "que pagarle</strong>. Dentro de política, la promesa de recompensa futura hay que cumplirla y el "
-    + "sistema se mantiene a raya; fuera de política se puede prometer y luego, tras tomar una acción "
+    + "que pagarle</strong>. On-policy, la promesa de recompensa futura hay que cumplirla y el "
+    + "sistema se mantiene a raya; off-policy se puede prometer y luego, tras tomar una acción "
     + "que la política objetivo nunca tomaría, olvidar y perdonar."));
 
   aviso(zonaTablaAlpha, t("t5.m4.panelA",
     "Y esto conecta con el punto fijo TD del módulo 3. La condición de estabilidad de TD(0) lineal es "
     + "que la matriz \\(A = \\mathbb E[x_t(x_t-\\gamma x_{t+1})^\\top]\\) sea definida positiva. Aquí "
-    + "es un solo número: fuera de política, actualizando solo la primera transición, "
+    + "es un solo número: off-policy, actualizando solo la primera transición, "
     + "\\(A = 1\\cdot(1-2\\gamma) = 1-2\\gamma\\), que es <strong>negativo</strong> en cuanto "
-    + "\\(\\gamma>0{,}5\\). Dentro de política, con las dos transiciones, \\(A = (5-2\\gamma)/2 > 0\\). "
+    + "\\(\\gamma>0{,}5\\). On-policy, con las dos transiciones, \\(A = (5-2\\gamma)/2 > 0\\). "
     + "<strong>El umbral 0,5 es exactamente el cambio de signo de \\(A\\).</strong>"));
 
   /* --- ficha de datos de Baird: texto y figura, no módulo --- */
@@ -1842,7 +1842,7 @@ function modulo4() {
     + "es cuestión de muestreo ni de asincronía</strong>: con actualizaciones de DP semi-gradiente "
     + "—barriendo todos los estados, sin nada de azar— el sistema sigue siendo inestable. Lo que lo "
     + "arregla es <strong>la distribución</strong>: cambiando solo la distribución de las "
-    + "actualizaciones de uniforme a la distribución dentro de política, la convergencia queda "
+    + "actualizaciones de uniforme a la distribución on-policy, la convergencia queda "
     + "garantizada con el error acotado por la cota del módulo 3."));
 
   /* --- Viz 1: SVG propio del fragmento --- */
@@ -2025,25 +2025,25 @@ function modulo4() {
         + "multiplica al error, y por eso cambia la pendiente.",
     },
     {
-      enunciado: "¿Qué es exactamente lo que cambia al pasar de fuera de política a dentro de "
+      enunciado: "¿Qué es exactamente lo que cambia al pasar de off-policy a dentro de "
         + "política en este ejemplo?",
       opciones: [
         "Que también se actualiza la transición de salida del segundo estado, cuya actualización "
         + "empuja \\(w\\) hacia abajo y compensa la primera.",
-        "Que el error TD deja de depender de \\(w\\), porque dentro de política el objetivo se "
+        "Que el error TD deja de depender de \\(w\\), porque on-policy el objetivo se "
         + "calcula con el valor verdadero en lugar de con la estimación.",
         "Que la razón de muestreo de importancia deja de ser 1 y pondera la actualización hacia "
         + "abajo.",
-        "Que el gradiente pasa de valer 1 a valer 2, porque dentro de política se recorre el segundo "
+        "Que el gradiente pasa de valer 1 a valer 2, porque on-policy se recorre el segundo "
         + "estado y su característica es \\(x=2\\).",
       ],
       correcta: 0,
-      explicacion: "La clave del ejemplo es que fuera de política esa transición se repite sin que "
-        + "\\(w\\) se actualice en las demás; dentro de política se recorre el episodio completo, y la "
+      explicacion: "La clave del ejemplo es que off-policy esa transición se repite sin que "
+        + "\\(w\\) se actualice en las demás; on-policy se recorre el episodio completo, y la "
         + "transición al terminal aporta \\(\\Delta w = -4\\alpha w\\), que es lo que mantiene el "
         + "sistema a raya. El objetivo sigue siendo una estimación en los dos casos —eso es el "
         + "<em>bootstrapping</em>, y no cambia—. La razón de importancia va al revés: dentro de "
-        + "política vale siempre uno, y es fuera de política donde vale cero en las transiciones que la "
+        + "política vale siempre uno, y es off-policy donde vale cero en las transiciones que la "
         + "política objetivo nunca tomaría. Y el gradiente vale 1 en la primera transición y 2 en la "
         + "segunda: no es que “pase a valer 2”, es que hay dos actualizaciones distintas.",
     },
@@ -2059,7 +2059,7 @@ function modulo4() {
         "Porque las características de los siete estados no son linealmente independientes y la "
         + "matriz del sistema es singular.",
         "Porque la política de comportamiento no cubre todas las acciones de la política objetivo, y "
-        + "sin cobertura ningún método fuera de política converge.",
+        + "sin cobertura ningún método off-policy converge.",
       ],
       correcta: 0,
       explicacion: "El libro presenta el ejemplo precisamente para dejar claro que todas las "
@@ -2165,7 +2165,7 @@ function modulo5() {
     + "optimista de arriba. Aquí hace falta \\(\\varepsilon > 0\\) por una razón concreta: <strong>con "
     + "\\(\\varepsilon = 0\\) los dos algoritmos son la misma regla</strong> —la acción greedy es el "
     + "\\(\\arg\\max\\), y el objetivo de SARSA coincide con el máximo en cada paso—, así que lo que se "
-    + "estaría comparando <strong>no es dentro de política frente a fuera de política</strong>, sino el "
+    + "estaría comparando <strong>no es on-policy frente a off-policy</strong>, sino el "
     + "<strong>momento</strong> en que cada caja elige la acción. Eso no es la lección. La comparación "
     + "que importa solo existe si hay exploración."));
 
@@ -2336,7 +2336,7 @@ function modulo5() {
     + "sin traza—, o cambia a reemplazo."));
   const notaDivergePesos = aviso(zonaNotas, t("t5.m5.notaDivergePesos",
     "Con este paso, alguna ejecución ha reventado numéricamente: los pesos han pasado de "
-    + "\\(10^{6}\\). Es el paso demasiado grande, no la tríada —SARSA aquí es dentro de política—. Baja "
+    + "\\(10^{6}\\). Es el paso demasiado grande, no la tríada —SARSA aquí es on-policy—. Baja "
     + "\\(\\alpha\\times m\\)."));
   const notaTope = aviso(zonaNotas, "");
 
@@ -2597,7 +2597,7 @@ function modulo5() {
         + "traslada al comienzo del paso siguiente. El gradiente se sigue evaluando en el par que se ha "
         + "vivido, \\((S,A)\\): eso no cambia. Q-learning explora igual —su política de comportamiento "
         + "sigue siendo \\(\\varepsilon\\)-greedy—; lo que ocurre es que aprende sobre la política "
-        + "greedy, y eso es justo lo que lo hace fuera de política. Y el caso terminal sigue sin término "
+        + "greedy, y eso es justo lo que lo hace off-policy. Y el caso terminal sigue sin término "
         + "de continuación en los dos algoritmos, porque \\(\\hat q(\\text{terminal},\\cdot,w)=0\\).",
     },
     {
@@ -2668,8 +2668,8 @@ const NOMBRES_M6 = {
   tabular: () => t("t5.m6.aproxTab", "tabular"),
   lineal: () => t("t5.m6.aproxLin", "lineal"),
   noLineal: () => t("t5.m6.aproxNoLin", "no lineal"),
-  dentro: () => t("t5.m6.politicaOn", "dentro de política"),
-  fuera: () => t("t5.m6.politicaOff", "fuera de política"),
+  dentro: () => t("t5.m6.politicaOn", "on-policy"),
+  fuera: () => t("t5.m6.politicaOff", "off-policy"),
 };
 
 /** Los veintiún textos, en español, indexados por la clave del motor. */
@@ -2698,10 +2698,10 @@ const TEXTOS_M6 = {
   "t5.m6.celda.td0.noLineal.dentro":
     "<strong>Aquí «NO» significa «sin garantía», no «diverge».</strong> Con dos inductores, la regla de "
     + "la tríada no predice inestabilidad, y <strong>el libro no da ningún contraejemplo de divergencia "
-    + "para este caso</strong>: todos sus contraejemplos son <strong>fuera de política</strong>. Lo que "
+    + "para este caso</strong>: todos sus contraejemplos son <strong>off-policy</strong>. Lo que "
     + "sí dice es que la teoría disponible no llega hasta aquí.",
   "t5.m6.celda.mc.tabular.fuera":
-    "Un inductor: fuera de política. Con muestreo de importancia se corrige la distribución y se "
+    "Un inductor: off-policy. Con muestreo de importancia se corrige la distribución y se "
     + "converge; el precio es <strong>varianza</strong>, no divergencia.",
   "t5.m6.celda.mc.lineal.fuera":
     "Dos inductores, y estable: <strong>MC no hace <em>bootstrapping</em></strong>, así que falta el "
@@ -2710,13 +2710,13 @@ const TEXTOS_M6 = {
   "t5.m6.celda.mc.noLineal.fuera":
     "<strong>Casilla discutible, y el libro no la cubre.</strong> Solo hay dos inductores —MC no arranca "
     + "por <em>bootstrapping</em>—, así que la regla de la tríada <strong>no</strong> predice "
-    + "divergencia; y la propia tabla marca «MC · no lineal · dentro de política» con SÍ, siendo la única "
-    + "diferencia el entrenamiento fuera de política. Lecturas defendibles: en toda la columna no lineal "
+    + "divergencia; y la propia tabla marca «MC · no lineal · on-policy» con SÍ, siendo la única "
+    + "diferencia el entrenamiento off-policy. Lecturas defendibles: en toda la columna no lineal "
     + "se pierde la garantía de óptimo <strong>global</strong>, y el muestreo de importancia ordinario "
     + "puede dar <strong>varianza infinita</strong>. Lo que no es defendible es leerlo como «los pesos "
     + "divergen».",
   "t5.m6.celda.td0.tabular.fuera":
-    "Dos inductores: <em>bootstrapping</em> y fuera de política. Falta la aproximación, y en tabular los "
+    "Dos inductores: <em>bootstrapping</em> y off-policy. Falta la aproximación, y en tabular los "
     + "valores están desacoplados: es el Q-learning tabular del tema 4, con las mejores garantías de todo "
     + "el curso.",
   "t5.m6.celda.td0.lineal.fuera":
@@ -2747,7 +2747,7 @@ const TEXTOS_M6 = {
   "t5.m6.celda.sarsa.noLineal.dentro":
     "Dos inductores. Otra vez la columna no lineal: sin garantía, no divergencia demostrada.",
   "t5.m6.celda.qLearning.tabular.fuera":
-    "Dos inductores: <em>bootstrapping</em> y fuera de política. Falta la aproximación, y en tabular "
+    "Dos inductores: <em>bootstrapping</em> y off-policy. Falta la aproximación, y en tabular "
     + "Q-learning tiene las mejores garantías de convergencia de todos los métodos de control.",
   "t5.m6.celda.qLearning.lineal.fuera":
     "<strong>Los tres inductores.</strong> Hay contraejemplos análogos al de Baird que muestran la "
@@ -2775,7 +2775,7 @@ function modulo6() {
   let aproximador = "lineal";
   let algoritmo = "td0";
 
-  /** Q-learning es fuera de política por construcción: la fila es la suya. */
+  /** Q-learning es off-policy por construcción: la fila es la suya. */
   const politicaDeTabla = (algo, pol) => {
     if (algo === "qLearning") return "fuera";
     if (algo === "mcControl" || algo === "sarsa") return "dentro";
@@ -2787,7 +2787,7 @@ function modulo6() {
 
   aviso(zonaControles, t("t5.m6.avisoFuente",
     "<strong>Estas dos tablas no están en Sutton &amp; Barto.</strong> En el libro no hay ninguna tabla "
-    + "que cruce tabular / lineal / no lineal con dentro y fuera de política. Vienen de las "
+    + "que cruce tabular / lineal / no lineal con on-policy y off-policy. Vienen de las "
     + "<strong>diapositivas de David Silver (UCL)</strong>, que la propia baraja declara como segunda "
     + "fuente en <code>#slide-2</code>. Lo que sí hay en el libro es la evidencia de cada casilla, "
     + "repartida por cuatro capítulos, y es lo que este módulo recompone: <strong>cada casilla trae la "
@@ -2805,8 +2805,8 @@ function modulo6() {
 
   const panel = panelControles(zonaControles);
   const mandoPolitica = grupoRadio(panel, t("t5.m6.politicaLabel", "Política"), [
-    { valor: "dentro", texto: t("t5.m6.politicaOn", "dentro de política") },
-    { valor: "fuera", texto: t("t5.m6.politicaOff", "fuera de política") },
+    { valor: "dentro", texto: t("t5.m6.politicaOn", "on-policy") },
+    { valor: "fuera", texto: t("t5.m6.politicaOff", "off-policy") },
   ], politica, (v) => { politica = v; dibujar(); });
   const mandoAprox = grupoRadio(panel, t("t5.m6.aproxLabel", "Aproximador"),
     APROXIMADORES_M6.map((a) => ({ valor: a, texto: NOMBRES_M6[a]() })),
@@ -2815,8 +2815,8 @@ function modulo6() {
     ["mc", "td0", "mcControl", "sarsa", "qLearning"].map((a) => ({ valor: a, texto: NOMBRES_M6[a]() })),
     algoritmo, (v) => {
       algoritmo = v;
-      /* Q-learning fuerza «fuera de política» y lo dice: la combinación
-         «Q-learning dentro de política» no existe y no se inventa. */
+      /* Q-learning fuerza «off-policy» y lo dice: la combinación
+         «Q-learning on-policy» no existe y no se inventa. */
       if (v === "qLearning") { politica = "fuera"; mandoPolitica.marcar(politica); }
       sincronizarPolitica();
       dibujar();
@@ -2920,7 +2920,7 @@ function modulo6() {
   const marcador = metricas(zonaMarcador, [
     { id: "ind1", etiqueta: t("t5.m6.ind1", "Aproximación de la función de valor") },
     { id: "ind2", etiqueta: t("t5.m6.ind2", "<em>Bootstrapping</em>") },
-    { id: "ind3", etiqueta: t("t5.m6.ind3", "Entrenamiento fuera de política") },
+    { id: "ind3", etiqueta: t("t5.m6.ind3", "Entrenamiento off-policy") },
     { id: "cuenta", etiqueta: t("t5.m6.cuentaEtiq", "Inductores presentes") },
   ]);
   const regla = parrafo(zonaMarcador, "explicacion siempre", "");
@@ -2939,8 +2939,8 @@ function modulo6() {
     + "divergencia» —el de Baird—; en la no lineal quiere decir «<strong>no hay garantía</strong>», que es "
     + "mucho más débil. Y en esa misma columna la tabla es, además, <strong>internamente "
     + "inconsistente en la fila de MC</strong>: marca "
-    + "«MC · dentro de política · no lineal» con SÍ y «MC · fuera de política · no lineal» con NO, y la "
-    + "única diferencia entre las dos es el entrenamiento fuera de política, que sin <em>bootstrapping</em> "
+    + "«MC · on-policy · no lineal» con SÍ y «MC · off-policy · no lineal» con NO, y la "
+    + "única diferencia entre las dos es el entrenamiento off-policy, que sin <em>bootstrapping</em> "
     + "no dispara la inestabilidad. <strong>El libro no cubre esa casilla</strong>; lo más fuerte que dice "
     + "es que la teoría del RL «está en su mayor parte limitada a métodos tabulares o con aproximación "
     + "lineal». La lectura defendible es doble: por un lado, en toda la columna no lineal lo único que se "
@@ -2962,18 +2962,18 @@ function modulo6() {
     + "fuerte en métodos de planificación como la programación dinámica, donde el entorno se conoce por "
     + "completo."));
   const notaQoff = aviso(zonaVeredicto, t("t5.m6.notaQoff",
-    "Q-learning es <strong>fuera de política por construcción</strong>: su objetivo es el máximo, no la "
+    "Q-learning es <strong>off-policy por construcción</strong>: su objetivo es el máximo, no la "
     + "acción que la política de comportamiento tomó. El interruptor de política queda fijo, y por eso su "
-    + "fila de la tabla de control no tiene versión «dentro de política». Es también la razón por la que el "
+    + "fila de la tabla de control no tiene versión «on-policy». Es también la razón por la que el "
     + "libro, al preguntarse qué inductor soltar, responde: <strong>usa SARSA en lugar de Q-learning</strong>."));
   const notaCtrlPolitica = aviso(zonaVeredicto, t("t5.m6.notaCtrlPolitica",
-    "La tabla de control de la diapositiva no separa dentro y fuera de política: MC control y SARSA son "
-    + "dentro de política por construcción, y Q-learning es fuera de política. El interruptor de política "
+    "La tabla de control de la diapositiva no separa on-policy y off-policy: MC control y SARSA son "
+    + "on-policy por construcción, y Q-learning es off-policy. El interruptor de política "
     + "sigue contando inductores, pero la fila de la tabla es la misma."));
 
   parrafo(zonaVeredicto, "explicacion siempre", t("t5.m6.enlaces",
-    "Tres de estas casillas se pueden ver funcionando: TD(0) lineal dentro de política en el "
-    + "<a href=\"#m3\">módulo 3</a>, TD(0) lineal fuera de política en el <a href=\"#m4\">módulo 4</a> y "
+    "Tres de estas casillas se pueden ver funcionando: TD(0) lineal on-policy en el "
+    + "<a href=\"#m3\">módulo 3</a>, TD(0) lineal off-policy en el <a href=\"#m4\">módulo 4</a> y "
     + "SARSA lineal en el <a href=\"#m5\">módulo 5</a>."));
   parrafo(zonaVeredicto, "suave", t("t5.m6.rotuloExacto", "Tabla de consulta · sin simulación"));
 
@@ -3050,12 +3050,12 @@ function modulo6() {
 
   crearQuiz($("#m6-quiz"), [
     {
-      enunciado: "En la tabla de predicción, la casilla de MC fuera de política con aproximación "
-        + "lineal es «SÍ», y la de TD(0) fuera de política con aproximación lineal es «NO». ¿Qué explica "
+      enunciado: "En la tabla de predicción, la casilla de MC off-policy con aproximación "
+        + "lineal es «SÍ», y la de TD(0) off-policy con aproximación lineal es «NO». ¿Qué explica "
         + "la diferencia?",
       opciones: [
         "Que MC no arranca por <em>bootstrapping</em>: le falta uno de los tres inductores, y con dos "
-        + "la inestabilidad se puede evitar. TD(0) fuera de política y lineal tiene los tres.",
+        + "la inestabilidad se puede evitar. TD(0) off-policy y lineal tiene los tres.",
         "Que MC usa muestreo de importancia y TD(0) no, y el muestreo de importancia corrige la "
         + "distribución de estados por completo.",
         "Que MC es de varianza menor y por tanto más estable numéricamente que TD(0) en el caso "
@@ -3065,19 +3065,19 @@ function modulo6() {
       correcta: 0,
       explicacion: "La regla del libro es la de contar: con dos de los tres inductores, la "
         + "inestabilidad se puede evitar; con los tres, no hay garantía y hay contraejemplos. MC fuera de "
-        + "política y lineal tiene aproximación y fuera de política, pero <strong>no</strong> "
+        + "política y lineal tiene aproximación y off-policy, pero <strong>no</strong> "
         + "<em>bootstrapping</em>, así que se queda en dos. El muestreo de importancia existe en las dos "
-        + "familias fuera de política y no es lo que decide. La varianza está al revés: MC tiene "
+        + "familias off-policy y no es lo que decide. La varianza está al revés: MC tiene "
         + "<strong>más</strong> varianza que TD, y aun así es más estable en este sentido. Y MC sí usa "
         + "\\(\\gamma\\) —en el retorno descontado—: el umbral \\(\\gamma>0{,}5\\) es del ejemplo concreto "
         + "del módulo 4, no una condición general.",
     },
     {
-      enunciado: "La casilla de TD(0) dentro de política con aproximación no lineal es «NO». ¿Qué "
+      enunciado: "La casilla de TD(0) on-policy con aproximación no lineal es «NO». ¿Qué "
         + "significa exactamente ese «NO»?",
       opciones: [
         "Que no hay garantía de convergencia, no que los pesos diverjan: el libro no da ningún "
-        + "contraejemplo de divergencia dentro de política, y todos los que da son fuera de política.",
+        + "contraejemplo de divergencia on-policy, y todos los que da son off-policy.",
         "Que los pesos divergen, igual que en el contraejemplo de Baird, solo que sin figura porque la "
         + "red neuronal no se puede dibujar.",
         "Que converge, pero a un óptimo local en lugar de al global, que es lo mismo que le pasa a MC "
@@ -3089,7 +3089,7 @@ function modulo6() {
       explicacion: "El «NO» de la columna no lineal es más débil que el de la lineal: ahí quiere decir "
         + "que la teoría no llega, y el libro es explícito en que la teoría del RL está limitada en su "
         + "mayor parte a métodos tabulares o lineales. <strong>Todos</strong> los contraejemplos de "
-        + "divergencia del libro son fuera de política —Baird y el de Tsitsiklis y Van Roy—, así que "
+        + "divergencia del libro son off-policy —Baird y el de Tsitsiklis y Van Roy—, así que "
         + "afirmar divergencia aquí sería ir más lejos que la fuente. Tampoco es «óptimo local»: eso es lo "
         + "que se afirma de MC no lineal, y por eso su casilla dice «SÍ» y ésta «NO»; la diferencia entre "
         + "las dos es el <em>bootstrapping</em>. Y no hay ninguna cota de tamaño de red que garantice "
@@ -3099,7 +3099,7 @@ function modulo6() {
       enunciado: "El libro se pregunta qué inductor se podría soltar. ¿Cuál dice que se puede soltar, "
         + "y con qué receta concreta para el RL sin modelo?",
       opciones: [
-        "El entrenamiento fuera de política: “se puede usar simplemente SARSA en lugar de "
+        "El entrenamiento off-policy: “se puede usar simplemente SARSA en lugar de "
         + "Q-learning”. La aproximación no se puede soltar, y el <em>bootstrapping</em> es demasiado "
         + "valioso.",
         "El <em>bootstrapping</em>: se puede usar Monte Carlo en lugar de TD, y el coste en eficiencia "

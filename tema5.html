@@ -149,7 +149,7 @@
           </tr>
           <tr data-t="t5.mapa.f9">
             <td>Los tres inductores</td>
-            <td>Aproximación + <em>bootstrapping</em> + fuera de política</td>
+            <td>Aproximación + <em>bootstrapping</em> + off-policy</td>
             <td>Con los tres a la vez los pesos pueden irse a infinito → <strong>módulos 4 y 6</strong></td>
           </tr>
           <tr data-t="t5.mapa.f10">
@@ -711,9 +711,9 @@
     <p class="explicacion" data-t="t5.b10.texto3">
       Tres cosas más que el libro añade y que sirven para leer las tablas del módulo 6: la
       misma cota vale para <strong>DP semi-gradiente</strong> cuando las actualizaciones siguen la
-      distribución dentro de política; vale, con una cota análoga, para <strong>SARSA(0)
+      distribución on-policy; vale, con una cota análoga, para <strong>SARSA(0)
       semi-gradiente</strong> —con política constante—; y es <strong>crítico</strong> que las actualizaciones sigan
-      la distribución dentro de política: <strong>con otras distribuciones, los métodos con
+      la distribución on-policy: <strong>con otras distribuciones, los métodos con
       <em>bootstrapping</em> y aproximación pueden divergir a infinito</strong>. Ése es el bloque siguiente.
     </p>
     <p><a class="siguiente" href="#m3" data-t="t5.b10.modulo">→ módulo 3: los dos puntos de convergencia se calculan exactos y se dibujan como dos líneas horizontales sobre las curvas de aprendizaje.</a></p>
@@ -750,7 +750,7 @@
     <p class="explicacion" data-t="t5.b11.texto">
       <code>#slide-15</code> proyecta una figura del libro con los pesos disparándose y <strong>una línea de
       texto</strong>: «Evolución de los pesos en el contraejemplo de Baird (predicción TD)». No dice
-      qué MDP es el de Baird, ni que el entrenamiento es <strong>fuera de política</strong>, ni por qué
+      qué MDP es el de Baird, ni que el entrenamiento es <strong>off-policy</strong>, ni por qué
       divergen los pesos. Es la afirmación más fuerte del tema apoyada en la figura más muda,
       así que empezamos por el ejemplo más pequeño que existe, que sí se sigue a mano.
     </p>
@@ -773,12 +773,12 @@
     </p>
     <p class="explicacion" data-t="t5.b11.texto4">
       La clave del ejemplo es que <strong>esa transición ocurre repetidamente sin que \(w\) se
-      actualice en las demás transiciones</strong>. Eso es posible fuera de política, porque la política
+      actualice en las demás transiciones</strong>. Eso es posible off-policy, porque la política
       de comportamiento puede elegir, en esas otras transiciones, acciones que la política
       objetivo nunca elegiría: para ellas la razón de importancia es cero y no se actualiza
-      nada. Dentro de política, esa razón vale siempre uno. Como lo dice el libro: <strong>al final,
-      al gaitero hay que pagarle</strong>. Dentro de política, la promesa de recompensa futura hay que
-      cumplirla y el sistema se mantiene a raya; fuera de política se puede prometer y luego,
+      nada. On-policy, esa razón vale siempre uno. Como lo dice el libro: <strong>al final,
+      al gaitero hay que pagarle</strong>. On-policy, la promesa de recompensa futura hay que
+      cumplirla y el sistema se mantiene a raya; off-policy se puede prometer y luego,
       tras tomar una acción que la política objetivo nunca tomaría, olvidar y perdonar.
     </p>
     <p class="explicacion" data-t="t5.b11.texto5">
@@ -801,7 +801,7 @@
       estados, sin nada de azar, exactamente como una barrida clásica de programación
       dinámica— el sistema sigue siendo inestable. Lo que lo arregla no es el algoritmo: es <strong>la
       distribución</strong>. Si en el contraejemplo de Baird se cambia solo la distribución de las
-      actualizaciones, de uniforme a la distribución dentro de política, la convergencia queda
+      actualizaciones, de uniforme a la distribución on-policy, la convergencia queda
       garantizada con el error acotado por la cota del bloque anterior.
     </p>
     <div class="aviso" data-t="t5.b11.aviso">
@@ -867,13 +867,13 @@
         <tbody>
           <tr data-t="t5.b12.i1"><td><strong>Aproximación de la función de valor</strong></td><td>Una forma potente y escalable de generalizar desde un espacio de estados mucho mayor que la memoria y el cómputo disponibles (por ejemplo, aproximación lineal o redes neuronales)</td></tr>
           <tr data-t="t5.b12.i2"><td><em>Bootstrapping</em></td><td>Objetivos de actualización que <strong>incluyen estimaciones ya existentes</strong> —como en DP o en TD— en lugar de basarse solo en recompensas reales y retornos completos, como en MC</td></tr>
-          <tr data-t="t5.b12.i3"><td><strong>Entrenamiento fuera de política</strong></td><td>Entrenar sobre una distribución de transiciones <strong>distinta</strong> de la que produce la política objetivo. <strong>Barrer el espacio de estados actualizando todos los estados por igual, como en DP, no respeta la política objetivo y es un caso de entrenamiento fuera de política</strong></td></tr>
+          <tr data-t="t5.b12.i3"><td><strong>Entrenamiento off-policy</strong></td><td>Entrenar sobre una distribución de transiciones <strong>distinta</strong> de la que produce la política objetivo. <strong>Barrer el espacio de estados actualizando todos los estados por igual, como en DP, no respeta la política objetivo y es un caso de entrenamiento off-policy</strong></td></tr>
         </tbody>
       </table>
     </div>
     <div class="aviso" data-t="t5.b12.aviso1">
-      El tercero suele sorprender y es literal del libro: <strong>DP es fuera de política</strong>. No hace
-      falta una política de comportamiento distinta para estar fuera de política; basta con
+      El tercero suele sorprender y es literal del libro: <strong>DP es off-policy</strong>. No hace
+      falta una política de comportamiento distinta para estar off-policy; basta con
       actualizar los estados con una distribución que no sea la que genera la política
       objetivo.
     </div>
@@ -884,7 +884,7 @@
       débiles o demasiado caros —los de mínimos cuadrados, como LSTD, son de complejidad
       cuadrática y por tanto demasiado caros para problemas grandes—. El <em>bootstrapping</em> se
       puede soltar, pero se paga en eficiencia de cálculo y de datos, y es demasiado valioso.
-      Queda el <strong>fuera de política</strong>, y ahí el libro da la receta concreta para el RL sin
+      Queda el <strong>off-policy</strong>, y ahí el libro da la receta concreta para el RL sin
       modelo: <strong>usar SARSA en lugar de Q-learning</strong>. Que es exactamente lo que dice la tabla de
       control de <code>#slide-21</code>, donde SARSA lineal es «(SÍ)» y Q-learning lineal es «NO».
     </p>
@@ -904,7 +904,7 @@
     </div>
     <div class="aviso" data-t="t5.b12.avisoFuente">
       <strong>Las dos tablas de convergencia no son de Sutton &amp; Barto.</strong> En el libro no hay ninguna
-      tabla tabular / lineal / no lineal cruzada con dentro y fuera de política. Vienen de las
+      tabla tabular / lineal / no lineal cruzada con on-policy y off-policy. Vienen de las
       <strong>diapositivas de David Silver (UCL)</strong>, que la propia baraja declara como segunda fuente
       en <code>#slide-2</code>. Lo que sí hay en el libro es la evidencia de cada casilla, dispersa por
       cuatro capítulos, y es lo que el módulo 6 recompone.
@@ -1020,7 +1020,7 @@ Repetir para cada episodio:
       \[ \text{Q-learning:}\quad w \leftarrow w + \alpha\big[R + \gamma\,\max_a \hat q(S',a,w) - \hat q(S,A,w)\big]\nabla\hat q(S,A,w) \]
     </p>
     <p class="explicacion" data-t="t5.b14.texto3">
-      Ese \(\max\) es lo que convierte el método en <strong>fuera de política</strong>, y por tanto lo que le
+      Ese \(\max\) es lo que convierte el método en <strong>off-policy</strong>, y por tanto lo que le
       añade el <strong>tercer inductor</strong> de B12. En el caso lineal, con
       \(\nabla\hat q(S,A,w) = x(S,A)\), las dos reglas se escriben
       \(\Delta w = \alpha\,\delta\,x(S,A)\), con el \(\delta\) que corresponda.
@@ -1319,9 +1319,9 @@ Repetir para cada episodio:
     </p>
     <p class="explicacion" data-t="t5.b16.texto2">
       Y hay una razón concreta para que sea Q-learning y no SARSA: <strong>la repetición de
-      experiencia exige un algoritmo fuera de política</strong>. Al muestrear transiciones sueltas de
+      experiencia exige un algoritmo off-policy</strong>. Al muestrear transiciones sueltas de
       un búfer, ya no se está siguiendo una trayectoria conectada con la política actual, y solo
-      un método fuera de política puede aprender de eso. Ser sin modelo y fuera de política
+      un método off-policy puede aprender de eso. Ser sin modelo y off-policy
       hacía de Q-learning la elección natural.
     </p>
     <div class="tabla-scroll">
@@ -1524,12 +1524,12 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t5.ecuaciones.f9">
             <td>\(w_{t+1} = (1+\alpha(2\gamma-1))w_t\)</td>
-            <td>Fuera de política, los pesos pueden crecer geométricamente para <strong>cualquier</strong> \(\alpha>0\)</td>
+            <td>Off-policy, los pesos pueden crecer geométricamente para <strong>cualquier</strong> \(\alpha>0\)</td>
             <td>B11, módulo 4</td>
           </tr>
           <tr data-t="t5.ecuaciones.f10">
             <td>\(\hat q(s,a,w)=w^\top x(s,a)\), y \(\max_a\) en lugar de \(\hat q(S',A',w)\)</td>
-            <td>Control: una característica por par estado-acción; el \(\max\) es lo que hace Q-learning fuera de política</td>
+            <td>Control: una característica por par estado-acción; el \(\max\) es lo que hace Q-learning off-policy</td>
             <td>B13, B14, módulo 5</td>
           </tr>
           <tr data-t="t5.ecuaciones.f11">
@@ -1675,7 +1675,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t5.glosario.f8">
             <td>\(\mu(s)\)</td>
-            <td>distribución de estados dentro de política</td>
+            <td>distribución de estados on-policy</td>
             <td>De Lucía (<code>Tema5_1_Aproximacion#slide-7</code>) y del libro (9.2)-(9.3). <strong>Álvaro nunca define el objetivo ponderado</strong></td>
           </tr>
           <tr data-t="t5.glosario.f9">

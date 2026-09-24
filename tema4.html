@@ -110,7 +110,7 @@
           <tr data-t="t4.mapa.f4">
             <td>Mantener la exploración</td>
             <td>Con una política determinista solo se ven las acciones que elige</td>
-            <td>Arranques exploratorios, políticas ε-soft, o dos políticas (fuera de política)</td>
+            <td>Arranques exploratorios, políticas ε-soft, o dos políticas (off-policy)</td>
           </tr>
           <tr data-t="t4.mapa.f5">
             <td>Bootstrapping</td>
@@ -130,12 +130,12 @@
           <tr data-t="t4.mapa.f8">
             <td>SARSA</td>
             <td>TD(0) aplicado a la quíntupla \((S_t,A_t,R_{t+1},S_{t+1},A_{t+1})\)</td>
-            <td>Dentro de política: evalúa la política que <strong>de verdad</strong> se está siguiendo</td>
+            <td>On-policy: evalúa la política que <strong>de verdad</strong> se está siguiendo</td>
           </tr>
           <tr data-t="t4.mapa.f9">
             <td>Q-learning</td>
             <td>Cambiar \(Q(S_{t+1},A_{t+1})\) por \(\max_a Q(S_{t+1},a)\)</td>
-            <td>Fuera de política: aprende \(q_*\) mientras se comporta con otra cosa → módulo 3</td>
+            <td>Off-policy: aprende \(q_*\) mientras se comporta con otra cosa → módulo 3</td>
           </tr>
           <tr data-t="t4.mapa.f10">
             <td>Sesgo de maximización</td>
@@ -189,13 +189,13 @@
       Y hay una segunda consecuencia, menos evidente y mucho más determinante: <strong>sin el
       modelo, una tabla de valores de estado no sirve para recuperar una política</strong>. Con
       modelo se mira un paso adelante —\(\pi(s)=\arg\max_a \sum_{s',r} p(s',r\mid s,a)[r+\gamma
-      v(s')]\)— y listo. Sin modelo esa expresión no se puede evaluar: falta justamente el
+      v_\pi(s')]\)— y listo. Sin modelo esa expresión no se puede evaluar: falta justamente el
       factor que no tienes. Por eso todo el tema estima <strong>valores de acción</strong>: con
       \(q\), la política sale de un \(\arg\max\) que no necesita nada más.
     </p>
 
     <p class="ecuacion" data-t="t4.b0.ec">
-      \[ \pi(s) \;=\; \arg\max_a \sum_{s',r} p(s',r\mid s,a)\big[\,r+\gamma v(s')\,\big]
+      \[ \pi(s) \;=\; \arg\max_a \sum_{s',r} p(s',r\mid s,a)\big[\,r+\gamma v_\pi(s')\,\big]
          \qquad\text{frente a}\qquad \pi(s) \;\doteq\; \arg\max_a q(s,a) \]
     </p>
 
@@ -213,7 +213,7 @@
       <li data-t="t4.b0.li1">Sin \(p\) no puedo calcular esperanzas → aprendo de muestras.</li>
       <li data-t="t4.b0.li2">Con muestras y sin \(p\), \(v\) no me da la política → necesito \(q\).</li>
       <li data-t="t4.b0.li3">Con \(q\) y una política determinista no veo todas las acciones → necesito exploración.</li>
-      <li data-t="t4.b0.li4">Si exploro, la política que sigo no es la que quiero evaluar → dentro de política con ε-soft, o fuera de política con muestreo de importancia.</li>
+      <li data-t="t4.b0.li4">Si exploro, la política que sigo no es la que quiero evaluar → on-policy con ε-soft, o off-policy con muestreo de importancia.</li>
       <li data-t="t4.b0.li5">Esperar al final del episodio es caro, y no vale para tareas continuas → bootstrapping, TD.</li>
       <li data-t="t4.b0.li6">TD a un paso y Monte Carlo son los dos extremos de un mismo espectro → n pasos, en la página siguiente.</li>
     </ul>
@@ -419,18 +419,17 @@ Repetir para siempre (para cada episodio):
       primera o de cada visita. Aquí está la cuenta entera.
     </p>
 
-    <pre class="codigo" data-t="t4.b4.episodio">S_0 = 1,  A_0 = d(erecha),  R_1 = −1
-S_1 = 2,  A_1 = a(bajo),    R_2 = −1
-S_2 = 5,  A_2 = d(erecha),  R_3 = −1
-S_3 = 6,  A_3 = a(bajo),    R_4 = −1
+    <pre class="codigo" data-t="t4.b4.episodio">S_0 = 1,  A_0 = derecha,  R_1 = −1
+S_1 = 2,  A_1 = abajo,    R_2 = −1
+S_2 = 5,  A_2 = derecha,  R_3 = −1
+S_3 = 6,  A_3 = abajo,    R_4 = −1
 S_4 = T</pre>
 
-    <p class="explicacion nota" data-t="t4.b4.erratum">
-      <strong>Errata del material.</strong> La diapositiva escribe \(A_3 = r\) (derecha), pero
-      en el dibujo la traza <strong>baja</strong> del estado 6 al terminal, que está justo
-      debajo. Con esta geometría, ir a la derecha desde 6 rebota contra la pared y deja al
-      agente en 6: el episodio no terminaría. La acción correcta es <strong>abajo</strong>, y es
-      la que se usa aquí. Las otras tres sí coinciden con el dibujo.
+    <p class="explicacion nota" data-t="t4.b4.letras">
+      La diapositiva abrevia las acciones con la inicial <strong>inglesa</strong>:
+      <code>r</code> es <em>right</em> (derecha) y <code>d</code> es <em>down</em> (abajo). Aquí
+      van escritas enteras para que no se confunda la <code>d</code> de <em>down</em> con la de
+      <em>derecha</em>.
     </p>
 
     <div class="tabla-scroll">
@@ -479,7 +478,7 @@ S_4 = T</pre>
   <section class="modulo solo-estudio" id="b5">
     <header>
       <h2 data-t="t4.b5.h2">Limitaciones, exploración y políticas ε-soft</h2>
-      <p class="fuente" data-t="t4.b5.fuente">4_Tema4#slide-13 y #slide-14 · material de Lucía: Tema4_1_ModelFree#slide-5 a #slide-10 (arranques exploratorios y GLIE, que Álvaro no cubre) · Sutton &amp; Barto §5.2, §5.3 y §5.4</p>
+      <p class="fuente" data-t="t4.b5.fuente">4_Tema4#slide-13 y #slide-14 · material de Lucía: Tema4_1_ModelFree#slide-5 a #slide-10 (arranques exploratorios y GLIE) · Sutton &amp; Barto §5.2, §5.3 y §5.4 · GLIE: Singh et al. (2000); la condición equivalente, en §6.4 del libro</p>
     </header>
 
     <p class="explicacion" data-t="t4.b5.p1">
@@ -500,11 +499,11 @@ S_4 = T</pre>
 
     <ol class="explicacion">
       <li data-t="t4.b5.li1"><strong>Arranques exploratorios</strong> (<em>exploring starts</em>): exigir que cada episodio empiece en un par \((s,a)\) elegido de forma que <strong>todos</strong> tengan probabilidad no nula. Garantiza visitar todos los pares, pero es una hipótesis irreal en cuanto se aprende de la interacción real: las condiciones iniciales rara vez son tan complacientes.</li>
-      <li data-t="t4.b5.li2"><strong>Políticas ε-soft</strong>, dentro de política: exigir \(\pi(a\mid s) \ge \varepsilon/|A(s)|\) para todo estado y toda acción. Las ε-greedy son el caso de esta familia más cercano a la greedy. Se explora siempre un poco, y se aprende sobre la política que de verdad se está siguiendo.</li>
-      <li data-t="t4.b5.li3"><strong>Dos políticas</strong>, fuera de política: una que genera el comportamiento y otra que se aprende. Es el bloque B10.</li>
+      <li data-t="t4.b5.li2"><strong>Políticas ε-soft</strong>, on-policy: exigir \(\pi(a\mid s) \ge \varepsilon/|A(s)|\) para todo estado y toda acción. Las ε-greedy son el caso de esta familia más cercano a la greedy. Se explora siempre un poco, y se aprende sobre la política que de verdad se está siguiendo.</li>
+      <li data-t="t4.b5.li3"><strong>Dos políticas</strong>, off-policy: una que genera el comportamiento y otra que se aprende. Es el bloque B10.</li>
     </ol>
 
-    <pre class="codigo" data-t="t4.b5.caja">Control MC de primera visita dentro de política (para políticas ε-soft), estima π ≈ π_*
+    <pre class="codigo" data-t="t4.b5.caja">Control MC de primera visita on-policy (para políticas ε-soft), estima π ≈ π_*
 
 Parámetro del algoritmo: ε &gt; 0 pequeño
 Inicializar:
@@ -524,33 +523,44 @@ Repetir para siempre (para cada episodio):
                 π(a|S_t) ← 1 − ε + ε/|A(S_t)|   si a = A*
                 π(a|S_t) ← ε/|A(S_t)|           si a ≠ A*</pre>
 
-    <div class="aviso" data-t="t4.b5.erratum">
-      <strong>Discrepancia entre las dos colecciones, y esta vez importa.</strong> La
-      diapositiva de clase dice que el teorema de mejora de la política se extiende a las ε-soft
-      y que eso da <em>«garantías de convergencia a una política óptima»</em>
-      (<code>4_Tema4#slide-14</code>). La otra colección responde lo contrario a la misma
-      pregunta: <em>«<strong>No</strong>, porque seguimos manteniendo exploración… pero podemos
-      encontrar la <strong>mejor política dentro de las ε-soft</strong>»</em>
-      (<code>Tema4_1_ModelFree#slide-10</code>, material de Lucía). <strong>La segunda es la
-      correcta</strong>: el libro demuestra que se alcanza el óptimo <strong>entre las políticas
-      ε-soft</strong>, no \(\pi_*\), salvo que \(\varepsilon\to 0\) (§5.4, p. 125). Con
-      \(\varepsilon\) fijo, la política a la que se llega sigue tomando acciones aleatorias una
-      fracción \(\varepsilon\) del tiempo, y eso tiene un coste que se verá con los ojos en el
-      módulo 3.
+    <div class="aviso" data-t="t4.b5.convergencia">
+      <strong>¿A qué converge esto?</strong> La respuesta depende por completo de qué se haga
+      con \(\varepsilon\), y por eso se oyen las dos versiones. Con \(\varepsilon\)
+      <strong>fijo</strong>, el teorema de mejora de la política sigue valiendo, pero
+      <strong>dentro de la familia ε-soft</strong>: lo que se alcanza es la mejor política
+      ε-soft, no \(\pi_*\) (§5.4, p. 125). La política límite sigue tomando acciones aleatorias
+      una fracción \(\varepsilon\) del tiempo, y eso cuesta retorno —se verá con los ojos en el
+      módulo 3—. Si en cambio \(\varepsilon\) <strong>se desvanece de la forma adecuada</strong>,
+      el límite sí es \(\pi_*\). Esa condición tiene nombre, y es la pieza que cierra el
+      argumento.
     </div>
 
+    <p class="explicacion" data-t="t4.b5.glie1">
+      <strong>GLIE</strong> —<em>greedy in the limit with infinite exploration</em>— son dos
+      condiciones sobre la sucesión de políticas que el algoritmo va siguiendo:
+    </p>
+
+    <ol class="explicacion">
+      <li data-t="t4.b5.glieLi1"><strong>Exploración infinita:</strong> todo par estado-acción se visita infinitas veces, \(N_k(s,a)\to\infty\). Es lo que hace falta para que la media muestral de <em>cada</em> par converja a su valor; sin ella hay acciones sobre las que nunca se sabe nada.</li>
+      <li data-t="t4.b5.glieLi2"><strong>Greedy en el límite:</strong> la política converge a la greedy respecto de \(Q\), es decir \(\pi_k(a\mid s)\to 1\) para \(a = \arg\max_a Q_k(s,a)\). Es lo que elimina el coste residual de explorar.</li>
+    </ol>
+
+    <p class="explicacion" data-t="t4.b5.glie2">
+      Las dos a la vez parecen incompatibles —explorar siempre y acabar siendo greedy— y no lo
+      son: basta con que \(\varepsilon\) baje, pero despacio. Una política ε-greedy con
+      \(\varepsilon_k = 1/k\) las cumple las dos, porque \(1/k\) <strong>nunca llega a
+      cero</strong> (se sigue explorando en todo momento) pero <strong>tiende a
+      cero</strong> (la política se vuelve greedy). Con GLIE, el control de Monte Carlo converge
+      a \(q_*\) y la política a \(\pi_*\). Sin GLIE, con \(\varepsilon\) fijo, se converge a la
+      mejor política ε-soft y ahí se queda: es exactamente el caso del recuadro anterior.
+    </p>
+
     <p class="explicacion nota" data-t="t4.b5.nota">
-      Dos avisos. Primero: el nombre <strong>GLIE</strong> (<em>greedy in the limit with
-      infinite exploration</em>), que se usa en clase
-      (<code>Tema4_1_ModelFree#slide-10</code>), <strong>no aparece en Sutton &amp;
-      Barto</strong>: viene de Singh et al. (2000) y de las diapositivas de David Silver. El
-      libro enuncia la condición equivalente sin ponerle nombre, en §6.4: converge <em>«siempre
-      que todos los pares estado-acción se visiten infinitas veces y la política converja en el
-      límite a la greedy, lo que puede conseguirse, por ejemplo, con políticas ε-greedy tomando
-      \(\varepsilon = 1/t\)»</em>. Segundo: <strong>Monte Carlo con arranques exploratorios no
-      tiene demostración de convergencia</strong>. El libro lo dice literalmente y añade que es
-      <em>«una de las preguntas teóricas abiertas más fundamentales del aprendizaje por
-      refuerzo»</em> (§5.3, p. 121). Si alguien te lo cuenta como un teorema, no lo es.
+      Un aviso que conviene no pasar por alto: <strong>Monte Carlo con arranques exploratorios
+      no tiene demostración de convergencia</strong>. El libro lo dice literalmente y añade que
+      es <em>«una de las preguntas teóricas abiertas más fundamentales del aprendizaje por
+      refuerzo»</em> (§5.3, p. 121). Si alguien te lo cuenta como un teorema, no lo es. La
+      garantía con GLIE, en cambio, sí está demostrada.
     </p>
   </section>
 
@@ -718,12 +728,15 @@ Repetir para cada episodio:
       </table>
     </div>
 
-    <div class="aviso" data-t="t4.b7.erratum">
-      La diapositiva escribe dos veces <strong>«propiedad MDP»</strong> donde debe decir
-      <strong>«propiedad de Markov»</strong> (<code>4_Tema4#slide-21</code>); la otra colección
-      lo escribe bien (<code>Tema4_2_ModelFree#slide-8</code>) y además da la razón, que es la
-      única formulación de las dos colecciones que la da: TD <em>«en oculto trata de estimar
-      \(p\)»</em>.
+    <div class="aviso" data-t="t4.b7.markov">
+      <strong>Por qué TD la aprovecha y MC no.</strong> En clase esa última fila se rotula
+      <em>«sensible a propiedades MDP (realimentación markoviana del estado)»</em>
+      (<code>4_Tema4#slide-21</code>), y la razón la da la otra colección —es la única
+      formulación de las dos que la da—: TD <em>«en oculto trata de estimar \(p\)»</em>
+      (<code>Tema4_2_ModelFree#slide-8</code>). Al hacer bootstrapping sobre \(V(S_{t+1})\), TD
+      da por hecho que \(S_{t+1}\) <strong>resume todo el pasado</strong>; si el estado no es
+      markoviano, esa suposición es falsa y el objetivo está mal construido. Monte Carlo no
+      supone nada: promedia retornos completos, y le da igual si el estado cumple Markov o no.
     </div>
 
     <p class="explicacion" data-t="t4.b7.p4">
@@ -860,19 +873,19 @@ Repetir para cada episodio:
   </section>
 
   <!-- ================================================================= -->
-  <!-- B10 · dentro y fuera de política · muestreo de importancia        -->
+  <!-- B10 · on-policy y off-policy · muestreo de importancia        -->
   <!-- ================================================================= -->
   <section class="modulo solo-estudio" id="b10">
     <header>
-      <h2 data-t="t4.b10.h2">Dentro y fuera de política, y el muestreo de importancia</h2>
-      <p class="fuente" data-t="t4.b10.fuente">4_Tema4#slide-29 y #slide-30 · material de Lucía: Tema4_1_ModelFree#slide-11 a #slide-13 (los símbolos π y b, la cobertura y el pseudocódigo fuera de política) · Sutton &amp; Barto §5.5, ecuaciones (5.3), (5.5) y (5.6), y §5.6</p>
+      <h2 data-t="t4.b10.h2">On-policy y off-policy, y el muestreo de importancia</h2>
+      <p class="fuente" data-t="t4.b10.fuente">4_Tema4#slide-29 y #slide-30 · material de Lucía: Tema4_1_ModelFree#slide-11 a #slide-13 (los símbolos π y b, la cobertura y el pseudocódigo off-policy) · Sutton &amp; Barto §5.5, ecuaciones (5.3), (5.5) y (5.6), y §5.6</p>
     </header>
 
     <p class="explicacion" data-t="t4.b10.p1">
       Hay dos formas de resolver la tensión entre “quiero aprender sobre la política óptima” y
-      “necesito explorar”. <strong>Dentro de política</strong> (<em>on-policy</em>) se aprende
+      “necesito explorar”. <strong>On-policy</strong> (<em>on-policy</em>) se aprende
       sobre la misma política que genera la experiencia, y se acepta que esa política tenga que
-      ser un poco exploratoria para siempre. <strong>Fuera de política</strong>
+      ser un poco exploratoria para siempre. <strong>Off-policy</strong>
       (<em>off-policy</em>) se usan dos: la <strong>política objetivo</strong> \(\pi\), que es la
       que se quiere aprender, y la <strong>política de comportamiento</strong> \(b\), que es la
       que se ejecuta y la que explora.
@@ -888,7 +901,7 @@ Repetir para cada episodio:
     </p>
 
     <p class="explicacion" data-t="t4.b10.p2">
-      Los métodos fuera de política son <strong>más generales</strong> —los de dentro de política
+      Los métodos off-policy son <strong>más generales</strong> —los de on-policy
       son el caso particular \(\pi = b\)— y también <strong>más ruidosos</strong>: mayor varianza
       y convergencia más lenta. A cambio, permiten aprender de experiencia ajena: de un registro
       histórico, de otro agente, o de una política antigua. Es la puerta por la que entrará la
@@ -951,7 +964,7 @@ Repetir para cada episodio:
     </p>
 
     <p class="explicacion" data-t="t4.b10.p8">
-      En el pseudocódigo del control MC fuera de política aparece la línea
+      En el pseudocódigo del control MC off-policy aparece la línea
       \(W \leftarrow W \cdot \tfrac{1}{b(A_t\mid S_t)}\), y al lado, con una flecha y un signo de
       interrogación, la forma general \(W \leftarrow W \cdot \tfrac{\pi(A_t\mid S_t)}{b(A_t\mid
       S_t)}\). <strong>¿Por qué desaparece el numerador?</strong> Porque en ese algoritmo la
@@ -996,7 +1009,7 @@ Repetir para cada episodio:
       terminal, entonces \(Q(S_{t+1},A_{t+1})\) vale cero por definición</strong>.
     </p>
 
-    <pre class="codigo" data-t="t4.b11.caja">SARSA (control TD dentro de política), para estimar Q ≈ q_*
+    <pre class="codigo" data-t="t4.b11.caja">SARSA (control TD on-policy), para estimar Q ≈ q_*
 
 Parámetros del algoritmo: paso de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño
 Inicializar Q(s,a) para todo s ∈ S⁺, a ∈ A(s), arbitrariamente salvo que Q(terminal,·) = 0
@@ -1101,8 +1114,8 @@ Repetir para cada episodio:
     <p class="explicacion" data-t="t4.b12.p2">
       La política de comportamiento es <strong>ε-greedy respecto a \(Q\)</strong>; la política
       objetivo es la <strong>greedy respecto a \(Q\)</strong>. Son distintas, y por eso Q-learning
-      es <strong>fuera de política</strong>. Ojo a la razón: no es fuera de política por usar
-      ε-greedy —SARSA también la usa y es dentro de política—, sino porque <strong>su objetivo
+      es <strong>off-policy</strong>. Ojo a la razón: no es off-policy por usar
+      ε-greedy —SARSA también la usa y es on-policy—, sino porque <strong>su objetivo
       evalúa la política greedy</strong> mientras se comporta con otra.
     </p>
 
@@ -1114,7 +1127,7 @@ Repetir para cada episodio:
       omite para Q-learning aunque las escribe dos diapositivas antes para SARSA).
     </p>
 
-    <pre class="codigo" data-t="t4.b12.caja">Q-learning (control TD fuera de política), para estimar π ≈ π_*
+    <pre class="codigo" data-t="t4.b12.caja">Q-learning (control TD off-policy), para estimar π ≈ π_*
 
 Parámetros del algoritmo: paso de aprendizaje α ∈ (0,1], ε &gt; 0 pequeño
 Inicializar Q(s,a) para todo s ∈ S⁺, a ∈ A(s), arbitrariamente salvo que Q(terminal,·) = 0
@@ -1194,8 +1207,8 @@ Repetir para cada episodio:
 
     <p class="explicacion" data-t="t4.b13.p3">
       Y hay una lectura que cierra el capítulo entero: en el ejemplo del acantilado, Expected
-      SARSA se usa <strong>dentro de política</strong>, pero en general puede comportarse con una
-      política distinta de la objetivo, y entonces es un método <strong>fuera de política</strong>.
+      SARSA se usa <strong>on-policy</strong>, pero en general puede comportarse con una
+      política distinta de la objetivo, y entonces es un método <strong>off-policy</strong>.
       En particular: <strong>si \(\pi\) es la política greedy y el comportamiento es exploratorio,
       Expected SARSA es exactamente Q-learning</strong>. Expected SARSA subsume y generaliza a
       Q-learning.
@@ -1458,7 +1471,7 @@ Repetir para cada episodio:
             <td><strong>módulo 2</strong></td>
           </tr>
           <tr data-t="t4.err.5">
-            <td>“El control MC dentro de política con ε-soft converge a la política óptima”</td>
+            <td>“El control MC on-policy con ε-soft converge a la política óptima”</td>
             <td>Converge a la <strong>mejor política entre las ε-soft</strong>, no a \(\pi_*\), salvo que \(\varepsilon\to0\). El material de clase dice lo contrario en un sitio y lo correcto en otro</td>
             <td>B5</td>
           </tr>
@@ -1473,13 +1486,13 @@ Repetir para cada episodio:
             <td>B10</td>
           </tr>
           <tr data-t="t4.err.8">
-            <td>“Q-learning es fuera de política porque usa ε-greedy”</td>
-            <td>No. Es fuera de política porque su <strong>objetivo</strong> usa \(\max_a Q\), es decir, evalúa la política greedy mientras se comporta con otra. SARSA también usa ε-greedy y es dentro de política</td>
+            <td>“Q-learning es off-policy porque usa ε-greedy”</td>
+            <td>No. Es off-policy porque su <strong>objetivo</strong> usa \(\max_a Q\), es decir, evalúa la política greedy mientras se comporta con otra. SARSA también usa ε-greedy y es on-policy</td>
             <td>B12, <strong>módulo 3</strong></td>
           </tr>
           <tr data-t="t4.err.9">
-            <td>“Expected SARSA es dentro de política”</td>
-            <td>Depende. Si la política objetivo es distinta de la de comportamiento, es fuera de política; y si la objetivo es la greedy, <strong>es exactamente Q-learning</strong></td>
+            <td>“Expected SARSA es on-policy”</td>
+            <td>Depende. Si la política objetivo es distinta de la de comportamiento, es off-policy; y si la objetivo es la greedy, <strong>es exactamente Q-learning</strong></td>
             <td>B13</td>
           </tr>
           <tr data-t="t4.err.10">
@@ -1589,7 +1602,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t4.glosario.f12">
             <td>\(C(s,a)\)</td>
-            <td>suma acumulada de pesos (MC fuera de política ponderado)</td>
+            <td>suma acumulada de pesos (MC off-policy ponderado)</td>
             <td>B10</td>
             <td>Aparece en el pseudocódigo de clase sin explicarse</td>
           </tr>

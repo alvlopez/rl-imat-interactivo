@@ -674,7 +674,7 @@ export const EN = {
   "t2.m3.mEcuaciones": "Equations in the system",
   "t2.m3.mBarridos": "Sweeps done",
   "t2.m3.mDelta": "Largest change",
-  "t2.m3.vista.q": "q(s,a)",
+  "t2.m3.vista.q": "q<sub>π</sub>(s,a)",
   "t2.m3.titulo.v": "v<sub>π</sub>(s)",
   "t2.m3.titulo.q": "q<sub>π</sub>(s,a) — the highlighted wedge is the best action",
   "t2.m3.exacto": "exact",
@@ -724,7 +724,7 @@ export const EN = {
   "t2.m4.leyenda":
     "Blue: wind (cells 3 and 4). Green: wind (cells 10 and 14). Red: the whirlpool (state " +
     "8), where <em>entering</em> costs −5. T can only be reached from 16 by going east.",
-  "t2.m4.paraActualizar": "To update v({e}) you need the values of:",
+  "t2.m4.paraActualizar": "To update v<sub>π</sub>({e}) you need the values of:",
   "t2.m4.aviso":
     "<strong>On the direction of the wind.</strong> The problem statement says “East wind” " +
     "and “South wind” without making clear whether the wind blows towards that compass " +
@@ -2577,12 +2577,12 @@ export const EN = {
     "And there is a second consequence, less obvious and far more decisive: <strong>without "
     + "the model, a table of state values is useless for recovering a policy</strong>. With "
     + "a model you look one step ahead —\\(\\pi(s)=\\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)"
-    + "[r+\\gamma v(s')]\\)— and you are done. Without a model that expression cannot be "
+    + "[r+\\gamma v_\\pi(s')]\\)— and you are done. Without a model that expression cannot be "
     + "evaluated: the missing factor is precisely the one you do not have. That is why the "
     + "whole unit estimates <strong>action values</strong>: with \\(q\\), the policy comes "
     + "out of an \\(\\arg\\max\\) that needs nothing else.",
   "t4.b0.ec":
-    "\\[ \\pi(s) \\;=\\; \\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)\\big[\\,r+\\gamma v(s')"
+    "\\[ \\pi(s) \\;=\\; \\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)\\big[\\,r+\\gamma v_\\pi(s')"
     + "\\,\\big] \\qquad\\text{against}\\qquad \\pi(s) \\;\\doteq\\; \\arg\\max_a q(s,a) \\]",
   "t4.b0.p4":
     "The first one is Unit 3’s and needs \\(p\\). The second is equation (5.1) of the book "
@@ -2743,13 +2743,11 @@ export const EN = {
     + "S_2 = 5,  A_2 = right,  R_3 = −1\n"
     + "S_3 = 6,  A_3 = down,   R_4 = −1\n"
     + "S_4 = T",
-  "t4.b4.erratum":
-    "<strong>Erratum in the material.</strong> The slide writes \\(A_3 = r\\) (right), but "
-    + "in the drawing the trace goes <strong>down</strong> from state 6 to the terminal "
-    + "state, which sits right below it. With this geometry, going right from 6 bounces off "
-    + "the wall and leaves the agent in 6: the episode would never end. The correct action "
-    + "is <strong>down</strong>, and that is the one used here. The other three do match the "
-    + "drawing.",
+  "t4.b4.letras":
+    "The slide abbreviates the actions to their initial: <code>r</code> for <em>right</em> "
+    + "and <code>d</code> for <em>down</em>. They are written out in full here because the "
+    + "Spanish for <em>right</em> is <em>derecha</em>, which also starts with a <code>d</code> "
+    + "and makes the slide's abbreviation ambiguous to a Spanish reader.",
   "t4.b4.cab":
     "<th>\\(t\\)</th><th>\\(S_t\\)</th><th>\\(R_{t+1}\\)</th>"
     + "<th>\\(G_t\\) with \\(\\gamma=1\\)</th><th>\\(V(S_t)\\) after the episode</th>",
@@ -2776,7 +2774,9 @@ export const EN = {
 
   /* --- B5 · limitaciones, exploración y políticas ε-soft ------------------ */
   "t4.b5.h2": "Limitations, exploration and ε-soft policies",
-  "t4.b5.fuente": "Sutton &amp; Barto §5.2, §5.3 and §5.4",
+  "t4.b5.fuente":
+    "Sutton &amp; Barto §5.2, §5.3 and §5.4 · GLIE: Singh et al. (2000); the equivalent "
+    + "condition is in §6.4 of the book",
   "t4.b5.p1":
     "The slide lists four limitations: <strong>it only works for episodic MDPs</strong>, "
     + "because the episode has to end before \\(G_t\\) is known; the estimator is unbiased "
@@ -2821,29 +2821,41 @@ export const EN = {
     + "            For all a ∈ A(S_t):\n"
     + "                π(a|S_t) ← 1 − ε + ε/|A(S_t)|   if a = A*\n"
     + "                π(a|S_t) ← ε/|A(S_t)|           if a ≠ A*",
-  "t4.b5.erratum":
-    "<strong>The two lecture collections disagree, and this time it matters.</strong> The "
-    + "reference deck says that the policy improvement theorem extends to ε-soft policies "
-    + "and that this yields <em>“guarantees of convergence to an optimal policy”</em>. The "
-    + "other collection answers the opposite to the same question: <em>“<strong>No</strong>, "
-    + "because we keep exploring… but we can find the <strong>best policy among the ε-soft "
-    + "ones</strong>”</em>. <strong>The second one is right</strong>: the book proves that "
-    + "the optimum is attained <strong>among ε-soft policies</strong>, not \\(\\pi_*\\), "
-    + "unless \\(\\varepsilon\\to 0\\) (§5.4, p. 125). With \\(\\varepsilon\\) fixed, the "
-    + "policy you end up with still takes random actions a fraction \\(\\varepsilon\\) of "
-    + "the time, and that has a price you will see with your own eyes in module 3.",
+  "t4.b5.convergencia":
+    "<strong>What does this converge to?</strong> The answer depends entirely on what you do "
+    + "with \\(\\varepsilon\\), which is why you hear both versions. With \\(\\varepsilon\\) "
+    + "<strong>fixed</strong>, the policy improvement theorem still holds, but "
+    + "<strong>within the ε-soft family</strong>: what you reach is the best ε-soft policy, "
+    + "not \\(\\pi_*\\) (§5.4, p. 125). The limiting policy still takes random actions a "
+    + "fraction \\(\\varepsilon\\) of the time, and that costs return — you will see it with "
+    + "your own eyes in module 3. If instead \\(\\varepsilon\\) <strong>vanishes in the right "
+    + "way</strong>, the limit is \\(\\pi_*\\) after all. That condition has a name, and it "
+    + "is the piece that closes the argument.",
+  "t4.b5.glie1":
+    "<strong>GLIE</strong> — <em>greedy in the limit with infinite exploration</em> — is two "
+    + "conditions on the sequence of policies the algorithm actually follows:",
+  "t4.b5.glieLi1":
+    "<strong>Infinite exploration:</strong> every state-action pair is visited infinitely "
+    + "often, \\(N_k(s,a)\\to\\infty\\). This is what makes the sample mean of <em>each</em> "
+    + "pair converge to its value; without it there are actions you never learn anything about.",
+  "t4.b5.glieLi2":
+    "<strong>Greedy in the limit:</strong> the policy converges to the greedy policy with "
+    + "respect to \\(Q\\), that is \\(\\pi_k(a\\mid s)\\to 1\\) for \\(a = \\arg\\max_a "
+    + "Q_k(s,a)\\). This is what removes the residual cost of exploring.",
+  "t4.b5.glie2":
+    "The two look incompatible — explore forever and end up greedy — and they are not: it is "
+    + "enough for \\(\\varepsilon\\) to decay, but slowly. An ε-greedy policy with "
+    + "\\(\\varepsilon_k = 1/k\\) satisfies both, because \\(1/k\\) <strong>never reaches "
+    + "zero</strong> (you keep exploring at every step) yet <strong>tends to zero</strong> "
+    + "(the policy becomes greedy). Under GLIE, Monte Carlo control converges to \\(q_*\\) "
+    + "and the policy to \\(\\pi_*\\). Without GLIE, with \\(\\varepsilon\\) fixed, it "
+    + "converges to the best ε-soft policy and stops there: exactly the case in the box above.",
   "t4.b5.nota":
-    "Two warnings. First: the name <strong>GLIE</strong> (<em>greedy in the limit with "
-    + "infinite exploration</em>), used in class, <strong>does not appear in Sutton &amp; "
-    + "Barto</strong>: it comes from Singh et al. (2000) and from David Silver’s slides. The "
-    + "book states the equivalent condition without naming it, in §6.4: it converges "
-    + "<em>“as long as all state-action pairs are visited an infinite number of times and "
-    + "the policy converges in the limit to the greedy policy, which can be arranged, for "
-    + "example, with ε-greedy policies by setting \\(\\varepsilon = 1/t\\)”</em>. Second: "
-    + "<strong>Monte Carlo with exploring starts has no convergence proof</strong>. The book "
-    + "says so literally and adds that it is <em>“one of the most fundamental open "
-    + "theoretical questions in reinforcement learning”</em> (§5.3, p. 121). If anyone sells "
-    + "it to you as a theorem, it is not one.",
+    "One warning worth keeping in mind: <strong>Monte Carlo with exploring starts has no "
+    + "convergence proof</strong>. The book says so literally and adds that it is <em>“one of "
+    + "the most fundamental open theoretical questions in reinforcement learning”</em> (§5.3, "
+    + "p. 121). If anyone sells it to you as a theorem, it is not one. The GLIE guarantee, by "
+    + "contrast, is proved.",
 
   /* --- B6 · predicción con TD -------------------------------------------- */
   "t4.b6.h2": "Temporal-difference prediction",
@@ -2964,11 +2976,15 @@ export const EN = {
   "t4.b7.g6":
     "<td>Markov property</td><td>Does not exploit it</td>"
     + "<td>Exploits it: underneath, it estimates the model of the process</td>",
-  "t4.b7.erratum":
-    "The reference deck writes <strong>“MDP property”</strong> twice where it should say "
-    + "<strong>“Markov property”</strong>; the other collection writes it correctly and, on "
-    + "top of that, gives the reason —the only formulation of the two that does—: TD "
-    + "<em>“is covertly trying to estimate \\(p\\)”</em>.",
+  "t4.b7.markov":
+    "<strong>Why TD exploits it and MC does not.</strong> In class that last row is labelled "
+    + "<em>“sensitive to MDP properties (Markovian state feedback)”</em>, and the reason is "
+    + "given by the other collection — the only formulation of the two that gives it —: TD "
+    + "<em>“is covertly trying to estimate \\(p\\)”</em>. By bootstrapping on "
+    + "\\(V(S_{t+1})\\), TD takes for granted that \\(S_{t+1}\\) <strong>summarises the whole "
+    + "past</strong>; if the state is not Markovian, that assumption is false and the target "
+    + "is built wrong. Monte Carlo assumes nothing: it averages complete returns, and it does "
+    + "not care whether the state satisfies Markov or not.",
   "t4.b7.p4":
     "And a warning about the claim “TD converges faster”. The book is explicit: <em>“no one "
     + "has been able to prove mathematically that one method converges faster than the "
@@ -3059,7 +3075,7 @@ export const EN = {
     + "before improving. The first is the one that forces the choice between ε-soft policies "
     + "(block B5) and off-policy methods (block B10).",
 
-  /* --- B10 · dentro y fuera de política · muestreo de importancia --------- */
+  /* --- B10 · on-policy y off-policy · muestreo de importancia --------- */
   "t4.b10.h2": "On-policy and off-policy, and importance sampling",
   "t4.b10.fuente":
     "Sutton &amp; Barto §5.5, equations (5.3), (5.5) and (5.6), and §5.6",
@@ -4004,7 +4020,7 @@ export const EN = {
   ],
   "t4.m1.quiz.0.explicacion":
     "The greedy operator on state values is \\(\\arg\\max_a \\sum_{s',r} p(s',r\\mid s,a)"
-    + "[r+\\gamma v(s')]\\): without \\(p\\) it cannot be evaluated. A deterministic MDP does "
+    + "[r+\\gamma v_*(s')]\\): without \\(p\\) it cannot be evaluated. A deterministic MDP does "
     + "not help, because what is missing is not the randomness but <strong>the "
     + "destination</strong> of each action; in the gridworld on this page the transitions are "
     + "deterministic and there are still two environments with the same \\(v_\\pi\\) and "
@@ -4040,7 +4056,7 @@ export const EN = {
   ],
   "t4.m1.quiz.2.explicacion":
     "The improvement operator of Unit 3 was written \\(\\arg\\max_a \\sum_{s',r} "
-    + "p(s',r\\mid s,a)[r+\\gamma v(s')]\\), with \\(p\\) inside. What is lost now is exactly "
+    + "p(s',r\\mid s,a)[r+\\gamma v_\\pi(s')]\\), with \\(p\\) inside. What is lost now is exactly "
     + "that factor. The Bellman equation is still true —it just cannot be evaluated—, "
     + "stochastic policies already appeared in Unit 2, and the size of the state space is the "
     + "problem of Unit 5, not of this one: here everything is still tabular.",

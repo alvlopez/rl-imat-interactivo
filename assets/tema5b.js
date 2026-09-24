@@ -1187,7 +1187,7 @@ function modulo2() {
     "El teorema sirve porque en su lado derecho <strong>no aparece \\(\\nabla\\mu\\)</strong>: la "
     + "distribución de estados está, pero <strong>sin derivar</strong>. Por eso se puede estimar el "
     + "gradiente sin conocer la dinámica del entorno — y por eso hay que <strong>seguir "
-    + "\\(\\pi\\)</strong> para muestrear, que es lo que hace estos métodos dentro de política.");
+    + "\\(\\pi\\)</strong> para muestrear, que es lo que hace estos métodos on-policy.");
   renderizarMatematicas(zonaLectura);
   const lectura2 = document.createElement("p");
   lectura2.className = "explicacion siempre";
@@ -1642,7 +1642,7 @@ function modulo3() {
 
   parrafo(zonaPaneles, "explicacion", t("t5b.m3.panelOnPolicy",
     "<code>5_Tema_5_2#slide-10</code> pregunta al aula: <strong>«¿on-policy u off-policy? ¿online u "
-    + "offline?»</strong>. <strong>Es dentro de política y fuera de línea.</strong> Dentro de "
+    + "offline?»</strong>. <strong>Es on-policy y fuera de línea.</strong> Dentro de "
     + "política porque el episodio se genera siguiendo la misma \\(\\pi\\) que se está actualizando: "
     + "es lo que exige el paso del teorema a la muestra, «si se sigue \\(\\pi\\), los estados "
     + "aparecen en esas proporciones». Fuera de línea porque \\(G_t\\) es el retorno "

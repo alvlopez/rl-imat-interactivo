@@ -1278,7 +1278,7 @@ describe("Módulo 4 · el ejemplo w → 2w (guion M4 §8a)", () => {
     }
   });
 
-  test("C4-6: dentro de política el factor (1+α(2γ−1))(1−4α) tiene módulo < 1, y con α = 0,1 vale 0,66", () => {
+  test("C4-6: on-policy el factor (1+α(2γ−1))(1−4α) tiene módulo < 1, y con α = 0,1 vale 0,66", () => {
     /* Derivación declarada de este guion sobre §9.4: el cierre dentro de
        política NO está en el libro y el módulo lo dice en pantalla (A16). */
     for (const alpha of ALPHAS_M4) {
@@ -1290,7 +1290,7 @@ describe("Módulo 4 · el ejemplo w → 2w (guion M4 §8a)", () => {
     cerca(fragmentoW2W({ gamma: 1, alpha: 0.1, regimen: "on" }).factor, 0.66, 1e-12, "factor con α = 0,1");
   });
 
-  test("C4-7: A fuera de política vale 1−2γ y es negativa si y solo si γ > 0,5", () => {
+  test("C4-7: A off-policy vale 1−2γ y es negativa si y solo si γ > 0,5", () => {
     // (9.11), p. 228, evaluada en un solo estado. El umbral 0,5 es el cambio de signo de A.
     for (let k = 0; k <= 100; k++) {
       const gamma = k / 100;
@@ -1300,7 +1300,7 @@ describe("Módulo 4 · el ejemplo w → 2w (guion M4 §8a)", () => {
     }
   });
 
-  test("C4-8: A dentro de política vale (5−2γ)/2 > 0, b = 0 y w_TD = 0", () => {
+  test("C4-8: A on-policy vale (5−2γ)/2 > 0, b = 0 y w_TD = 0", () => {
     for (let k = 0; k <= 100; k++) {
       const gamma = k / 100;
       const { A, b, wTD } = fragmentoW2W({ gamma, alpha: 0.1, regimen: "on" });
@@ -1833,7 +1833,7 @@ describe("Módulo 6 · las dos tablas de convergencia (guion M6 §8a)", () => {
     for (const c of tabulares) assert.equal(c.veredicto, "si", `${c.clave}`);
   });
 
-  test("C6-7: «Q-learning · dentro de política» es inalcanzable y `fichaCasilla` la rechaza", () => {
+  test("C6-7: «Q-learning · on-policy» es inalcanzable y `fichaCasilla` la rechaza", () => {
     /* §11.3, p. 287: «one can simply use Sarsa rather than Q-learning». Es una
        restricción del modelo, no un resultado, y el motor tiene que hacerla
        imposible en vez de inventar una casilla. */
@@ -1844,7 +1844,7 @@ describe("Módulo 6 · las dos tablas de convergencia (guion M6 §8a)", () => {
       );
     }
     assert.equal(TABLA_CONTROL.filter((c) => c.algoritmo === "qLearning" && c.politica === "dentro").length, 0);
-    // Pero Q-learning fuera de política sí existe, y cuenta el inductor aunque se pida «dentro».
+    // Pero Q-learning off-policy sí existe, y cuenta el inductor aunque se pida «dentro».
     assert.equal(contarInductores({ algoritmo: "qLearning", aproximador: "lineal", politica: "dentro" }).fueraDePolitica, true);
   });
 

@@ -646,7 +646,7 @@ function modulo1() {
       ],
       correcta: 0,
       explicacion: "El operador greedy sobre valores de estado es \\(\\arg\\max_a \\sum_{s',r} "
-        + "p(s',r\\mid s,a)[r+\\gamma v(s')]\\): sin \\(p\\) no se puede evaluar. Que el MDP sea "
+        + "p(s',r\\mid s,a)[r+\\gamma v_*(s')]\\): sin \\(p\\) no se puede evaluar. Que el MDP sea "
         + "determinista no ayuda, porque lo que falta no es la aleatoriedad sino <strong>el "
         + "destino</strong> de cada acción; en el gridworld de esta página las transiciones son "
         + "deterministas y aun así hay dos entornos con la misma \\(v_\\pi\\) y políticas greedy "
@@ -683,7 +683,7 @@ function modulo1() {
       ],
       correcta: 0,
       explicacion: "El operador de mejora del Tema 3 se escribía \\(\\arg\\max_a \\sum_{s',r} "
-        + "p(s',r\\mid s,a)[r+\\gamma v(s')]\\), con \\(p\\) dentro. Lo que se pierde ahora es "
+        + "p(s',r\\mid s,a)[r+\\gamma v_\\pi(s')]\\), con \\(p\\) dentro. Lo que se pierde ahora es "
         + "exactamente ese factor. La ecuación de Bellman sigue siendo verdad —lo que ocurre es "
         + "que no se puede evaluar—, las políticas estocásticas ya aparecían en el Tema 2, y el "
         + "tamaño del espacio de estados es el problema del Tema 5, no de éste: aquí todo sigue "
@@ -2262,7 +2262,8 @@ function figuraTraza() {
   const cuerpo = caja(zona, t("t4.b4.figura",
     "El episodio 1 → 2 → 5 → 6 → T, con el retorno \\(G_t\\) de cada estado visitado"));
 
-  /* Episodio de 4_Tema4#slide-12, con A_3 = abajo (ver la errata del bloque). */
+  /* Episodio de 4_Tema4#slide-12 (A_3 = d, abajo: la diapositiva se corrigió
+     el 2026-09-24 y ya coincide con el dibujo). */
   const TRAZA = [
     { s: 0, accion: "dch", g: -4 },
     { s: 1, accion: "abajo", g: -3 },

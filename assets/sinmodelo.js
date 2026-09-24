@@ -108,7 +108,7 @@ export function paseoAleatorio({
 
   /* v_π SE CALCULA, no se escribe a mano. Con γ = 1 y paseo simétrico el valor
      es la interpolación lineal entre las dos recompensas terminales:
-       v(i) = rIzq + (rDch − rIzq) · (i+1)/(n+1)
+       v_π(i) = rIzq + (rDch − rIzq) · (i+1)/(n+1)
      que da [1/6 … 5/6] con 5 estados y [−0,9 … 0,9] con 19. */
   const valoresVerdaderos = [];
   for (let s = 0; s < nEstados; s++) {
@@ -1101,7 +1101,7 @@ function valorEsperadoEpsilonGreedy(fila, epsilon) {
  *
  * Se mueve de forma determinista en la misma dirección en la que SARSA se mueve
  * en esperanza: elimina la varianza que introduce el sorteo de A_{t+1}. Aquí se
- * usa DENTRO de política (la esperanza se toma bajo la misma ε-greedy que se
+ * usa en modo ON-POLICY (la esperanza se toma bajo la misma ε-greedy que se
  * está ejecutando), que es como lo usa el libro en el acantilado; con π greedy
  * y comportamiento exploratorio sería exactamente Q-learning.
  *

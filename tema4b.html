@@ -417,9 +417,9 @@ Para cada episodio:
     <p class="explicacion" data-t="t4b.b5.p4">
       El capítulo tiene tres piezas más que aquí solo se nombran: <strong>SARSA esperado a \(n\)
       pasos</strong>, que cambia el último valor por su esperanza \(\bar V_{t+n-1}(s)\doteq\sum_a
-      \pi(a\mid s)Q_t(s,a)\); la versión <strong>fuera de política</strong> con la razón de
+      \pi(a\mid s)Q_t(s,a)\); la versión <strong>off-policy</strong> con la razón de
       muestreo de importancia truncada \(\rho_{t:h}\); y el <em><strong>tree backup</strong></em>,
-      que consigue aprendizaje fuera de política <strong>sin</strong> muestreo de importancia.
+      que consigue aprendizaje off-policy <strong>sin</strong> muestreo de importancia.
       Están en §7.2, §7.3 y §7.5 del libro.
     </p>
   </section>
@@ -819,7 +819,7 @@ Para cada episodio:
     </p>
 
     <p class="explicacion" data-t="t4b.b11.p5">
-      De <strong>Q(\(\lambda\))</strong> —la versión fuera de política con trazas— basta saber que
+      De <strong>Q(\(\lambda\))</strong> —la versión off-policy con trazas— basta saber que
       existe y que su dificultad propia es qué hacer con la traza cuando la política de
       comportamiento toma una acción que la política objetivo nunca tomaría: la respuesta clásica
       es <strong>cortarla a cero</strong>. El libro lo trata fuera del tramo §12.1-§12.7 que cubre
@@ -1009,7 +1009,7 @@ Para cada episodio:
           <tr data-t="t4b.glosario.f10">
             <td>\(b(a\mid s)\)</td>
             <td><strong>política de comportamiento</strong></td>
-            <td>B5 (mención de fuera de política)</td>
+            <td>B5 (mención de off-policy)</td>
           </tr>
           <tr data-t="t4b.glosario.f11">
             <td>\(w\), \(x(s)\), \(\nabla\hat v(s,w)\)</td>

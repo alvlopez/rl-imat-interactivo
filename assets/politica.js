@@ -36,7 +36,7 @@
      α^θ, α^w los dos pasos, independientes.  NUNCA β: el β de
               5_Tema_5_2#slide-17 es notación importada sin armonizar.
      J(θ)     rendimiento; SE MAXIMIZA, por ASCENSO
-     μ(s)     distribución dentro de política
+     μ(s)     distribución on-policy
      η(s)     visitas esperadas por episodio;  μ = η / Σ η
      δ        error TD en actor-crítico; error MONTE CARLO en REINFORCE con
               línea base. Mismo símbolo, dos objetos.
@@ -658,7 +658,7 @@ function distribucionInicial(entorno) {
  *
  *   n(s) = 1 + Σ_a π(a|s) n(s')          con n(terminal) = 0
  *   v(s) = −n(s)                          (γ = 1, r = −1 por paso)
- *   q(s,a) = −1 + v(s')                   (transiciones deterministas)
+ *   q_π(s,a) = −1 + v_π(s')                   (transiciones deterministas)
  *   η(s) = h(s) + Σ_{s̄} η(s̄) Σ_a π(a|s̄) p(s|s̄,a)     (S&B ec. 9.2)
  *   μ(s) = η(s) / Σ_{s'} η(s')
  *

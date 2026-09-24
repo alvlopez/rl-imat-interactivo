@@ -470,7 +470,7 @@
     </p>
     <p class="explicacion" data-t="t5b.b6.texto3">
       Dos cosas que las diapositivas no dicen y que hacen falta para entender la fórmula. La
-      primera: <strong>qué es \(\mu(s)\)</strong>. Es la <strong>distribución dentro de política</strong>, la fracción del
+      primera: <strong>qué es \(\mu(s)\)</strong>. Es la <strong>distribución on-policy</strong>, la fracción del
       tiempo que se pasa en cada estado siguiendo \(\pi\). Se calcula contando visitas: si
       \(\eta(s)\) es el número esperado de pasos en \(s\) por episodio, entonces \(\mu(s) =
       \eta(s)/\sum_{s'}\eta(s')\). No es una distribución arbitraria ni una elección de diseño:
@@ -494,7 +494,7 @@
       es <strong>derivar</strong> la distribución. \(\mu(s)\) sigue estando en la fórmula, y el paso
       siguiente es exactamente muestrear estados siguiendo \(\pi\): «si se sigue \(\pi\), los
       estados aparecerán en esas proporciones». <strong>Eso es lo que hace que estos métodos sean
-      dentro de política.</strong>
+      on-policy.</strong>
     </div>
     <p><a class="siguiente" href="#m2" data-t="t5b.b6.modulo">→ módulo 2: los dos lados de la ecuación, con sus números, y la constante que los iguala.</a></p>
   </section>
@@ -643,7 +643,7 @@ Repetir para cada episodio:
     <div class="aviso" data-t="t5b.b7.respuesta">
       <code>5_Tema_5_2#slide-10</code> pregunta al aula: <strong>«¿on-policy u off-policy? ¿online u offline?»</strong>
       y no lo responde en pantalla. La respuesta, en las notas del ponente: <strong>es dentro de
-      política (<em>on-policy</em>) y fuera de línea (<em>offline</em>)</strong>. Dentro de política porque el
+      política (<em>on-policy</em>) y fuera de línea (<em>offline</em>)</strong>. On-policy porque el
       episodio se genera siguiendo la misma \(\pi\) que se actualiza —es lo que exige el paso de
       la suma sobre \(\mu\) a la esperanza—; fuera de línea porque hay que esperar al final del
       episodio para tener \(G_t\).
@@ -1058,7 +1058,7 @@ Repetir para cada episodio:
     <p class="explicacion" data-t="t5b.b11.texto3">
       La diapositiva no define \(D_{KL}\) ni dice entre qué dos distribuciones se calcula. Para
       dos políticas sobre el mismo conjunto de acciones, y promediando sobre los estados con la
-      distribución dentro de política, es esto:
+      distribución on-policy, es esto:
     </p>
     <p class="ecuacion" data-t="t5b.b11.ecuacion2">
       \[ D_{KL}(\pi_{\theta_{\text{ant}}} \,\|\, \pi_\theta) \;=\; \sum_s \mu(s) \sum_a \pi(a\mid s,\theta_{\text{ant}})\,\ln\frac{\pi(a\mid s,\theta_{\text{ant}})}{\pi(a\mid s,\theta)} \]
@@ -1149,7 +1149,7 @@ Repetir para cada episodio:
     </p>
     <div class="aviso" data-t="t5b.b12.aviso">
       ⚠ <strong>El libro llama \(\mu(s,\theta)\) a la media de esta gaussiana</strong>, y \(\mu(s)\) a la
-      distribución dentro de política del teorema del gradiente — las dos cosas, en el mismo
+      distribución on-policy del teorema del gradiente — las dos cosas, en el mismo
       capítulo. Aquí la media se escribe \(m(s,\theta)\) para que \(\mu(s)\) siga significando
       lo mismo que en el bloque B6 y en la página del tema anterior. Si lees el libro, el
       \(\mu\) de la ecuación (13.19) es esta \(m\).
@@ -1203,7 +1203,7 @@ Repetir para cada episodio:
       rendimiento deja de ser el valor del estado inicial y pasa a ser la <strong>tasa de recompensa
       media</strong> \(r(\pi)\); el teorema del gradiente sigue siendo cierto, con constante de
       proporcionalidad 1, y ahí sí es una igualdad. Ninguna de las dos barajas lo toca.
-      <strong>Gradiente de política fuera de política</strong>: existe en la literatura y el libro solo lo
+      <strong>Gradiente de política off-policy</strong>: existe en la literatura y el libro solo lo
       cita en sus notas. <strong>Gradiente natural</strong>: igual. Y <strong>la demostración del teorema</strong>, que
       está en el recuadro de la p. 347 del libro y que aquí se comprueba con números en vez de
       reproducirse.
@@ -1255,7 +1255,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t5b.ecuaciones.f6">
             <td>\(\mu(s) = \eta(s)/\sum_{s'}\eta(s')\)</td>
-            <td>La distribución dentro de política sale de contar visitas</td>
+            <td>La distribución on-policy sale de contar visitas</td>
             <td>B6, módulo 2</td>
           </tr>
           <tr data-t="t5b.ecuaciones.f7">
@@ -1339,7 +1339,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t5b.errores.f5">
             <td>«El teorema del gradiente evita muestrear estados»</td>
-            <td><strong>No.</strong> Evita <strong>derivar</strong> la distribución de estados. \(\mu(s)\) sigue en la fórmula, y el paso siguiente es precisamente muestrear estados siguiendo \(\pi\) — que es lo que hace estos métodos <strong>dentro de política</strong>. S&amp;B §13.2, p. 346 y §13.3, p. 348</td>
+            <td><strong>No.</strong> Evita <strong>derivar</strong> la distribución de estados. \(\mu(s)\) sigue en la fórmula, y el paso siguiente es precisamente muestrear estados siguiendo \(\pi\) — que es lo que hace estos métodos <strong>on-policy</strong>. S&amp;B §13.2, p. 346 y §13.3, p. 348</td>
           </tr>
           <tr data-t="t5b.errores.f6">
             <td>«En un MDP finito la política óptima puede ser estocástica»</td>
@@ -1447,7 +1447,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t5b.glosario.f9">
             <td>\(\mu(s)\)</td>
-            <td><strong>distribución dentro de política</strong>: fracción del tiempo que se pasa en \(s\) siguiendo \(\pi\)</td>
+            <td><strong>distribución on-policy</strong>: fracción del tiempo que se pasa en \(s\) siguiendo \(\pi\)</td>
             <td>B6, módulo 2</td>
             <td>No está en <code>notacion.md</code>. Es la de S&amp;B §9.2 y la misma que usa la página del tema anterior</td>
           </tr>
@@ -1467,7 +1467,7 @@ Repetir para cada episodio:
             <td>\(m(s,\theta)\)</td>
             <td><strong>media</strong> de la política gaussiana</td>
             <td>B12</td>
-            <td>⚠ <strong>El libro la llama \(\mu(s,\theta)\)</strong>, y en el mismo capítulo \(\mu(s)\) es la distribución dentro de política. Aquí se renombra para que \(\mu\) signifique una sola cosa</td>
+            <td>⚠ <strong>El libro la llama \(\mu(s,\theta)\)</strong>, y en el mismo capítulo \(\mu(s)\) es la distribución on-policy. Aquí se renombra para que \(\mu\) signifique una sola cosa</td>
           </tr>
           <tr data-t="t5b.glosario.f12">
             <td>\(\eta_{KL}\)</td>

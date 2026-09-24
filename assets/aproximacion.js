@@ -203,7 +203,7 @@ export function cachePaseoMil() {
  * @param {number} radio Anchura del salto a cada lado (100 en el Example 9.1).
  * @param {number} gamma Descuento.
  * @returns {{v: Float64Array, eta: Float64Array, mu: Float64Array, barridos: {v: number, eta: number}}}
- *   Valores verdaderos, visitas esperadas, distribución dentro de política y
+ *   Valores verdaderos, visitas esperadas, distribución on-policy y
  *   número de barridos que ha costado cada una.
  * @throws {Error} Si alguna de las dos iteraciones no converge en el tope.
  */
@@ -224,7 +224,7 @@ function resolverPaseo(nEstados, radio, gamma) {
     rMedia[s] = (nDch[s] - nIzq[s]) / total;
   }
 
-  /* v(s) ← (1/200)[ γ Σ_{s' vecino} v(s') + n_dch(s) − n_izq(s) ] */
+  /* V(s) ← (1/200)[ γ Σ_{s' vecino} V(s') + n_dch(s) − n_izq(s) ] */
   let v = new Float64Array(n);
   let barridosV = 0;
   for (let iter = 0; iter < MAX_BARRIDOS; iter++) {
@@ -1578,7 +1578,7 @@ export function trazaTrasPasos(repr, transiciones, { gamma, lambda, traza = "ree
  *
  * La ÚNICA diferencia entre los dos es el objetivo —q̂(S',A',w), la acción
  * realmente elegida, frente a max_a q̂(S',a,w)—, y eso es lo que convierte a
- * Q-learning en fuera de política. Aquí es literalmente un `if`.
+ * Q-learning en off-policy. Aquí es literalmente un `if`.
  *
  * ⚠ ORDEN DE CONSUMO DEL GENERADOR. Los dos algoritmos consumen el azar en el
  * MISMO orden: `inicio` una vez por episodio, y una elección de acción por
@@ -1860,8 +1860,8 @@ export function fragmentoW2W({ gamma, alpha, w0 = 10, pasos = 60, regimen = "off
   const factor = regimen === "off" ? factorPrimera : factorPrimera * factorSalida;
 
   /* A y b de (9.11)-(9.12) evaluados a mano sobre este fragmento:
-       fuera de política, μ concentrada en s₁:  A = 1·(1 − 2γ),  b = 0
-       dentro de política, μ = (1/2, 1/2):      A = ((1−2γ) + 4)/2 = (5−2γ)/2,
+       off-policy, μ concentrada en s₁:  A = 1·(1 − 2γ),  b = 0
+       on-policy, μ = (1/2, 1/2):      A = ((1−2γ) + 4)/2 = (5−2γ)/2,
                                                 b = 0 (todas las recompensas son 0)
      Con b = 0 el punto fijo es w_TD = 0 siempre que A ≠ 0. */
   const A = regimen === "off" ? 1 - 2 * gamma : (5 - 2 * gamma) / 2;
@@ -1974,7 +1974,7 @@ const CON_BOOTSTRAPPING = new Set(["td0", "sarsa", "qLearning"]);
  *
  * · aproximación: presente si el aproximador es lineal o no lineal.
  * · bootstrapping: presente en TD(0), SARSA y Q-learning; ausente en MC.
- * · fuera de política: presente si el interruptor lo dice y SIEMPRE en
+ * · off-policy: presente si el interruptor lo dice y SIEMPRE en
  *   Q-learning.
  *
  * Y la regla del libro: con los tres, los pesos pueden divergir; con dos o
@@ -2059,9 +2059,9 @@ export const TABLA_PREDICCION = Object.freeze([
  * la política cambia: la garantía de la predicción está enunciada para
  * política constante.
  *
- * La tabla NO separa dentro y fuera de política: MC control y SARSA son dentro
+ * La tabla NO separa on-policy y off-policy: MC control y SARSA son dentro
  * de política por construcción y Q-learning es fuera. La combinación
- * «Q-learning · dentro de política» NO EXISTE y `fichaCasilla` la rechaza
+ * «Q-learning · on-policy» NO EXISTE y `fichaCasilla` la rechaza
  * (aserción C6-7).
  */
 export const TABLA_CONTROL = Object.freeze([
@@ -2091,7 +2091,7 @@ export const TABLA_CONTROL = Object.freeze([
  * @param {string} consulta.politica "dentro" | "fuera".
  * @returns {{veredicto: string, clave: string, cita: string, inductores: object, cuadraConLaRegla: boolean, tabla: string}}
  * @throws {Error} Si la combinación no existe en ninguna de las dos tablas
- *   (en particular, «Q-learning · dentro de política»).
+ *   (en particular, «Q-learning · on-policy»).
  */
 export function fichaCasilla({ algoritmo, aproximador, politica }) {
   const buscar = (tabla) =>
