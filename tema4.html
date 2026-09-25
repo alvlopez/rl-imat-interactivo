@@ -39,11 +39,11 @@
     <h1 data-t="t4.h1">Aprendizaje por refuerzo sin modelo</h1>
     <p class="entradilla" data-t="t4.entradilla">
       Hasta aquí, todo lo que sabías calcular dependía de \(p(s',r\mid s,a)\). A partir de
-      ahora no lo tienes. Esta página responde las preguntas que las diapositivas del tema
-      dejan abiertas: por qué sin modelo hay que estimar \(q_\pi(s,a)\) y no basta con
-      \(v_\pi(s)\), qué separa de verdad a Monte Carlo de la diferencia temporal —y no es la
-      velocidad—, qué hiperparámetros hay detrás de la figura del acantilado que se proyecta
-      en clase sin ninguno, y por qué el \(\max\) de unas estimaciones ruidosas engaña siempre
+      ahora no lo tienes. Esta página acompaña a las diapositivas del tema y desarrolla por
+      escrito lo que en clase se cuenta de palabra: por qué sin modelo hay que estimar
+      \(q_\pi(s,a)\) y no basta con \(v_\pi(s)\), qué separa de verdad a Monte Carlo de la
+      diferencia temporal —y no es la velocidad—, qué hiperparámetros hay detrás de la figura
+      del acantilado, y por qué el \(\max\) de unas estimaciones ruidosas engaña siempre
       hacia arriba.
     </p>
 
@@ -247,7 +247,7 @@
   <section class="modulo solo-estudio" id="b1">
     <header>
       <h2 data-t="t4.b1.h2">Hasta ahora…</h2>
-      <p class="fuente" data-t="t4.b1.fuente">4_Tema4#slide-2 a #slide-7 · sin equivalente en el material de Lucía · Sutton &amp; Barto, caps. 2, 3 y 4</p>
+      <p class="fuente" data-t="t4.b1.fuente">4_Tema4#slide-2 a #slide-7 · Sutton &amp; Barto, caps. 2, 3 y 4</p>
     </header>
 
     <p class="explicacion" data-t="t4.b1.p1">
@@ -286,8 +286,8 @@
     <p class="explicacion nota" data-t="t4.b1.nota">
       Las dos figuras del repaso —el diagrama de flujo de la búsqueda de una política
       (<code>#slide-6</code>) y el triángulo de la iteración generalizada (<code>#slide-7</code>)—
-      son imagen pura en la diapositiva: lo que se dice sobre ellas es oral. Aquí van con su glosa escrita, que
-      es lo que falta cuando se estudia por el PDF.
+      se comentan de palabra en clase. Aquí van con su glosa escrita, para estudiarlas por tu
+      cuenta.
     </p>
   </section>
 
@@ -414,9 +414,8 @@ Repetir para siempre (para cada episodio):
 
     <p class="explicacion" data-t="t4.b4.p1">
       La diapositiva del tema proyecta un episodio completo sobre el gridworld 3×3 del Tema 2
-      y anuncia <em>«cómo evolucionan los valores de estado»</em>. <strong>Los valores no llegan
-      a mostrarse</strong>, y tampoco se dice cuánto vale \(\gamma\) ni si el método es de
-      primera o de cada visita. Aquí está la cuenta entera.
+      y anuncia <em>«cómo evolucionan los valores de estado»</em>. Aquí está la cuenta entera,
+      con \(\gamma = 1\) y el método de primera visita de la diapositiva anterior.
     </p>
 
     <pre class="codigo" data-t="t4.b4.episodio">S_0 = 1,  A_0 = derecha,  R_1 = −1
@@ -457,8 +456,7 @@ S_4 = T</pre>
       estado visitado. Con \(\gamma = 1\) y \(r=-1\) en cada paso, \(G_t\) es simplemente
       <strong>menos el número de pasos que quedaban hasta terminar</strong>. Los cuatro estados
       aparecen una sola vez en el episodio, así que <strong>primera visita y cada visita dan
-      exactamente lo mismo</strong> —motivo por el cual la diapositiva puede permitirse no decir
-      cuál usa—.
+      exactamente lo mismo</strong>.
     </p>
 
     <p class="explicacion" data-t="t4.b4.p3">
@@ -651,9 +649,8 @@ Repetir para cada episodio:
 
     <p class="explicacion nota" data-t="t4.b6.notacion">
       Aquí se escribe \(V\) en mayúscula, no \(v\). Es deliberado: \(v_\pi\) es la función de
-      valor <strong>verdadera</strong> y \(V\) es el array de <strong>estimaciones</strong>. El
-      material de la asignatura las mezcla; el libro no, y este tema entero trata justamente de
-      la diferencia entre las dos.
+      valor <strong>verdadera</strong> y \(V\) es el array de <strong>estimaciones</strong>, y
+      este tema entero trata justamente de la diferencia entre las dos.
     </p>
   </section>
 
@@ -663,7 +660,7 @@ Repetir para cada episodio:
   <section class="modulo solo-estudio" id="b7">
     <header>
       <h2 data-t="t4.b7.h2">Monte Carlo frente a TD</h2>
-      <p class="fuente" data-t="t4.b7.fuente">4_Tema4#slide-19 a #slide-21 · material de Lucía: Tema4_2_ModelFree#slide-7, #slide-8 y #slide-11 (el paseo aleatorio con sus cifras, que Álvaro no tiene) · Sutton &amp; Barto §6.2, Example 6.1, Figura 6.1, Example 6.2 y §6.3</p>
+      <p class="fuente" data-t="t4.b7.fuente">4_Tema4#slide-19 a #slide-21 · material de Lucía: Tema4_2_ModelFree#slide-7, #slide-8 y #slide-11 (el paseo aleatorio con sus cifras) · Sutton &amp; Barto §6.2, Example 6.1, Figura 6.1, Example 6.2 y §6.3</p>
     </header>
 
     <p class="explicacion" data-t="t4.b7.p1">
@@ -706,8 +703,7 @@ Repetir para cada episodio:
     <div id="b7-figura"></div>
 
     <p class="explicacion" data-t="t4.b7.p3">
-      El resumen que se proyecta en clase, ordenado y con dos matices que la diapositiva no
-      pone:
+      El resumen que se proyecta en clase, ordenado y con dos matices añadidos:
     </p>
 
     <div class="tabla-scroll">
@@ -731,9 +727,8 @@ Repetir para cada episodio:
     <div class="aviso" data-t="t4.b7.markov">
       <strong>Por qué TD la aprovecha y MC no.</strong> En clase esa última fila se rotula
       <em>«sensible a propiedades MDP (realimentación markoviana del estado)»</em>
-      (<code>4_Tema4#slide-21</code>), y la razón la da la otra colección —es la única
-      formulación de las dos que la da—: TD <em>«en oculto trata de estimar \(p\)»</em>
-      (<code>Tema4_2_ModelFree#slide-8</code>). Al hacer bootstrapping sobre \(V(S_{t+1})\), TD
+      (<code>4_Tema4#slide-21</code>), y la razón la da la otra colección: TD <em>«en oculto
+      trata de estimar \(p\)»</em> (<code>Tema4_2_ModelFree#slide-8</code>). Al hacer bootstrapping sobre \(V(S_{t+1})\), TD
       da por hecho que \(S_{t+1}\) <strong>resume todo el pasado</strong>; si el estado no es
       markoviano, esa suposición es falsa y el objetivo está mal construido. Monte Carlo no
       supone nada: promedia retornos completos, y le da igual si el estado cumple Markov o no.
@@ -805,8 +800,7 @@ Repetir para cada episodio:
 
     <p class="explicacion" data-t="t4.b8.p2">
       La diapositiva siguiente proyecta la “visión unificada”: un cuadrado con dos ejes y cuatro
-      esquinas. <strong>Ninguna de las dos colecciones explica los ejes</strong>, y son justamente
-      lo que hay que llevarse:
+      esquinas. Los <strong>dos ejes</strong> son justamente lo que hay que llevarse:
     </p>
 
     <ol class="explicacion">
@@ -832,7 +826,7 @@ Repetir para cada episodio:
   <section class="modulo solo-estudio" id="b9">
     <header>
       <h2 data-t="t4.b9.h2">Control sin modelo: GPI, pero sobre \(Q\)</h2>
-      <p class="fuente" data-t="t4.b9.fuente">4_Tema4#slide-26 a #slide-28 · material de Lucía: Tema4_1_ModelFree#slide-6 y #slide-7 (Monte Carlo ES y las dos hipótesis irreales, que Álvaro no cubre) · Sutton &amp; Barto §5.3, ecuación (5.1)</p>
+      <p class="fuente" data-t="t4.b9.fuente">4_Tema4#slide-26 a #slide-28 · material de Lucía: Tema4_1_ModelFree#slide-6 y #slide-7 (Monte Carlo ES y las dos hipótesis irreales) · Sutton &amp; Barto §5.3, ecuación (5.1)</p>
     </header>
 
     <p class="explicacion" data-t="t4.b9.p1">
@@ -912,8 +906,8 @@ Repetir para cada episodio:
       Para que esto funcione hace falta una condición, y es la única: <strong>cobertura</strong>.
       Toda acción que \(\pi\) pueda tomar tiene que ser posible también bajo \(b\):
       \(\pi(a\mid s) > 0 \Rightarrow b(a\mid s) > 0\). De ahí se sigue que \(b\) tiene que ser
-      <strong>estocástica</strong> en los estados donde no coincida con \(\pi\). La diapositiva de
-      clase plantea la pregunta “¿cómo deben ser \(\pi\) y \(b\)?” y no la responde: <strong>la
+      <strong>estocástica</strong> en los estados donde no coincida con \(\pi\). A la pregunta que
+      plantea la diapositiva de clase, “¿cómo deben ser \(\pi\) y \(b\)?”, <strong>la
       respuesta es exactamente ésa</strong>, ni más ni menos. En particular \(\pi\) sí puede ser
       determinista, y de hecho suele serlo (la greedy respecto a \(Q\)).
     </p>
@@ -1060,8 +1054,7 @@ Repetir para cada episodio:
     </p>
 
     <p class="explicacion" data-t="t4.b11.p6">
-      Dos cosas que decir sobre esa curva y que no están escritas en ninguna diapositiva de la
-      colección de referencia. La primera: la <strong>pendiente</strong> es la velocidad de
+      Dos cosas que decir sobre esa curva. La primera: la <strong>pendiente</strong> es la velocidad de
       resolución de episodios, así que lo que hay que mirar no es la altura, es cuándo despega.
       La segunda, más importante: <strong>a priori no se puede saber si has llegado al
       óptimo</strong>, ni siquiera cuando has terminado de entrenar. En la práctica no se busca
@@ -1087,8 +1080,7 @@ Repetir para cada episodio:
     </header>
 
     <p class="explicacion" data-t="t4.b12.p1">
-      La diapositiva de clase hace algo que no hace ninguna otra de las dos colecciones:
-      <strong>deriva el objetivo paso a paso</strong>. Empieza por la regla de SARSA, se pregunta
+      La diapositiva de clase <strong>deriva el objetivo paso a paso</strong>. Empieza por la regla de SARSA, se pregunta
       qué pasa si la acción siguiente la elige la política <strong>greedy</strong> en lugar de la
       de comportamiento, y llega al \(\max\):
     </p>
@@ -1098,14 +1090,6 @@ Repetir para cada episodio:
          \;=\; R_{t+1} + \gamma \max_{a'} Q(S_{t+1},a') \]
     </p>
 
-    <div class="aviso" data-t="t4.b12.erratum">
-      En la diapositiva el último paso está escrito \(= R_{t+1} + \max_{a'} \gamma
-      Q(S_{t+1},a')\), con \(\gamma\) <strong>dentro</strong> del máximo, y dos líneas más abajo
-      vuelve a escribirse \(\gamma \max_a\), fuera. Las dos son iguales porque \(\gamma \ge 0\) y
-      el máximo de un escalar positivo por algo es ese escalar por el máximo; pero la forma
-      estándar —y la de todos los libros— es con \(\gamma\) <strong>fuera</strong>, y es la que se
-      usa aquí.
-    </div>
 
     <p class="ecuacion">
       \[ Q(S_t,A_t) \;\leftarrow\; Q(S_t,A_t) + \alpha\Big[\,R_{t+1} + \gamma \max_a Q(S_{t+1},a) - Q(S_t,A_t)\,\Big] \tag{6.8} \]
@@ -1123,8 +1107,7 @@ Repetir para cada episodio:
       La consecuencia es fuerte: \(Q\) aproxima \(q_*\) <strong>independientemente de la política
       que se esté siguiendo</strong>. La política solo decide qué pares se visitan y se
       actualizan; y lo único que hace falta para converger es que <strong>todos</strong> se sigan
-      actualizando (más las condiciones habituales sobre \(\alpha\), que la diapositiva de clase
-      omite para Q-learning aunque las escribe dos diapositivas antes para SARSA).
+      actualizando (más las condiciones habituales sobre \(\alpha\)).
     </p>
 
     <pre class="codigo" data-t="t4.b12.caja">Q-learning (control TD off-policy), para estimar π ≈ π_*
@@ -1184,7 +1167,7 @@ Repetir para cada episodio:
   <section class="modulo solo-estudio" id="b13">
     <header>
       <h2 data-t="t4.b13.h2">Expected SARSA</h2>
-      <p class="fuente" data-t="t4.b13.fuente"><strong>Solo en el material de Lucía</strong>: Tema4_2_ModelFree#slide-23 y #slide-24. La baraja de referencia (4_Tema4) no lo cubre · Sutton &amp; Barto §6.6, ecuación (6.9), Figura 6.3 y Figura 6.4</p>
+      <p class="fuente" data-t="t4.b13.fuente">Material de Lucía: Tema4_2_ModelFree#slide-23 y #slide-24 · Sutton &amp; Barto §6.6, ecuación (6.9), Figura 6.3 y Figura 6.4</p>
     </header>
 
     <p class="explicacion" data-t="t4.b13.p1">
@@ -1215,9 +1198,8 @@ Repetir para cada episodio:
     </p>
 
     <div class="aviso" data-t="t4.b13.honestidad">
-      La diapositiva de clase remata con <em>«mejora consistentemente a SARSA»</em> y <strong>no
-      muestra ninguna figura ni experimento que lo respalde</strong>. La evidencia existe: es la
-      <strong>Figura 6.3</strong> del libro, un barrido de \(\alpha\) de 0,1 a 1,0 sobre el
+      La diapositiva de clase remata con <em>«mejora consistentemente a SARSA»</em>. La
+      evidencia está en la <strong>Figura 6.3</strong> del libro, un barrido de \(\alpha\) de 0,1 a 1,0 sobre el
       acantilado con los tres métodos. Aquí no se reproduce, y por un motivo honesto: esa figura
       promedia <strong>50 000 ejecuciones</strong> para el rendimiento a corto plazo y
       <strong>100 000 episodios</strong> para el asintótico, y una versión con veinte ejecuciones
@@ -1236,7 +1218,7 @@ Repetir para cada episodio:
   <section class="modulo solo-estudio" id="b14">
     <header>
       <h2 data-t="t4.b14.h2">Cuando el \(\max\) engaña</h2>
-      <p class="fuente" data-t="t4.b14.fuente">4_Tema4#slide-37 y #slide-38 (el rótulo y el pseudocódigo; <strong>el sesgo no se define en ninguna parte de esta baraja</strong>) · material de Lucía: Tema4_2_ModelFree#slide-19 y #slide-20 (la única explicación escrita del sesgo en todo el material) · Sutton &amp; Barto §6.7, Example 6.7, ecuación (6.10) y Figura 6.5</p>
+      <p class="fuente" data-t="t4.b14.fuente">4_Tema4#slide-37 y #slide-38 · material de Lucía: Tema4_2_ModelFree#slide-19 y #slide-20 · Sutton &amp; Barto §6.7, Example 6.7, ecuación (6.10) y Figura 6.5</p>
     </header>
 
     <p class="explicacion" data-t="t4.b14.p1">
@@ -1472,7 +1454,7 @@ Repetir para cada episodio:
           </tr>
           <tr data-t="t4.err.5">
             <td>“El control MC on-policy con ε-soft converge a la política óptima”</td>
-            <td>Converge a la <strong>mejor política entre las ε-soft</strong>, no a \(\pi_*\), salvo que \(\varepsilon\to0\). El material de clase dice lo contrario en un sitio y lo correcto en otro</td>
+            <td>Con \(\varepsilon\) fijo converge a la <strong>mejor política entre las ε-soft</strong>, no a \(\pi_*\). A \(\pi_*\) solo se llega si la exploración se desvanece cumpliendo <strong>GLIE</strong></td>
             <td>B5</td>
           </tr>
           <tr data-t="t4.err.6">
@@ -1550,7 +1532,7 @@ Repetir para cada episodio:
             <td>\(V(s)\), \(Q(s,a)\)</td>
             <td>arrays de <strong>estimaciones</strong></td>
             <td>todo el tema</td>
-            <td><strong>Mayúscula = estimación.</strong> <code>notacion.md</code> recoge \(Q(s,a)\) pero no \(V(s)\): se propone añadirlo</td>
+            <td><strong>Mayúscula = estimación</strong>; minúscula, valor verdadero</td>
           </tr>
           <tr data-t="t4.glosario.f4">
             <td>\(G_t\)</td>
@@ -1592,19 +1574,19 @@ Repetir para cada episodio:
             <td>\(b(a\mid s)\)</td>
             <td>política de <strong>comportamiento</strong></td>
             <td>B10</td>
-            <td><strong>La diapositiva de clase escribe μ</strong> (<code>4_Tema4#slide-29</code>). Se usa \(b\), que es la del libro</td>
+            <td>En <code>4_Tema4#slide-29</code> se escribe μ; es la misma política. Se usa \(b\), que es la del libro</td>
           </tr>
           <tr data-t="t4.glosario.f11">
             <td>\(\rho_{t:T-1}\)</td>
             <td>razón de muestreo de importancia</td>
             <td>B10</td>
-            <td><strong>No aparece escrita en ninguna diapositiva de ninguna de las dos colecciones</strong></td>
+            <td>—</td>
           </tr>
           <tr data-t="t4.glosario.f12">
             <td>\(C(s,a)\)</td>
             <td>suma acumulada de pesos (MC off-policy ponderado)</td>
             <td>B10</td>
-            <td>Aparece en el pseudocódigo de clase sin explicarse</td>
+            <td>Aparece en el pseudocódigo del MC off-policy de clase</td>
           </tr>
           <tr data-t="t4.glosario.f13">
             <td>\(Q_1\), \(Q_2\)</td>

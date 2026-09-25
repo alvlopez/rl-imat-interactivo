@@ -1263,7 +1263,7 @@ function modulo2() {
         + "que el libro llama la <em>estimación de equivalencia cierta</em>—. Si crees que el "
         + "proceso es de Markov, \\(3/4\\) es mejor predicción del futuro; si no lo crees, no "
         + "lo es. <strong>Esto es lo que quiere decir “TD es sensible a la propiedad de "
-        + "Markov”</strong>, y es lo que las diapositivas afirman sin enseñar. "
+        + "Markov”</strong>. "
         + "(\\(V(B) = {b}\\) en los dos métodos.)",
         { td: numMat(vaTd, 2), mc: numMat(vaMc, 2), b: numMat(vB, 2) });
       renderizarMatematicas(respuesta);
@@ -1724,16 +1724,15 @@ function modulo3() {
     }
 
     html += ` ${t("t4.m3.verEsarsa",
-      "Y la tercera curva contesta a una afirmación que el material hace sin ninguna evidencia. "
+      "Y la tercera curva pone a prueba una afirmación de clase: "
       + "<code>Tema4_2_ModelFree#slide-23</code> y <code>#slide-24</code> dicen que Expected "
-      + "SARSA “mejora consistentemente a SARSA”, y no lo comprueban. Aquí se ve: con estos "
+      + "SARSA “mejora consistentemente a SARSA”. Aquí se ve: con estos "
       + "parámetros obtiene {e}, su política greedy es <strong>el camino intermedio de 15 "
       + "pasos en {n15} de las 50 ejecuciones</strong> —ni el borde del acantilado ni la fila "
       + "de arriba— y, sobre todo, <strong>aguanta con \\(\\alpha\\) grande</strong>: con "
       + "\\(\\alpha = 1{,}0\\) y la semilla de partida se queda en \\(-20{,}4\\) "
       + "mientras SARSA se hunde a "
-      + "\\(-94{,}9\\). Eso último es lo que hace fuerte la afirmación, y no está en ninguna "
-      + "diapositiva.", { e, n15: cuantas("esarsa", 15) })}`;
+      + "\\(-94{,}9\\). Eso último es lo que hace fuerte la afirmación.", { e, n15: cuantas("esarsa", 15) })}`;
 
     zonaVeredicto.innerHTML = html;
     renderizarMatematicas(zonaVeredicto);
@@ -2111,14 +2110,14 @@ function modulo4() {
     cuerpoExperimento.replaceChildren(graficaLineas(series, {
       ejeX: t("t4.m4.ejeXep", "Episodios"),
       ejeY: t("t4.m4.ejeYpct", "% de acciones izquierda desde A"),
-      yMin: 0, yMax: 100, escalaX: "log2",
+      yMin: 0, yMax: 100, ticksX: [1, 100, 200, 300],
       formatoY: (v) => num(v, 0),
       mensaje: t("t4.m4.viz2vacio", "Calculando las 2 000 ejecuciones…"),
     }));
     conLeyenda(cuerpoExperimento, series);
     pieExperimento.innerHTML = t("t4.m4.viz2runs",
       "<strong>{n} ejecuciones independientes</strong> · semillas {a}…{b} · <em>el libro "
-      + "promedia 10 000</em> · eje horizontal logarítmico",
+      + "promedia 10 000</em>",
       { n: EJECUCIONES, a: semillaActual(), b: semillaActual() + EJECUCIONES - 1 });
   }
 

@@ -2479,11 +2479,11 @@ export const EN = {
   "t4.h1": "Model-free reinforcement learning",
   "t4.entradilla":
     "Up to here, everything you could compute relied on \\(p(s',r\\mid s,a)\\). From now "
-    + "on you do not have it. This page answers the questions the unit leaves open: why, "
-    + "with no model, you have to estimate \\(q_\\pi(s,a)\\) and \\(v_\\pi(s)\\) is not "
+    + "on you do not have it. This page accompanies the unit's slides and puts in writing "
+    + "what is explained out loud in class: why, with no model, you have to estimate \\(q_\\pi(s,a)\\) and \\(v_\\pi(s)\\) is not "
     + "enough; what really separates Monte Carlo from temporal difference —and it is not "
-    + "speed—; which hyperparameters sit behind the cliff-walking figure that gets "
-    + "projected in class without a single one of them; and why the \\(\\max\\) of a set of "
+    + "speed—; which hyperparameters sit behind the cliff-walking figure; "
+    + "and why the \\(\\max\\) of a set of "
     + "noisy estimates always misleads upwards.",
   "t4.subtitulo":
     "It follows the order of the lecture deck, slide by slide, with the explanatory text of "
@@ -2646,9 +2646,8 @@ export const EN = {
     + "\\(v_*,\\pi_*\\). The skeleton does not change in this unit; the only thing that "
     + "changes is <strong>where the numbers come from</strong>.</td>",
   "t4.b1.nota":
-    "The two review figures are pure images on the slide: whatever is said about them is "
-    + "said out loud. Here they come with the written gloss, which is exactly what is "
-    + "missing when you study from the PDF.",
+    "The two review figures are discussed out loud in class. Here they come with a "
+    + "written gloss, so you can study them on your own.",
 
   /* --- B2 · lo que necesitamos para el control ---------------------------- */
   "t4.b2.h2": "So, what we need for control",
@@ -2734,9 +2733,8 @@ export const EN = {
     "The same 3×3 gridworld as in Unit 2 · Sutton &amp; Barto §5.1",
   "t4.b4.p1":
     "The lecture slide projects a full episode on the 3×3 gridworld of Unit 2 and announces "
-    + "<em>“how the state values evolve”</em>. <strong>The values are never actually "
-    + "shown</strong>, and it does not say what \\(\\gamma\\) is either, nor whether the "
-    + "method is first-visit or every-visit. Here is the whole computation.",
+    + "<em>“how the state values evolve”</em>. Here is the whole computation, with "
+    + "\\(\\gamma = 1\\) and the first-visit method of the previous slide.",
   "t4.b4.episodio":
     "S_0 = 1,  A_0 = right,  R_1 = −1\n"
     + "S_1 = 2,  A_1 = down,   R_2 = −1\n"
@@ -2761,8 +2759,7 @@ export const EN = {
     + "computed is the one of the last state visited. With \\(\\gamma = 1\\) and \\(r=-1\\) "
     + "at every step, \\(G_t\\) is simply <strong>minus the number of steps that were left "
     + "before termination</strong>. All four states appear exactly once in the episode, so "
-    + "<strong>first-visit and every-visit give exactly the same thing</strong> —which is "
-    + "why the slide can afford not to say which one it uses—.",
+    + "<strong>first-visit and every-visit give exactly the same thing</strong>.",
   "t4.b4.p3":
     "And there is the limitation in one line: after one episode you know something about "
     + "<strong>four</strong> of the eight states, and nothing about the other four. With "
@@ -2925,7 +2922,7 @@ export const EN = {
   "t4.b6.notacion":
     "Note the capital \\(V\\) here, not \\(v\\). It is deliberate: \\(v_\\pi\\) is the "
     + "<strong>true</strong> value function and \\(V\\) is the array of "
-    + "<strong>estimates</strong>. The course material mixes them; the book does not, and "
+    + "<strong>estimates</strong>, and "
     + "this whole unit is precisely about the difference between the two.",
 
   /* --- B7 · Monte Carlo frente a TD -------------------------------------- */
@@ -2957,7 +2954,7 @@ export const EN = {
     + "<em>“do you have to wait until you get home before increasing your estimate for the "
     + "initial state?”</em>",
   "t4.b7.p3":
-    "The summary projected in class, tidied up and with two nuances the slide leaves out:",
+    "The summary projected in class, tidied up and with two nuances added:",
   "t4.b7.cab2": "<th></th><th>Monte Carlo</th><th>TD</th>",
   "t4.b7.g1":
     "<td>Target</td><td>\\(G_t\\): the return actually observed</td>"
@@ -2979,7 +2976,7 @@ export const EN = {
   "t4.b7.markov":
     "<strong>Why TD exploits it and MC does not.</strong> In class that last row is labelled "
     + "<em>“sensitive to MDP properties (Markovian state feedback)”</em>, and the reason is "
-    + "given by the other collection — the only formulation of the two that gives it —: TD "
+    + "given by the other collection: TD "
     + "<em>“is covertly trying to estimate \\(p\\)”</em>. By bootstrapping on "
     + "\\(V(S_{t+1})\\), TD takes for granted that \\(S_{t+1}\\) <strong>summarises the whole "
     + "past</strong>; if the state is not Markovian, that assumption is false and the target "
@@ -3027,7 +3024,7 @@ export const EN = {
     + "<td><strong>All</strong> branches, <strong>one single level</strong></td>",
   "t4.b8.p2":
     "The next slide projects the “unified view”: a square with two axes and four corners. "
-    + "<strong>Neither collection explains the axes</strong>, and they are exactly what you "
+    + "The <strong>two axes</strong> are exactly what you "
     + "should take away:",
   "t4.b8.li1":
     "The horizontal axis, <strong>width of the update</strong>, measures how many of the "
@@ -3103,8 +3100,8 @@ export const EN = {
     + "<strong>coverage</strong>. Every action \\(\\pi\\) may take must also be possible "
     + "under \\(b\\): \\(\\pi(a\\mid s) > 0 \\Rightarrow b(a\\mid s) > 0\\). It follows that "
     + "\\(b\\) has to be <strong>stochastic</strong> in the states where it differs from "
-    + "\\(\\pi\\). The lecture slide asks “what must \\(\\pi\\) and \\(b\\) be like?” and "
-    + "never answers: <strong>that is exactly the answer</strong>, no more and no less. In "
+    + "\\(\\pi\\). To the question the lecture slide asks, “what must \\(\\pi\\) and \\(b\\) be "
+    + "like?”, <strong>that is exactly the answer</strong>, no more and no less. In "
     + "particular \\(\\pi\\) may well be deterministic, and usually is (the greedy policy "
     + "with respect to \\(Q\\)).",
   "t4.b10.p4":
@@ -3209,8 +3206,7 @@ export const EN = {
     + "exactly <strong>15</strong>, which is what the book states. That is how you confirm "
     + "that the row of winds has been read off the figure correctly.",
   "t4.b11.p6":
-    "Two things worth saying about that curve that are not written on any slide of the "
-    + "reference collection. First: the <strong>slope</strong> is the rate at which episodes "
+    "Two things worth saying about that curve. First: the <strong>slope</strong> is the rate at which episodes "
     + "get solved, so what you should look at is not the height but when it takes off. "
     + "Second, and more important: <strong>you cannot know a priori whether you have reached "
     + "the optimum</strong>, not even once training is over. In practice one does not look "
@@ -3228,17 +3224,9 @@ export const EN = {
     "Q-learning: learning \\(q_*\\) while behaving in some other way",
   "t4.b12.fuente": "Sutton &amp; Barto §6.5, equation (6.8)",
   "t4.b12.p1":
-    "The lecture slide does something no other slide in either collection does: it "
-    + "<strong>derives the target step by step</strong>. It starts from the SARSA rule, asks "
+    "The lecture slide <strong>derives the target step by step</strong>. It starts from the SARSA rule, asks "
     + "what happens if the next action is chosen by the <strong>greedy</strong> policy "
     + "instead of the behaviour policy, and arrives at the \\(\\max\\):",
-  "t4.b12.erratum":
-    "On the slide the last step is written \\(= R_{t+1} + \\max_{a'} \\gamma "
-    + "Q(S_{t+1},a')\\), with \\(\\gamma\\) <strong>inside</strong> the maximum, and two "
-    + "lines below it is written \\(\\gamma \\max_a\\) again, outside. Both are equal because "
-    + "\\(\\gamma \\ge 0\\) and the maximum of a positive scalar times something is that "
-    + "scalar times the maximum; but the standard form —and the one in every textbook— has "
-    + "\\(\\gamma\\) <strong>outside</strong>, and that is the one used here.",
   "t4.b12.p2":
     "The behaviour policy is <strong>ε-greedy with respect to \\(Q\\)</strong>; the target "
     + "policy is the <strong>greedy one with respect to \\(Q\\)</strong>. They are "
@@ -3250,8 +3238,7 @@ export const EN = {
     "The consequence is strong: \\(Q\\) approximates \\(q_*\\) <strong>regardless of the "
     + "policy being followed</strong>. The policy only decides which pairs get visited and "
     + "updated; and all that is needed for convergence is that <strong>all</strong> of them "
-    + "keep being updated (plus the usual conditions on \\(\\alpha\\), which the lecture "
-    + "slide omits for Q-learning even though it writes them two slides earlier for SARSA).",
+    + "keep being updated (plus the usual conditions on \\(\\alpha\\)).",
   "t4.b12.caja":
     "Q-learning (off-policy TD control), for estimating π ≈ π<sub>*</sub>\n\n"
     + "Algorithm parameters: step size α ∈ (0,1], small ε &gt; 0\n"
@@ -3288,8 +3275,7 @@ export const EN = {
   /* --- B13 · Expected SARSA ---------------------------------------------- */
   "t4.b13.h2": "Expected SARSA",
   "t4.b13.fuente":
-    "<strong>Only in the second lecture collection</strong>; the reference deck does not "
-    + "cover it · Sutton &amp; Barto §6.6, equation (6.9), Figures 6.3 and 6.4",
+    "Sutton &amp; Barto §6.6, equation (6.9), Figures 6.3 and 6.4",
   "t4.b13.p1":
     "There is room for a third method between SARSA and Q-learning. SARSA uses "
     + "\\(Q(S_{t+1},A_{t+1})\\), where \\(A_{t+1}\\) is a <strong>sampled</strong> action; "
@@ -3309,9 +3295,8 @@ export const EN = {
     + "exploratory, Expected SARSA is exactly Q-learning</strong>. Expected SARSA subsumes "
     + "and generalises Q-learning.",
   "t4.b13.honestidad":
-    "The lecture slide signs off with <em>“it consistently improves on SARSA”</em> and "
-    + "<strong>shows no figure or experiment to back it up</strong>. The evidence does "
-    + "exist: it is <strong>Figure 6.3</strong> of the book, a sweep of \\(\\alpha\\) from "
+    "The lecture slide signs off with <em>“it consistently improves on SARSA”</em>. The "
+    + "evidence is <strong>Figure 6.3</strong> of the book, a sweep of \\(\\alpha\\) from "
     + "0.1 to 1.0 on the cliff with all three methods. It is not reproduced here, and for an "
     + "honest reason: that figure averages <strong>50,000 runs</strong> for short-term "
     + "performance and <strong>100,000 episodes</strong> for the asymptotic one, and a "
@@ -3491,9 +3476,9 @@ export const EN = {
     + "<td><strong>module 2</strong></td>",
   "t4.err.5":
     "<td>“On-policy MC control with ε-soft converges to the optimal policy”</td>"
-    + "<td>It converges to the <strong>best policy among the ε-soft ones</strong>, not to "
-    + "\\(\\pi_*\\), unless \\(\\varepsilon\\to0\\). The course material says the opposite "
-    + "in one place and the right thing in another</td><td>B5</td>",
+    + "<td>With \\(\\varepsilon\\) fixed it converges to the <strong>best policy among the "
+    + "ε-soft ones</strong>, not to \\(\\pi_*\\). It only reaches \\(\\pi_*\\) if exploration "
+    + "vanishes under <strong>GLIE</strong></td><td>B5</td>",
   "t4.err.6":
     "<td>“Importance sampling corrects the difference in dynamics between the two "
     + "policies”</td>"
@@ -3565,8 +3550,7 @@ export const EN = {
   "t4.glosario.f3":
     "<td>\\(V(s)\\), \\(Q(s,a)\\)</td><td>arrays of <strong>estimates</strong></td>"
     + "<td>the whole unit</td>"
-    + "<td><strong>Capital = estimate.</strong> The course notation file lists \\(Q(s,a)\\) "
-    + "but not \\(V(s)\\): adding it is proposed</td>",
+    + "<td><strong>Capital = estimate</strong>; lower case, true value</td>",
   "t4.glosario.f4":
     "<td>\\(G_t\\)</td><td>return from \\(t\\)</td><td>B3, B4, B6</td><td>—</td>",
   "t4.glosario.f5":
@@ -3586,15 +3570,15 @@ export const EN = {
     "<td>\\(\\pi\\)</td><td><strong>target</strong> policy</td><td>B10, B12</td><td>—</td>",
   "t4.glosario.f10":
     "<td>\\(b(a\\mid s)\\)</td><td><strong>behaviour</strong> policy</td><td>B10</td>"
-    + "<td><strong>The lecture slide writes μ</strong>. This page uses \\(b\\), the book’s "
-    + "symbol</td>",
+    + "<td>One lecture slide writes μ; it is the same policy. This page uses \\(b\\), the "
+    + "book’s symbol</td>",
   "t4.glosario.f11":
     "<td>\\(\\rho_{t:T-1}\\)</td><td>importance-sampling ratio</td><td>B10</td>"
-    + "<td><strong>It is not written on any slide of either collection</strong></td>",
+    + "<td>—</td>",
   "t4.glosario.f12":
     "<td>\\(C(s,a)\\)</td>"
     + "<td>cumulative sum of weights (weighted off-policy MC)</td><td>B10</td>"
-    + "<td>It appears in the lecture pseudocode with no explanation</td>",
+    + "<td>It appears in the off-policy MC pseudocode shown in class</td>",
   "t4.glosario.f13":
     "<td>\\(Q_1\\), \\(Q_2\\)</td><td>the two tables of double learning</td>"
     + "<td>B14, module 4</td><td>—</td>",
@@ -3775,8 +3759,8 @@ export const EN = {
     + "TD(0) gets right the Markov model that generated it</strong> —what the book calls the "
     + "<em>certainty-equivalence estimate</em>—. If you believe the process is Markov, "
     + "\\(3/4\\) is the better prediction of the future; if you do not, it is not. "
-    + "<strong>This is what “TD is sensitive to the Markov property” means</strong>, and it "
-    + "is what the slides assert without showing. (\\(V(B) = {b}\\) in both methods.)",
+    + "<strong>This is what “TD is sensitive to the Markov property” means</strong>. "
+    + "(\\(V(B) = {b}\\) in both methods.)",
   "t4.m2.predOpc1": "\\(V(A) = 0\\)",
   "t4.m2.predOpc2": "\\(V(A) = 3/4\\)",
   "t4.m2.predVer": "Show the answer",
@@ -3866,15 +3850,13 @@ export const EN = {
     + "values of the policy it is really following, exploration included, and that policy "
     + "<strong>steers away from the edge</strong>.",
   "t4.m3.verEsarsa":
-    "And the third curve answers a claim the material makes with no evidence at all. The "
-    + "lecture material says that Expected SARSA “consistently improves on SARSA”, and never "
-    + "checks it. Here you can see it: with these parameters it scores {e}, its greedy policy "
+    "And the third curve puts a claim from class to the test: the lecture material says "
+    + "that Expected SARSA “consistently improves on SARSA”. Here you can see it: with these parameters it scores {e}, its greedy policy "
     + "is <strong>the intermediate 15-step path in {n15} of the 50 runs</strong> —neither the "
     + "cliff edge nor the top row— and, above all, <strong>it holds up with large "
     + "\\(\\alpha\\)</strong>: at \\(\\alpha = 1.0\\), with the default seed, it stays "
     + "at \\(-20.4\\) while SARSA "
-    + "sinks to \\(-94.9\\). That last point is what makes the claim strong, and it is on no "
-    + "slide.",
+    + "sinks to \\(-94.9\\). That last point is what makes the claim strong.",
   "t4.m3.rejillaRun":
     "Policy of the run with seed {semilla}: a single one, not an average —an average policy "
     + "is not a policy—.",
@@ -3936,7 +3918,7 @@ export const EN = {
   "t4.m4.viz2vacio": "Computing the 2,000 runs…",
   "t4.m4.viz2runs":
     "<strong>{n} independent runs</strong> · seeds {a}…{b} · <em>the book averages "
-    + "10,000</em> · logarithmic horizontal axis",
+    + "10,000</em>",
   "t4.m4.picoEn": "{p}% at episode {e}",
   "t4.m4.verPocas":
     "With only {n} actions the effect is barely visible: the estimated maximum is {b} and "
